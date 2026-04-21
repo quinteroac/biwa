@@ -1,11 +1,13 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import type { SaveManager } from '../SaveManager.ts'
-import type { SlotInfo } from '../types/save.d.ts'
+import type { GameSaveState, SlotInfo } from '../types/save.d.ts'
 
 interface SaveLoadMenuProps {
   isOpen: boolean
   onClose: () => void
   saveManager: SaveManager
+  /** Returns the current game state to be written when the player clicks Save. */
+  getState: () => GameSaveState
 }
 
 /** Format a millisecond timestamp as a human-readable date/time string. */
@@ -79,7 +81,40 @@ const SLOT_LIST_STYLE: React.CSSProperties = {
   gap: 10,
 }
 
-function SlotRow({ slotKey, info }: { slotKey: number | 'auto'; info: SlotInfo | undefined }) {
+const SAVE_BTN_STYLE: React.CSSProperties = {
+  marginLeft: 'auto',
+  flexShrink: 0,
+  padding: '5px 14px',
+  background: 'transparent',
+  border: '1px solid var(--vn-accent, #c084fc)',
+  borderRadius: 6,
+  color: 'var(--vn-accent, #c084fc)',
+  fontFamily: 'inherit',
+  fontSize: 13,
+  fontWeight: 'bold',
+  cursor: 'pointer',
+  letterSpacing: '0.04em',
+  transition: 'background 0.15s, color 0.15s',
+}
+
+const ERROR_BANNER_STYLE: React.CSSProperties = {
+  padding: '10px 14px',
+  borderRadius: 8,
+  background: 'rgba(220,50,50,0.15)',
+  border: '1px solid rgba(220,50,50,0.5)',
+  color: '#fca5a5',
+  fontSize: 13,
+}
+
+function SlotRow({
+  slotKey,
+  info,
+  onSave,
+}: {
+  slotKey: number | 'auto'
+  info: SlotInfo | undefined
+  onSave: () => void
+}) {
   const label = slotKey === 'auto' ? 'Auto Save' : `Slot ${slotKey}`
   const isOccupied = info !== undefined
 
@@ -144,18 +179,30 @@ function SlotRow({ slotKey, info }: { slotKey: number | 'auto'; info: SlotInfo |
           Empty slot
         </span>
       )}
+      <button
+        onClick={onSave}
+        style={SAVE_BTN_STYLE}
+        aria-label={`Save to ${label}`}
+        type="button"
+      >
+        Save
+      </button>
     </div>
   )
 }
 
 /**
- * Overlay menu for browsing save slots.
+ * Overlay menu for browsing and writing save slots.
  * Renders when `isOpen` is `true`; calls `onClose` on close-button click or Escape key.
  * @param isOpen - Whether the menu is visible.
  * @param onClose - Callback invoked when the player dismisses the menu.
- * @param saveManager - The `SaveManager` instance used to read slot data.
+ * @param saveManager - The `SaveManager` instance used to read and write slot data.
+ * @param getState - Returns the current `GameSaveState` to write when the player saves.
  */
-export function SaveLoadMenu({ isOpen, onClose, saveManager }: SaveLoadMenuProps) {
+export function SaveLoadMenu({ isOpen, onClose, saveManager, getState }: SaveLoadMenuProps) {
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [saveCount, setSaveCount] = useState(0)
+
   useEffect(() => {
     if (!isOpen) return
     const handler = (e: KeyboardEvent) => {
@@ -170,6 +217,18 @@ export function SaveLoadMenu({ isOpen, onClose, saveManager }: SaveLoadMenuProps
 
   if (!isOpen) return null
 
+  function handleSave(slot: number | 'auto') {
+    const ok = saveManager.save(slot, getState())
+    if (ok) {
+      setSaveError(null)
+    } else {
+      setSaveError('Could not save — storage may be full or unavailable.')
+    }
+    setSaveCount(c => c + 1)
+  }
+
+  // Re-read slots every render so the list reflects the latest state (saveCount drives re-renders).
+  void saveCount
   const occupiedSlots = saveManager.listSlots()
   const occupiedByKey = new Map<string, SlotInfo>(
     occupiedSlots.map(s => [String(s.slot), s]),
@@ -201,12 +260,19 @@ export function SaveLoadMenu({ isOpen, onClose, saveManager }: SaveLoadMenuProps
           </button>
         </div>
 
+        {saveError !== null && (
+          <div style={ERROR_BANNER_STYLE} role="alert">
+            {saveError}
+          </div>
+        )}
+
         <div style={SLOT_LIST_STYLE}>
           {allSlotKeys.map(slotKey => (
             <SlotRow
               key={String(slotKey)}
               slotKey={slotKey}
               info={occupiedByKey.get(String(slotKey))}
+              onSave={() => handleSave(slotKey)}
             />
           ))}
         </div>

@@ -20,3 +20,23 @@
 - The `localStorage` mock pattern (define on `globalThis` with `writable: true`) is established in `SaveManager.test.ts` — reuse the same pattern in component tests that exercise save logic.
 - `SaveManager.slotCount` returns the numeric slot count (excludes the `'auto'` slot). The full slot list is `['auto', 1, 2, …, slotCount]`.
 - CSS variables `--vn-dialog-bg`, `--vn-accent`, `--vn-choice-hover`, and `--vn-font` are used by the existing components; `SaveLoadMenu` reuses them for visual consistency.
+
+## US-002 — Save to a slot
+
+**Summary:** Extended `SaveLoadMenu` with a `getState: () => GameSaveState` prop and a Save button on every slot row. `SaveManager.save()` now returns `boolean` (true = success, false = failure) so the component can surface a non-blocking `role="alert"` error banner when localStorage is unavailable. A `saveCount` state variable forces re-renders after every save attempt so `listSlots()` is re-evaluated and the UI reflects the latest saved data.
+
+**Key Decisions:**
+- Changed `SaveManager.save()` return type from `void` to `boolean` — minimal, backward-compatible (callers that ignored the return value still compile).
+- Used two `useState` hooks in `SaveLoadMenu`: `saveError` (string | null) for the error banner and `saveCount` (number) as a re-render trigger after save. The `void saveCount` line suppresses the "unused variable" lint warning while ensuring the value is read so React's dependency tracking stays correct.
+- Error banner uses `role="alert"` for accessibility; no auto-dismiss timer (keeps implementation simple and avoids `setTimeout` cleanup in SSR-render tests).
+- Save button styled with the existing `--vn-accent` CSS variable for visual consistency; `aria-label="Save to {label}"` enables slot-specific accessibility labels and is used in tests.
+
+**Pitfalls Encountered:**
+- The previous test file had the old `SaveLoadMenu` signature (without `getState`). All existing render calls needed the new prop; the whole test file was rewritten in one shot to avoid partial-match failures with the `edit` tool.
+- `void saveCount` pattern is required because TypeScript strict mode flags unused variables, but the value must be read to trigger a re-render when it changes. Documenting this avoids future confusion.
+
+**Useful Context for Future Agents:**
+- `SaveManager.save()` now returns `boolean`. Update any callers (e.g., `autoSave`) if they need to surface errors too (currently `autoSave` ignores the return value, which is intentional for a fire-and-forget path).
+- The component re-reads `saveManager.listSlots()` synchronously on every render — no caching or memoisation. This is fine for a small slot count but may need a `useMemo` if slot counts grow large.
+- The `getState` prop is required (not optional) to enforce that every consumer provides the current game state; do not make it optional without also providing a sensible default.
+- Tests for click-handler behaviour (AC02 integration) use indirect verification: call `saveManager.save()` directly and assert on `saveManager.load()`, since `renderToString` cannot fire events.

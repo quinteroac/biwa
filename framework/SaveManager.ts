@@ -40,9 +40,10 @@ export class SaveManager {
    * Persist a typed game-state snapshot to localStorage.
    * @param slot - Numeric slot index or `'auto'` for the auto-save slot.
    * @param state - Fully typed `GameSaveState` payload (meta + game variables).
-   * @returns void. Emits `console.warn` and swallows the error if localStorage is unavailable.
+   * @returns `true` if the save succeeded, `false` if localStorage is unavailable or full.
+   *   Emits `console.warn` on failure.
    */
-  save(slot: number | 'auto', state: GameSaveState): void {
+  save(slot: number | 'auto', state: GameSaveState): boolean {
     const data: SaveData = {
       version: SaveManager.CURRENT_VERSION,
       timestamp: Date.now(),
@@ -51,8 +52,10 @@ export class SaveManager {
     }
     try {
       localStorage.setItem(this.#key(slot), JSON.stringify(data))
+      return true
     } catch (e) {
       console.warn('[SaveManager] Failed to save slot', slot, e)
+      return false
     }
   }
 
