@@ -91,14 +91,21 @@ export class SaveManager {
 
   /**
    * List all occupied save slots.
-   * @returns Array of `SlotInfo` for every slot that contains data.
+   * @returns Array of `SlotInfo` for every slot that contains data, ordered with
+   *   `'auto'` first followed by numeric slots in ascending order. Empty slots are omitted.
    */
   listSlots(): SlotInfo[] {
     const result: SlotInfo[] = []
     const slotIds: (number | 'auto')[] = ['auto', ...Array.from({ length: this.#slots }, (_, i) => i + 1)]
     for (const slot of slotIds) {
-      const data = this.load(slot)
-      if (data) result.push({ slot, data })
+      const loaded = this.load(slot)
+      if (loaded) {
+        result.push({
+          slot,
+          meta: { ...loaded.state.meta, timestamp: loaded.timestamp },
+          state: loaded.state.state,
+        })
+      }
     }
     return result
   }

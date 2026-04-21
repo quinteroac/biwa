@@ -35,3 +35,20 @@
 - `SaveSlot` is now the canonical load return type — import from `framework/types/save.d.ts`.
 - `SCHEMA_VERSION` is a module-level constant in `SaveManager.ts`; bump it there when the save schema evolves.
 - Tests for `load()` live in the `SaveManager.load` describe block in `framework/__tests__/SaveManager.test.ts`, immediately after the `SaveManager.save` block.
+
+## US-003 — List all occupied slots
+
+**Summary:** Implemented `listSlots()` returning a flat `SlotInfo[]` with `slot`, `meta` (SaveMeta fields + `timestamp`), and `state`. Updated `SlotInfo` in `save.d.ts` from `{ slot, data: SaveSlot }` to `{ slot, meta: SaveMeta & { timestamp }, state }`. The method iterates `['auto', 1..N]` slots in order, calls `load()` on each, and maps present results to the flat shape.
+
+**Key Decisions:**
+- `SlotInfo` was redesigned from a nested `{ slot, data: SaveSlot }` to a flat UI-friendly shape, merging `timestamp` into `meta` rather than leaving it at the top level — this matches the AC02 spec precisely and makes slot-picker rendering straightforward.
+- Ordering (`'auto'` first, then ascending numerics) is guaranteed by the slot iteration order in `listSlots()`, not by sorting after the fact.
+- `listSlots()` reuses `load()` internally, so migrations apply automatically when listing.
+
+**Pitfalls Encountered:**
+- The previous `SlotInfo` (from US-002) had `data: SaveSlot` which conflicted with the flat shape required by AC02. Updating it is a breaking change but there were no external callers.
+- `timestamp` lives on `SaveSlot` (not on `SaveMeta`), so the merge `{ ...loaded.state.meta, timestamp: loaded.timestamp }` is necessary to satisfy AC02.
+
+**Useful Context for Future Agents:**
+- `SlotInfo` is now a flat structure: `{ slot, meta: SaveMeta & { timestamp }, state }` — do not expect a nested `data` field.
+- Tests for `listSlots()` live in the `SaveManager.listSlots` describe block, inserted between the `SaveManager.save` and `SaveManager.load` blocks in `framework/__tests__/SaveManager.test.ts`.

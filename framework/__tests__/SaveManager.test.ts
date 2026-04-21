@@ -116,7 +116,90 @@ describe('SaveManager.save', () => {
   })
 })
 
-// --- SaveManager.load (US-002) -------------------------------------------
+// --- SaveManager.listSlots (US-003) --------------------------------------
+
+describe('SaveManager.listSlots', () => {
+  let sm: SaveManager
+
+  beforeEach(() => {
+    localStorageMock.clear()
+    sm = new SaveManager({ gameId: 'test-game', slots: 3, autoSave: false })
+  })
+
+  // AC01 — only occupied slots are returned
+  it('AC01: returns an empty array when no slots are saved', () => {
+    expect(sm.listSlots()).toEqual([])
+  })
+
+  it('AC01: omits empty slots, includes only occupied ones', () => {
+    sm.save(1, makeState())
+    sm.save(3, makeState({ meta: { displayName: 'Ch3', sceneName: 'ch3', playtime: 99 } }))
+    const list = sm.listSlots()
+    expect(list).toHaveLength(2)
+    const slots = list.map((e) => e.slot)
+    expect(slots).toContain(1)
+    expect(slots).toContain(3)
+    expect(slots).not.toContain(2)
+    expect(slots).not.toContain('auto')
+  })
+
+  // AC02 — each entry has slot, meta (with timestamp), state
+  it('AC02: each entry exposes slot, meta (with timestamp), and state', () => {
+    const before = Date.now()
+    sm.save(1, makeState())
+    const after = Date.now()
+
+    const list = sm.listSlots()
+    expect(list).toHaveLength(1)
+
+    const entry = list[0]!
+    expect(entry.slot).toBe(1)
+
+    // meta fields from SaveMeta
+    expect(entry.meta.displayName).toBe('Chapter 1')
+    expect(entry.meta.sceneName).toBe('prologue')
+    expect(entry.meta.playtime).toBe(42)
+
+    // timestamp is merged into meta
+    expect(typeof entry.meta.timestamp).toBe('number')
+    expect(entry.meta.timestamp).toBeGreaterThanOrEqual(before)
+    expect(entry.meta.timestamp).toBeLessThanOrEqual(after)
+
+    // state is the game variables record
+    expect(entry.state).toEqual({ health: 100, flag_met_hero: true })
+  })
+
+  it('AC02: auto slot entry exposes slot as "auto"', () => {
+    sm.save('auto', makeState())
+    const list = sm.listSlots()
+    expect(list).toHaveLength(1)
+    expect(list[0]!.slot).toBe('auto')
+    expect(list[0]!.meta.displayName).toBe('Chapter 1')
+    expect(list[0]!.state['health']).toBe(100)
+  })
+
+  // AC03 — ordering: 'auto' first, then numeric ascending
+  it('AC03: orders auto slot first, then numeric slots ascending', () => {
+    sm.save(3, makeState({ meta: { displayName: 'Slot 3', sceneName: 's3', playtime: 3 } }))
+    sm.save(1, makeState({ meta: { displayName: 'Slot 1', sceneName: 's1', playtime: 1 } }))
+    sm.save('auto', makeState({ meta: { displayName: 'Auto', sceneName: 'sA', playtime: 0 } }))
+
+    const list = sm.listSlots()
+    expect(list).toHaveLength(3)
+    expect(list[0]!.slot).toBe('auto')
+    expect(list[1]!.slot).toBe(1)
+    expect(list[2]!.slot).toBe(3)
+  })
+
+  it('AC03: numeric slots are ascending even when saved out of order', () => {
+    sm.save(3, makeState())
+    sm.save(2, makeState())
+    sm.save(1, makeState())
+
+    const list = sm.listSlots()
+    expect(list.map((e) => e.slot)).toEqual([1, 2, 3])
+  })
+})
 
 describe('SaveManager.load', () => {
   let sm: SaveManager

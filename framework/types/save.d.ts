@@ -27,7 +27,11 @@ export interface SaveSlot {
   state: GameSaveState
 }
 
+/** A single entry returned by `SaveManager.listSlots()`. */
 export interface SlotInfo {
   slot: number | 'auto'
-  data: SaveSlot
+  /** Save metadata including the timestamp of when the slot was saved. */
+  meta: SaveMeta & { timestamp: number }
+  /** Serialisable key-value game variables for this slot. */
+  state: Record<string, unknown>
 }
