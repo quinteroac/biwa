@@ -61,3 +61,21 @@
 - `handleLoad` is the authoritative function for load logic: it calls `saveManager.load()`, passes `saveSlot.state` to `onLoad`, calls `onClose()`, or sets `loadError` on failure.
 - The `LOAD_BTN_STYLE` constant uses a muted white border/color to visually distinguish Load from Save (accent-colored) at a glance.
 - `loadError` and `saveError` are independent states — both banners may appear simultaneously if the user interleaves failed saves and loads.
+
+## US-004 — Developer mounts the component
+
+**Summary:** Created `framework/components/VnSaveMenu.tsx` — a thin, well-documented public wrapper around `SaveLoadMenu`. The component accepts the same five props (`isOpen`, `onClose`, `saveManager`, `getState`, `onLoad`) and delegates rendering entirely to `SaveLoadMenu` via `createElement`. A co-located test file verifies mount, null-render, slot count, Save button count, and close-button presence.
+
+**Key Decisions:**
+- `VnSaveMenu` delegates 100% to `SaveLoadMenu` via `createElement(SaveLoadMenu, props)`. This avoids duplicating logic and keeps a single source of truth while providing a `Vn`-prefixed public API consistent with the rest of the framework's component naming.
+- `VnSaveMenuProps` is a named, exported interface (not inlined) so consumers can reference the type directly when writing wrapper components or higher-order components.
+- Return type annotated as `React.ReactElement | null` to accurately reflect the conditional rendering in the underlying `SaveLoadMenu`.
+
+**Pitfalls Encountered:**
+- Typo in the localStorage stub's `removeItem` lambda (`delete store[k]` instead of `delete store[key]`). Caught before running tests via code review; the fix was trivial but worth watching for when copy-pasting the stub pattern.
+- The pre-existing `ScriptRunner.ts` typecheck error (`Identifier expected` at line 177) is unrelated to this story — `npx tsc --noEmit` will report it but it is not introduced by this change.
+
+**Useful Context for Future Agents:**
+- `VnSaveMenu` is the public-facing component; `SaveLoadMenu` is the internal implementation. New feature work on the save UI should extend `SaveLoadMenu` and the public contract propagates automatically through `VnSaveMenu`.
+- The `VnSaveMenuProps` interface can be used directly in `VnApp` or any host component to type the props being forwarded into `VnSaveMenu`.
+- Test pattern for `VnSaveMenu` mirrors `SaveLoadMenu.test.tsx` exactly (same localStorage stub, same `renderToString` approach, same `makeState` helper). Keep them in sync when the underlying component changes.
