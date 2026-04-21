@@ -52,3 +52,19 @@
 **Useful Context for Future Agents:**
 - `SlotInfo` is now a flat structure: `{ slot, meta: SaveMeta & { timestamp }, state }` — do not expect a nested `data` field.
 - Tests for `listSlots()` live in the `SaveManager.listSlots` describe block, inserted between the `SaveManager.save` and `SaveManager.load` blocks in `framework/__tests__/SaveManager.test.ts`.
+
+## US-004 — Delete a save slot
+
+**Summary:** Added `deleteSlot(slot)` as the primary delete method; updated the existing `delete(slot)` to be a deprecated alias that calls `deleteSlot()` and logs a `console.warn` deprecation message pointing to the new method.
+
+**Key Decisions:**
+- `deleteSlot()` simply calls `localStorage.removeItem()` — the Web API spec guarantees this is a no-op for missing keys, satisfying the "no error on empty slot" requirement without extra guards.
+- The deprecated `delete()` delegates to `deleteSlot()` rather than duplicating logic, keeping behaviour in sync automatically.
+
+**Pitfalls Encountered:**
+- None significant. The `delete` → `deleteSlot` refactor was straightforward because the existing implementation was a single-line `removeItem` call.
+
+**Useful Context for Future Agents:**
+- `deleteSlot()` is the canonical delete API going forward; `delete()` is kept only for backward compatibility.
+- Tests for `deleteSlot()` live in the `SaveManager.deleteSlot` describe block, inserted between `SaveManager.listSlots` and `SaveManager.load` in `framework/__tests__/SaveManager.test.ts`.
+- The `console.warn` spy pattern used in AC02 tests requires `.mockImplementation(() => {})` immediately after `spyOn` to suppress real console output, followed by `warnSpy.mockRestore()` in cleanup.

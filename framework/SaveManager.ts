@@ -111,10 +111,20 @@ export class SaveManager {
   }
 
   /**
+   * Remove a save from localStorage. Safe to call on an already-empty slot.
+   * @param slot - Slot to delete.
+   */
+  deleteSlot(slot: number | 'auto'): void {
+    localStorage.removeItem(this.#key(slot))
+  }
+
+  /**
+   * @deprecated Use `deleteSlot(slot)` instead.
    * Remove a save from localStorage.
    * @param slot - Slot to delete.
    */
   delete(slot: number | 'auto'): void {
-    localStorage.removeItem(this.#key(slot))
+    console.warn('[SaveManager] delete() is deprecated — use deleteSlot() instead.')
+    this.deleteSlot(slot)
   }
 }

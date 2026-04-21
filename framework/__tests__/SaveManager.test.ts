@@ -201,6 +201,60 @@ describe('SaveManager.listSlots', () => {
   })
 })
 
+// --- SaveManager.deleteSlot (US-004) ------------------------------------
+
+describe('SaveManager.deleteSlot', () => {
+  let sm: SaveManager
+
+  beforeEach(() => {
+    localStorageMock.clear()
+    sm = new SaveManager({ gameId: 'test-game', slots: 3, autoSave: false })
+  })
+
+  // AC01 — removes entry from localStorage
+  it('AC01: removes an existing slot from localStorage', () => {
+    sm.save(1, makeState())
+    expect(localStorage.getItem('vn:test-game:save:1')).not.toBeNull()
+
+    sm.deleteSlot(1)
+    expect(localStorage.getItem('vn:test-game:save:1')).toBeNull()
+  })
+
+  // AC01 — no error when slot is already empty
+  it('AC01: does not throw when the slot is already empty', () => {
+    expect(() => sm.deleteSlot(2)).not.toThrow()
+  })
+
+  it('AC01: deletes the auto slot', () => {
+    sm.save('auto', makeState())
+    sm.deleteSlot('auto')
+    expect(localStorage.getItem('vn:test-game:save:auto')).toBeNull()
+  })
+
+  // AC02 — deprecated delete() alias logs console.warn
+  it('AC02: delete() logs a console.warn deprecation message', () => {
+    const warnSpy = spyOn(console, 'warn').mockImplementation(() => {})
+    sm.save(1, makeState())
+
+    sm.delete(1)
+
+    expect(warnSpy).toHaveBeenCalledTimes(1)
+    const msg: string = warnSpy.mock.calls[0]![0] as string
+    expect(msg).toContain('deleteSlot')
+    warnSpy.mockRestore()
+  })
+
+  // AC02 — deprecated delete() still removes the slot
+  it('AC02: delete() still removes the slot from localStorage', () => {
+    const warnSpy = spyOn(console, 'warn').mockImplementation(() => {})
+    sm.save(1, makeState())
+
+    sm.delete(1)
+    expect(localStorage.getItem('vn:test-game:save:1')).toBeNull()
+    warnSpy.mockRestore()
+  })
+})
+
 describe('SaveManager.load', () => {
   let sm: SaveManager
 
