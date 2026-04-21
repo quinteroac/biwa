@@ -40,3 +40,24 @@
 - The component re-reads `saveManager.listSlots()` synchronously on every render — no caching or memoisation. This is fine for a small slot count but may need a `useMemo` if slot counts grow large.
 - The `getState` prop is required (not optional) to enforce that every consumer provides the current game state; do not make it optional without also providing a sensible default.
 - Tests for click-handler behaviour (AC02 integration) use indirect verification: call `saveManager.save()` directly and assert on `saveManager.load()`, since `renderToString` cannot fire events.
+
+## US-003 — Load from a slot
+
+**Summary:** Extended `SaveLoadMenu` with an `onLoad: (state: GameSaveState) => void` required prop. Added a "Load" button rendered only on occupied slot rows. `handleLoad` calls `saveManager.load(slot)` — on success it calls `onLoad(saveSlot.state)` then `onClose()`; on null it sets a `loadError` state shown as a `role="alert"` banner. Added `LOAD_BTN_STYLE` (visually distinct from Save) and a separate `loadError` state alongside the existing `saveError`.
+
+**Key Decisions:**
+- `onLoad` is a required prop (not optional) to match the pattern established by `getState` — every consumer must handle the loaded state.
+- Load button is only rendered when `isOccupied` (checked via `occupiedByKey.has(String(slotKey))`) — empty slots show no Load button at all (AC01).
+- Separate `loadError` state (not merged with `saveError`) so both can co-exist if the user saves to one slot then tries to load a missing one.
+- `onClose()` is called after `onLoad()`, matching typical "perform action then dismiss" modal UX (AC04).
+- `render` helper in tests updated to accept optional `onLoad` (defaulting to `() => {}`), avoiding changes to all 15+ existing test invocations.
+
+**Pitfalls Encountered:**
+- The `render` helper function signature needed updating to allow `onLoad` to be optional so all prior tests compiling against the old `SaveLoadMenuProps` didn't need mass-editing. Using `Omit<...> & { onLoad?: ... }` with a spread default in the helper solved this cleanly.
+- Event-handler tests (AC02, AC04) remain indirect (unit-level verification via `sm.load()`) since `renderToString` cannot fire click events. The structural tests (Load button presence in rendered HTML) confirm wiring for AC01 and AC03.
+
+**Useful Context for Future Agents:**
+- `SaveLoadMenu` now requires both `getState` and `onLoad` props. Any consumer (e.g., `VnApp`) must provide both.
+- `handleLoad` is the authoritative function for load logic: it calls `saveManager.load()`, passes `saveSlot.state` to `onLoad`, calls `onClose()`, or sets `loadError` on failure.
+- The `LOAD_BTN_STYLE` constant uses a muted white border/color to visually distinguish Load from Save (accent-colored) at a glance.
+- `loadError` and `saveError` are independent states — both banners may appear simultaneously if the user interleaves failed saves and loads.

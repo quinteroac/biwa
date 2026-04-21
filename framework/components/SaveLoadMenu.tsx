@@ -8,6 +8,8 @@ interface SaveLoadMenuProps {
   saveManager: SaveManager
   /** Returns the current game state to be written when the player clicks Save. */
   getState: () => GameSaveState
+  /** Called with the loaded `GameSaveState` after a successful slot load. */
+  onLoad: (state: GameSaveState) => void
 }
 
 /** Format a millisecond timestamp as a human-readable date/time string. */
@@ -97,6 +99,22 @@ const SAVE_BTN_STYLE: React.CSSProperties = {
   transition: 'background 0.15s, color 0.15s',
 }
 
+const LOAD_BTN_STYLE: React.CSSProperties = {
+  marginLeft: 8,
+  flexShrink: 0,
+  padding: '5px 14px',
+  background: 'transparent',
+  border: '1px solid rgba(255,255,255,0.35)',
+  borderRadius: 6,
+  color: 'rgba(255,255,255,0.75)',
+  fontFamily: 'inherit',
+  fontSize: 13,
+  fontWeight: 'bold',
+  cursor: 'pointer',
+  letterSpacing: '0.04em',
+  transition: 'background 0.15s, color 0.15s',
+}
+
 const ERROR_BANNER_STYLE: React.CSSProperties = {
   padding: '10px 14px',
   borderRadius: 8,
@@ -110,10 +128,12 @@ function SlotRow({
   slotKey,
   info,
   onSave,
+  onLoad,
 }: {
   slotKey: number | 'auto'
   info: SlotInfo | undefined
   onSave: () => void
+  onLoad?: () => void
 }) {
   const label = slotKey === 'auto' ? 'Auto Save' : `Slot ${slotKey}`
   const isOccupied = info !== undefined
@@ -187,6 +207,16 @@ function SlotRow({
       >
         Save
       </button>
+      {isOccupied && onLoad !== undefined && (
+        <button
+          onClick={onLoad}
+          style={LOAD_BTN_STYLE}
+          aria-label={`Load from ${label}`}
+          type="button"
+        >
+          Load
+        </button>
+      )}
     </div>
   )
 }
@@ -199,8 +229,9 @@ function SlotRow({
  * @param saveManager - The `SaveManager` instance used to read and write slot data.
  * @param getState - Returns the current `GameSaveState` to write when the player saves.
  */
-export function SaveLoadMenu({ isOpen, onClose, saveManager, getState }: SaveLoadMenuProps) {
+export function SaveLoadMenu({ isOpen, onClose, saveManager, getState, onLoad }: SaveLoadMenuProps) {
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [saveCount, setSaveCount] = useState(0)
 
   useEffect(() => {
@@ -225,6 +256,17 @@ export function SaveLoadMenu({ isOpen, onClose, saveManager, getState }: SaveLoa
       setSaveError('Could not save — storage may be full or unavailable.')
     }
     setSaveCount(c => c + 1)
+  }
+
+  function handleLoad(slot: number | 'auto') {
+    const saveSlot = saveManager.load(slot)
+    if (saveSlot !== null) {
+      setLoadError(null)
+      onLoad(saveSlot.state)
+      onClose()
+    } else {
+      setLoadError('Could not load — save data is missing or corrupted.')
+    }
   }
 
   // Re-read slots every render so the list reflects the latest state (saveCount drives re-renders).
@@ -266,6 +308,12 @@ export function SaveLoadMenu({ isOpen, onClose, saveManager, getState }: SaveLoa
           </div>
         )}
 
+        {loadError !== null && (
+          <div style={ERROR_BANNER_STYLE} role="alert">
+            {loadError}
+          </div>
+        )}
+
         <div style={SLOT_LIST_STYLE}>
           {allSlotKeys.map(slotKey => (
             <SlotRow
@@ -273,6 +321,7 @@ export function SaveLoadMenu({ isOpen, onClose, saveManager, getState }: SaveLoa
               slotKey={slotKey}
               info={occupiedByKey.get(String(slotKey))}
               onSave={() => handleSave(slotKey)}
+              onLoad={occupiedByKey.has(String(slotKey)) ? () => handleLoad(slotKey) : undefined}
             />
           ))}
         </div>
