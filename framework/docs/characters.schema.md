@@ -1,0 +1,390 @@
+# `characters.md` — Schema Reference
+
+Each character in your visual novel is defined by a single Markdown file inside `data/characters/`. The filename should match the character's `id` (e.g. `kai.md`).
+
+The file has two parts: a **YAML frontmatter block** (between `---` delimiters) that the engine reads, and a **freeform Markdown body** that is ignored at runtime but serves as documentation for writers and collaborators — and as context for LLMs when generating or editing characters.
+
+```
+data/characters/
+  kai.md
+  sara.md
+  narrator.md
+```
+
+---
+
+## Frontmatter fields
+
+### Identity
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | `string` | ✅ | Unique identifier. Must match the value used in Ink tags: `# character: kai`. Only lowercase letters, numbers, and hyphens. |
+| `displayName` | `string` | ✅ | Name shown in the dialog box. Can differ from `id`. |
+| `nameColor` | `string` | — | CSS color for the character's name in the dialog box. Accepts hex or any valid CSS value. Default: `white`. |
+| `isNarrator` | `boolean` | — | If `true`, the name is hidden in the dialog box. Use for narration or inner monologue. Default: `false`. |
+
+---
+
+### Position
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `defaultPosition` | `"left"` \| `"center"` \| `"right"` | — | Starting position on stage when the character enters. Default: `"center"`. |
+| `defaultExpression` | `string` | — | Expression key shown when the character first appears. Must exist in `animation.sprites`, `animation.expressions`, or a layer's animation. |
+| `scale` | `number` | — | Size relative to the stage. `1.0` = natural size. Use `1.2` for a taller character, `0.8` for a shorter one. |
+| `offset` | `{ x: number, y: number }` | — | Fine-grained position adjustment in pixels relative to the stage. Example: `{ x: 0, y: -20 }`. |
+
+---
+
+### Animation
+
+The `animation` field uses a **discriminated union** — the `type` field determines which other fields are valid. The engine dispatches to the correct renderer based on `type`.
+
+> **Note:** `animation` and `layers` are mutually exclusive. If `layers` is present, `animation` at the root level is ignored.
+
+#### `type: sprites` — Static PNG sprites
+
+One image per expression. The simplest option, no additional dependencies.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `animation.type` | `"sprites"` | ✅ | Discriminator. |
+| `animation.sprites` | `Record<string, string>` | ✅ | Map of `expression → PNG path`. At least one expression is required. |
+
+```yaml
+animation:
+  type: sprites
+  sprites:
+    neutral:   characters/kai/neutral.png
+    happy:     characters/kai/happy.png
+    sad:       characters/kai/sad.png
+    surprised: characters/kai/surprised.png
+```
+
+---
+
+#### `type: spritesheet` — Frame animation
+
+A single PNG containing multiple frames, with a JSON atlas describing frame coordinates.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `animation.type` | `"spritesheet"` | ✅ | Discriminator. |
+| `animation.file` | `string` | ✅ | Path to the spritesheet PNG. |
+| `animation.atlas` | `string` | ✅ | Path to the JSON file with frame coordinates. |
+| `animation.expressions` | `Record<string, string>` | ✅ | Map of `expression → animation name` as defined in the atlas. |
+
+```yaml
+animation:
+  type: spritesheet
+  file:  characters/kai/kai_sheet.png
+  atlas: characters/kai/kai_sheet.json
+  expressions:
+    neutral: idle
+    happy:   smile_loop
+    blink:   blink_loop
+```
+
+---
+
+#### `type: spine` — Spine 2D skeletal animation
+
+Professional-grade skeletal animation. Requires the Spine runtime (~500KB).
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `animation.type` | `"spine"` | ✅ | Discriminator. |
+| `animation.file` | `string` | ✅ | Path to the `.skel` or `.json` Spine export. |
+| `animation.atlas` | `string` | ✅ | Path to the Spine `.atlas` file. |
+| `animation.expressions` | `Record<string, string>` | ✅ | Map of `expression → Spine animation name`. |
+| `animation.idle` | `string` | — | Animation to loop when no expression is active. Example: `"idle_breathe"`. |
+
+```yaml
+animation:
+  type: spine
+  file:  characters/kai/kai.skel
+  atlas: characters/kai/kai.atlas
+  idle:  idle_breathe
+  expressions:
+    neutral:   idle_neutral
+    menacing:  taunt
+    surprised: hit_react
+```
+
+---
+
+#### `type: rive` — Rive animation
+
+Modern open-source alternative to Spine. Uses a State Machine to switch between expressions.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `animation.type` | `"rive"` | ✅ | Discriminator. |
+| `animation.file` | `string` | ✅ | Path to the `.riv` file. |
+| `animation.stateMachine` | `string` | ✅ | Name of the State Machine inside the Rive file that controls expressions. |
+| `animation.expressions` | `Record<string, string>` | ✅ | Map of `expression → State Machine input name`. |
+
+```yaml
+animation:
+  type: rive
+  file:         characters/sara/sara.riv
+  stateMachine: ExpressionController
+  expressions:
+    neutral:  Neutral
+    happy:    Happy
+    sad:      Sad
+```
+
+---
+
+### Layers
+
+Use `layers` instead of `animation` when a character is composed of independently-swappable parts (e.g. separate body, face, and outfit images).
+
+Layers are rendered in array order — the first layer is at the bottom, the last is on top.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `layers` | `Layer[]` | — | Array of independent visual layers. Mutually exclusive with `animation`. |
+| `layers[].id` | `string` | ✅ | Layer identifier. Common values: `"body"`, `"face"`, `"outfit"`. Referenced in Ink tags: `# character: sara, layer: outfit, expression: casual`. |
+| `layers[].animation` | `Animation` | ✅ | Same schema as the root `animation` field. |
+| `layers[].default` | `string` | — | Default expression for this layer on entry. |
+
+```yaml
+layers:
+  - id: body
+    animation:
+      type: sprites
+      sprites:
+        default: characters/sara/body.png
+    default: default
+
+  - id: face
+    animation:
+      type: sprites
+      sprites:
+        neutral: characters/sara/face_neutral.png
+        happy:   characters/sara/face_happy.png
+        wink:    characters/sara/face_wink.png
+    default: neutral
+
+  - id: outfit
+    animation:
+      type: sprites
+      sprites:
+        school: characters/sara/outfit_school.png
+        casual: characters/sara/outfit_casual.png
+    default: school
+```
+
+To change a single layer from an Ink script:
+
+```ink
+Sara changed into her casual clothes.
+# character: sara, layer: outfit, expression: casual
+```
+
+---
+
+### Voice
+
+Voice acting is optional and can be configured per character. Individual audio files are referenced from Ink tags — the engine builds the full path from the folder and format defined here.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `voice.folder` | `string` | ✅ (if `voice` present) | Base folder for voice files. Example: `audio/voice/kai/`. |
+| `voice.format` | `"ogg"` \| `"mp3"` \| `"webm"` | — | Audio format. Default: `"ogg"`. |
+| `voice.volume` | `number` | — | Relative volume, `0.0–1.0`. Default: `1.0`. |
+
+```yaml
+voice:
+  folder: audio/voice/kai/
+  format: ogg
+  volume: 0.9
+```
+
+To trigger a voice line from Ink:
+
+```ink
+Kai looked away.
+# voice: kai_ch01_003
+```
+
+The engine resolves this to `audio/voice/kai/kai_ch01_003.ogg`.
+
+---
+
+## Markdown body
+
+Everything after the closing `---` is free Markdown. The engine ignores it entirely. Use it for:
+
+- Character biography and backstory
+- Personality notes for writers
+- Narrative arc across chapters
+- Relationship notes with other characters
+- LLM generation context
+
+This section is also the context you pass to an LLM when asking it to generate new dialogue, maintain voice consistency, or create related characters.
+
+---
+
+## Full examples
+
+### Minimal character
+
+```markdown
+---
+id: narrator
+displayName: ""
+isNarrator: true
+
+animation:
+  type: sprites
+  sprites:
+    default: ""
+---
+
+The narrator. No sprite, no name shown in the dialog box.
+```
+
+### Static sprites with voice
+
+```markdown
+---
+id: kai
+displayName: Kai
+nameColor: "#7dd3fc"
+defaultPosition: right
+defaultExpression: neutral
+
+animation:
+  type: sprites
+  sprites:
+    neutral:   characters/kai/neutral.png
+    happy:     characters/kai/happy.png
+    sad:       characters/kai/sad.png
+    surprised: characters/kai/surprised.png
+
+voice:
+  folder: audio/voice/kai/
+  format: ogg
+  volume: 0.9
+---
+
+# Kai
+
+Final-year student. Reserved by nature, but with a complicated past
+that slowly surfaces throughout the novel.
+
+## Personality
+
+Introverted but loyal. Struggles to trust new people.
+Reacts poorly to dishonesty.
+
+## Writing notes
+
+Kai never initiates conversation. He always responds with questions.
+Avoid making him sound aggressive — his tone is distant, not hostile.
+```
+
+### Layered sprites
+
+```markdown
+---
+id: sara
+displayName: Sara
+nameColor: "#f9a8d4"
+defaultPosition: left
+defaultExpression: neutral
+
+layers:
+  - id: body
+    animation:
+      type: sprites
+      sprites:
+        default: characters/sara/body.png
+    default: default
+
+  - id: face
+    animation:
+      type: sprites
+      sprites:
+        neutral: characters/sara/face_neutral.png
+        happy:   characters/sara/face_happy.png
+        wink:    characters/sara/face_wink.png
+    default: neutral
+
+  - id: outfit
+    animation:
+      type: sprites
+      sprites:
+        school: characters/sara/outfit_school.png
+        casual: characters/sara/outfit_casual.png
+    default: school
+---
+
+# Sara
+
+Secondary character. Outgoing and perceptive. Her outfit changes
+reflect her emotional state across chapters.
+```
+
+### Spine animation
+
+```markdown
+---
+id: antagonist
+displayName: "???"
+nameColor: "#f87171"
+defaultPosition: center
+scale: 1.2
+
+animation:
+  type: spine
+  file:  characters/antagonist/antagonist.skel
+  atlas: characters/antagonist/antagonist.atlas
+  idle:  idle_breathe
+  expressions:
+    neutral:   idle_neutral
+    menacing:  taunt
+    surprised: hit_react
+---
+
+# The Antagonist
+
+Real name revealed in chapter 6. Scaled up slightly to feel
+imposing when centered on stage.
+```
+
+---
+
+## Ink tag reference
+
+All character interactions from Ink use the `# character:` tag.
+
+```ink
+# character: {id}
+# character: {id}, position: left|center|right
+# character: {id}, expression: {expressionKey}
+# character: {id}, position: right, expression: happy
+# character: {id}, layer: {layerId}, expression: {expressionKey}
+# character: {id}, exit
+```
+
+The engine resolves each tag against the character's config in `CharacterRegistry`.
+
+---
+
+## Validation rules
+
+The engine runs these checks at startup via `SchemaValidator`. A failed check throws an error with the offending file path and field.
+
+- `id` must match `/^[a-z0-9-]+$/`
+- `id` must be unique across all files in `data/characters/`
+- `id` must match the filename (e.g. `kai.md` → `id: kai`)
+- `animation` and `layers` cannot both be present
+- If `animation` is present, `type` is required
+- `defaultExpression` must exist as a key in `animation.sprites`, `animation.expressions`, or at least one layer's animation
+- `voice.volume` must be between `0.0` and `1.0`
+- `scale` must be a positive number

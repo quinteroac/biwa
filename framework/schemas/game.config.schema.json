@@ -1,0 +1,76 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "game.config.js",
+  "description": "JSON Schema for the game's configuration (game.config.js)",
+  "type": "object",
+  "required": ["id", "title", "version", "story"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "description": "Unique identifier. Only [a-z0-9-]. Used as a namespace in localStorage"
+    },
+    "title": { "type": "string" },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[A-Za-z0-9.-]+)?$",
+      "description": "Semver. Invalidates saved data if the major version changes"
+    },
+    "description": { "type": "string" },
+    "cover": { "type": "string" },
+    "story": {
+      "type": "object",
+      "required": ["defaultLocale", "locales"],
+      "properties": {
+        "defaultLocale": { "type": "string" },
+        "locales": {
+          "type": "object",
+          "description": "Map of locale → .ink file path",
+          "additionalProperties": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "data": {
+      "type": "object",
+      "properties": {
+        "characters": { "type": "string" },
+        "scenes": { "type": "string" },
+        "audio": { "type": "string" },
+        "minigames": { "type": "string" }
+      },
+      "additionalProperties": { "type": "string" }
+    },
+    "minigames": {
+      "type": "object",
+      "additionalProperties": { "description": "Entry for lazy-loading a minigame (path or function)", "anyOf": [{ "type": "string" }, { "type": "object" }, { "type": "null" }] }
+    },
+    "theme": {
+      "type": "object",
+      "properties": {
+        "font": { "type": "string" },
+        "dialogBg": { "type": "string" },
+        "accent": { "type": "string" },
+        "cssVars": { "type": "object", "additionalProperties": { "type": "string" } }
+      },
+      "additionalProperties": true
+    },
+    "saves": {
+      "type": "object",
+      "properties": {
+        "slots": { "type": "integer", "minimum": 1 },
+        "autoSave": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
+    "distribution": {
+      "type": "object",
+      "properties": {
+        "mode": { "type": "string", "enum": ["portal", "static", "embedded"] },
+        "basePath": { "type": "string" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

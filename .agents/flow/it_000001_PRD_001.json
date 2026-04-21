@@ -1,0 +1,163 @@
+{
+  "goals": [
+    "Define a canonical `GameSaveState` type that captures everything needed to fully restore a session.",
+    "Replace the `state: unknown` field in `SaveManager` with the typed `GameSaveState`.",
+    "Add slot metadata (display name, scene name, timestamp, playtime) to support a future menu UI without changing the core API.",
+    "Expose a clean public API: `save`, `load`, `listSlots`, `deleteSlot`, `autoSave`.",
+    "Support schema versioning with a migration hook so future state shape changes don't break existing saves."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Save game state to a slot",
+      "description": "As a game developer, I want to call `saveManager.save(slot, state)` with a fully typed payload so that the complete game state is persisted to `localStorage` without runtime type errors.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "`save(slot, state)` accepts a `GameSaveState` object (not `unknown`) and serializes it to `localStorage` under the key `vn:{gameId}:save:{slot}`."
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "The persisted JSON includes `version`, `timestamp`, `meta` (displayName, sceneName, playtime), and `state` fields."
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "Calling `save` on a slot that already has data overwrites it silently."
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "If `localStorage` is unavailable or throws, a `console.warn` is emitted and no uncaught exception propagates."
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Load game state from a slot",
+      "description": "As a game developer, I want to call `saveManager.load(slot)` and receive a typed `SaveSlot` object or `null` so that I can restore the engine state without manual casting.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "`load(slot)` returns `SaveSlot | null` — `null` when the slot is empty or the stored JSON is unparseable."
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "If the stored `version` is older than the current schema version, the registered migration function is called before the data is returned."
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "The returned object's `state` field is typed as `GameSaveState`."
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "List all occupied slots",
+      "description": "As a game developer, I want to call `saveManager.listSlots()` and get an array of occupied slots with metadata so that I can render a slot picker in the future without coupling the UI to localStorage keys.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-003-AC01",
+          "text": "`listSlots()` returns `SaveSlot[]` containing only slots that have data (empty slots are omitted)."
+        },
+        {
+          "id": "US-003-AC02",
+          "text": "Each entry exposes `slot` (number | `'auto'`), `meta` (displayName, sceneName, playtime, timestamp), and `state`."
+        },
+        {
+          "id": "US-003-AC03",
+          "text": "The list is ordered: `'auto'` slot first, then numeric slots ascending."
+        }
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "Delete a save slot",
+      "description": "As a game developer, I want to call `saveManager.deleteSlot(slot)` so that I can programmatically clear a slot (e.g. \"New Game\" overwrite confirmation flow).",
+      "acceptanceCriteria": [
+        {
+          "id": "US-004-AC01",
+          "text": "`deleteSlot(slot)` removes the entry from `localStorage` and emits no error if the slot was already empty."
+        },
+        {
+          "id": "US-004-AC02",
+          "text": "The existing `delete(slot)` method is kept as a deprecated alias to avoid breaking current call sites, and logs a `console.warn` pointing to `deleteSlot`."
+        }
+      ]
+    },
+    {
+      "id": "US-005",
+      "title": "Auto-save",
+      "description": "As a game developer, I want to call `saveManager.autoSave(state)` at scene transitions so that the player's progress is preserved without manual intervention.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-005-AC01",
+          "text": "`autoSave(state)` calls `save('auto', state)` only when `autoSaveEnabled` is `true`."
+        },
+        {
+          "id": "US-005-AC02",
+          "text": "`autoSave` accepts the same typed `GameSaveState` as `save`."
+        },
+        {
+          "id": "US-005-AC03",
+          "text": "If `autoSaveEnabled` is `false`, calling `autoSave` is a no-op with no error."
+        }
+      ]
+    },
+    {
+      "id": "US-006",
+      "title": "Schema version migration",
+      "description": "As a framework maintainer, I want to register a migration function on `SaveManager` so that saves written with an older schema version are automatically upgraded on load without data loss.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-006-AC01",
+          "text": "`SaveManager` exports a static `CURRENT_VERSION` constant (initially `2`, incrementing the existing `1`)."
+        },
+        {
+          "id": "US-006-AC02",
+          "text": "A `registerMigration(fromVersion, fn)` method accepts a function `(oldData: unknown) => GameSaveState`."
+        },
+        {
+          "id": "US-006-AC03",
+          "text": "When `load` reads a slot with `version < CURRENT_VERSION`, it runs all registered migrations in order and returns the upgraded data."
+        },
+        {
+          "id": "US-006-AC04",
+          "text": "If no migration is registered for an old version, `load` returns `null` and logs a warning."
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "Define and export a `GameSaveState` interface in `framework/types/save.d.ts` with fields: `inkState: string` (Ink story JSON from `story.state.ToJson()`), `variables: Record<string, unknown>` (from `VariableStore.snapshot()`), `sceneId: string`, and `engineState: string`."
+    },
+    {
+      "id": "FR-2",
+      "description": "Define and export a `SaveSlotMeta` interface in `framework/types/save.d.ts` with fields: `displayName: string`, `sceneName: string`, `playtime: number` (seconds), `timestamp: number` (Unix ms)."
+    },
+    {
+      "id": "FR-3",
+      "description": "Define and export a `SaveSlot` interface in `framework/types/save.d.ts` combining `slot: number | 'auto'`, `version: number`, `meta: SaveSlotMeta`, and `state: GameSaveState`."
+    },
+    {
+      "id": "FR-4",
+      "description": "Update `SaveManager.ts` to replace all `state: unknown` / `SaveData` references with the new typed interfaces."
+    },
+    {
+      "id": "FR-5",
+      "description": "Implement `registerMigration(fromVersion: number, fn: (old: unknown) => GameSaveState): void` on `SaveManager`."
+    },
+    {
+      "id": "FR-6",
+      "description": "Add `static readonly CURRENT_VERSION = 2` to `SaveManager`."
+    },
+    {
+      "id": "FR-7",
+      "description": "Rename `delete` → `deleteSlot`; keep `delete` as a deprecated alias with a `console.warn`."
+    },
+    {
+      "id": "FR-8",
+      "description": "All public methods must have JSDoc comments documenting parameters, return type, and side effects."
+    }
+  ]
+}

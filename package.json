@@ -1,0 +1,27 @@
+{
+  "name": "visual-novel-experiment",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun manager/cli.ts dev",
+    "build": "bun manager/cli.ts build",
+    "new": "bun manager/cli.ts new",
+    "list": "bun manager/cli.ts list"
+  },
+  "dependencies": {
+    "@chenglou/pretext": "^0.0.5",
+    "inkjs": "^2.3.0",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "yoga-layout": "^3.2.1"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "bun-types": "latest",
+    "js-yaml": "^4.1.0",
+    "typescript": "^5.8.0"
+  }
+}
