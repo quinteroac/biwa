@@ -110,6 +110,13 @@ export class SaveManager {
   }
 
   /**
+   * Total number of numeric save slots configured (excludes the auto-save slot).
+   */
+  get slotCount(): number {
+    return this.#slots
+  }
+
+  /**
    * List all occupied save slots.
    * @returns Array of `SlotInfo` for every slot that contains data, ordered with
    *   `'auto'` first followed by numeric slots in ascending order. Empty slots are omitted.
