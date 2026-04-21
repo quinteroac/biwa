@@ -79,3 +79,22 @@
 - `VnSaveMenu` is the public-facing component; `SaveLoadMenu` is the internal implementation. New feature work on the save UI should extend `SaveLoadMenu` and the public contract propagates automatically through `VnSaveMenu`.
 - The `VnSaveMenuProps` interface can be used directly in `VnApp` or any host component to type the props being forwarded into `VnSaveMenu`.
 - Test pattern for `VnSaveMenu` mirrors `SaveLoadMenu.test.tsx` exactly (same localStorage stub, same `renderToString` approach, same `makeState` helper). Keep them in sync when the underlying component changes.
+
+## US-005 — Quick-save
+
+**Summary:** Created `framework/components/VnQuickSave.tsx` with two exports: the `VnQuickSave` React component (button + toast) and a headless `quickSave(saveManager, getState)` helper function. The component accepts `saveManager: SaveManager` and `getState: () => GameSaveState` as props, writes to slot 1, and shows a brief `role="status"` ARIA live-region toast for the confirmation message. The toast container is always mounted (opacity 0 when idle) so screen readers register the live region before it fires.
+
+**Key Decisions:**
+- Both a component (`VnQuickSave`) and a function (`quickSave`) are exported. The function satisfies the AC's "or a `quickSave` export" clause and also makes the slot-1 write logic directly testable without `renderToString` event simulation.
+- The toast container (`role="status"`, `aria-live="polite"`) is always rendered with `opacity: 0` when no message is active. This ensures the ARIA live region is registered with the browser before any update fires, following best-practice for dynamic status regions.
+- `useEffect` triggers a 2 000 ms `setTimeout` to clear the message, giving a visible but non-intrusive fade-out window.
+
+**Pitfalls Encountered:**
+- `renderToString` cannot fire `onClick` handlers, so AC01 (slot-1 write) is verified via the `quickSave` export directly: call it, then assert on `saveManager.load(1)`.
+- The toast opacity in the rendered HTML from `renderToString` will always be `0` (initial state), so the AC03 test checks for structural presence (`role="status"`, `aria-live="polite"`, `opacity:0`) rather than message content.
+
+**Useful Context for Future Agents:**
+- `quickSave(saveManager, getState)` is the canonical headless entry-point; it returns `boolean` (same contract as `saveManager.save()`).
+- `VnQuickSave` is self-contained — it has no dependency on `SaveLoadMenu` or `VnSaveMenu`.
+- The `QUICK_SAVE_SLOT = 1` constant is module-level inside `VnQuickSave.tsx`; if the slot designation needs to be configurable, add an optional `slot?: number` prop and default it to `1`.
+- CSS variables `--vn-accent` and `--vn-font` are reused for visual consistency with the rest of the framework.
