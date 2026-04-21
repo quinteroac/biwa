@@ -1,8 +1,6 @@
 import type { GameSaveState, SaveData, SaveSlot, SlotInfo } from './types/save.d.ts'
 
-const SCHEMA_VERSION = 1
-
-type MigrationFn = (data: SaveData) => SaveData
+type MigrationFn = (oldData: unknown) => GameSaveState
 
 interface SaveManagerOptions {
   gameId: string
@@ -11,6 +9,8 @@ interface SaveManagerOptions {
 }
 
 export class SaveManager {
+  static readonly CURRENT_VERSION = 2
+
   #gameId: string
   #slots: number
   #autoSaveEnabled: boolean
@@ -30,7 +30,7 @@ export class SaveManager {
    * Register a migration function that upgrades data from `fromVersion` to `fromVersion + 1`.
    * Called automatically by `load()` when stored data is at an older schema version.
    * @param fromVersion - The version the migration reads from.
-   * @param fn - Pure function that transforms the old `SaveData` shape into the new one.
+   * @param fn - Function that accepts the old (unknown-shaped) save data and returns a `GameSaveState`.
    */
   registerMigration(fromVersion: number, fn: MigrationFn): void {
     this.#migrations.set(fromVersion, fn)
@@ -44,7 +44,7 @@ export class SaveManager {
    */
   save(slot: number | 'auto', state: GameSaveState): void {
     const data: SaveData = {
-      version: SCHEMA_VERSION,
+      version: SaveManager.CURRENT_VERSION,
       timestamp: Date.now(),
       meta: state.meta,
       state: state.state,
@@ -60,21 +60,41 @@ export class SaveManager {
    * Load a previously persisted save from localStorage, applying schema migrations if needed.
    * @param slot - Slot to load.
    * @returns A `SaveSlot` whose `state` field is typed as `GameSaveState`, or `null` if
-   *   the slot is empty, the stored JSON is unparseable, or localStorage is unavailable.
+   *   the slot is empty, the stored JSON is unparseable, no migration is registered for an
+   *   old version, or localStorage is unavailable.
    */
   load(slot: number | 'auto'): SaveSlot | null {
     try {
       const raw = localStorage.getItem(this.#key(slot))
       if (!raw) return null
-      let data = JSON.parse(raw) as SaveData
-      let v = data.version
-      while (v < SCHEMA_VERSION) {
+      const parsed = JSON.parse(raw) as SaveData
+      const { version: storedVersion, timestamp } = parsed
+
+      if (storedVersion === SaveManager.CURRENT_VERSION) {
+        return {
+          version: storedVersion,
+          timestamp,
+          state: { meta: parsed.meta, state: parsed.state },
+        }
+      }
+
+      let v = storedVersion
+      let current: unknown = parsed
+      while (v < SaveManager.CURRENT_VERSION) {
         const migrate = this.#migrations.get(v)
-        if (migrate) data = migrate(data)
+        if (!migrate) {
+          console.warn(`[SaveManager] No migration registered for version ${v} → ${v + 1}. Cannot load slot.`)
+          return null
+        }
+        current = migrate(current)
         v++
       }
-      const gameState: GameSaveState = { meta: data.meta, state: data.state }
-      return { version: data.version, timestamp: data.timestamp, state: gameState }
+
+      return {
+        version: SaveManager.CURRENT_VERSION,
+        timestamp,
+        state: current as GameSaveState,
+      }
     } catch {
       return null
     }

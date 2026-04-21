@@ -293,6 +293,107 @@ describe('SaveManager.autoSave', () => {
   })
 })
 
+// --- SaveManager.CURRENT_VERSION & registerMigration (US-006) -----------
+
+describe('SaveManager.CURRENT_VERSION', () => {
+  // AC01 — static constant is 2
+  it('AC01: exposes a static CURRENT_VERSION of 2', () => {
+    expect(SaveManager.CURRENT_VERSION).toBe(2)
+  })
+
+  it('AC01: CURRENT_VERSION is accessible without instantiating SaveManager', () => {
+    expect(typeof SaveManager.CURRENT_VERSION).toBe('number')
+  })
+})
+
+describe('SaveManager.registerMigration', () => {
+  let sm: SaveManager
+
+  beforeEach(() => {
+    localStorageMock.clear()
+    sm = new SaveManager({ gameId: 'test-game', slots: 3, autoSave: false })
+  })
+
+  // AC02 — accepts (oldData: unknown) => GameSaveState
+  it('AC02: accepts a migration function typed (unknown) => GameSaveState', () => {
+    const fn = (oldData: unknown): GameSaveState => {
+      const d = oldData as SaveData
+      return { meta: d.meta, state: d.state }
+    }
+    expect(() => sm.registerMigration(1, fn)).not.toThrow()
+  })
+
+  // AC03 — migrations run in order for version < CURRENT_VERSION
+  it('AC03: applies chained migrations when version is behind CURRENT_VERSION', () => {
+    const v0Save: SaveData = {
+      version: 0,
+      timestamp: 2000,
+      meta: { displayName: 'Legacy', sceneName: 'start', playtime: 0 },
+      state: { step: 0 },
+    }
+    store['vn:test-game:save:1'] = JSON.stringify(v0Save)
+
+    sm.registerMigration(0, (data) => {
+      const d = data as SaveData
+      return { meta: d.meta, state: { ...d.state, step: 1 } }
+    })
+    sm.registerMigration(1, (data) => {
+      const d = data as GameSaveState
+      return { meta: d.meta, state: { ...d.state, step: 2 } }
+    })
+
+    const result = sm.load(1)
+    expect(result).not.toBeNull()
+    expect(result!.version).toBe(SaveManager.CURRENT_VERSION)
+    expect(result!.state.state['step']).toBe(2)
+  })
+
+  // AC04 — returns null and logs warning when no migration registered
+  it('AC04: returns null and logs a warning when no migration is registered for an old version', () => {
+    const oldSave: SaveData = {
+      version: 0,
+      timestamp: 3000,
+      meta: { displayName: 'Old', sceneName: 'scene', playtime: 0 },
+      state: {},
+    }
+    store['vn:test-game:save:1'] = JSON.stringify(oldSave)
+
+    const warnSpy = spyOn(console, 'warn').mockImplementation(() => {})
+
+    const result = sm.load(1)
+
+    expect(result).toBeNull()
+    expect(warnSpy).toHaveBeenCalledTimes(1)
+    const msg: string = warnSpy.mock.calls[0]![0] as string
+    expect(msg).toContain('No migration registered')
+
+    warnSpy.mockRestore()
+  })
+
+  it('AC04: returns null even when some but not all migrations are registered', () => {
+    const v0Save: SaveData = {
+      version: 0,
+      timestamp: 4000,
+      meta: { displayName: 'Old', sceneName: 'scene', playtime: 0 },
+      state: {},
+    }
+    store['vn:test-game:save:1'] = JSON.stringify(v0Save)
+
+    // Only register v0 migration, missing v1 migration
+    sm.registerMigration(0, (data) => {
+      const d = data as SaveData
+      return { meta: d.meta, state: d.state }
+    })
+
+    const warnSpy = spyOn(console, 'warn').mockImplementation(() => {})
+    const result = sm.load(1)
+
+    expect(result).toBeNull()
+    expect(warnSpy).toHaveBeenCalledTimes(1)
+    warnSpy.mockRestore()
+  })
+})
+
 describe('SaveManager.load', () => {
   let sm: SaveManager
 
@@ -317,7 +418,7 @@ describe('SaveManager.load', () => {
     sm.save(1, makeState())
     const result = sm.load(1)
     expect(result).not.toBeNull()
-    expect(result!.version).toBe(1)
+    expect(result!.version).toBe(2)
     expect(typeof result!.timestamp).toBe('number')
     expect(result!.state.meta.displayName).toBe('Chapter 1')
     expect(result!.state.state['health']).toBe(100)
@@ -325,7 +426,7 @@ describe('SaveManager.load', () => {
 
   // AC02 — migration is called when version is older
   it('AC02: calls the registered migration when stored version is older than current', () => {
-    // Write a v0 save directly
+    // Write a v0 save directly (two versions behind CURRENT_VERSION = 2)
     const oldSave: SaveData = {
       version: 0,
       timestamp: 1000,
@@ -334,12 +435,13 @@ describe('SaveManager.load', () => {
     }
     store['vn:test-game:save:1'] = JSON.stringify(oldSave)
 
-    const migrateFn = (data: SaveData): SaveData => ({
-      ...data,
-      version: 1,
-      state: { ...data.state, migrated: true },
+    // v0 → v1: add 'migrated' flag
+    sm.registerMigration(0, (data) => {
+      const d = data as SaveData
+      return { meta: d.meta, state: { ...d.state, migrated: true } }
     })
-    sm.registerMigration(0, migrateFn)
+    // v1 → v2: pass-through
+    sm.registerMigration(1, (data) => data as GameSaveState)
 
     const result = sm.load(1)
     expect(result).not.toBeNull()
@@ -352,7 +454,7 @@ describe('SaveManager.load', () => {
     sm.save(1, makeState())
 
     let called = false
-    sm.registerMigration(1, (data) => { called = true; return data })
+    sm.registerMigration(1, (data) => { called = true; return data as GameSaveState })
 
     sm.load(1)
     expect(called).toBe(false)

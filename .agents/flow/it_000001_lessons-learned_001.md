@@ -84,3 +84,22 @@
 - `autoSave` delegates directly to `save('auto', state)` — it shares the same error-swallowing behaviour (try/catch + console.warn) for localStorage failures.
 - The `autoSaveEnabled` flag is set via `SaveManagerOptions.autoSave` (default `true`); tests that should NOT trigger auto-save must construct `SaveManager` with `autoSave: false`.
 - Tests for `autoSave()` live in the `SaveManager.autoSave` describe block in `framework/__tests__/SaveManager.test.ts`, between `SaveManager.deleteSlot` and `SaveManager.load`.
+
+## US-006 — Schema version migration
+
+**Summary:** Promoted the module-level `SCHEMA_VERSION = 1` to a `static readonly CURRENT_VERSION = 2` on the `SaveManager` class. Changed `MigrationFn` to `(oldData: unknown) => GameSaveState`. Updated `load()` to: (a) fast-path when stored version equals `CURRENT_VERSION`, (b) chain registered migrations for older versions, (c) return `null` + `console.warn` when a migration step is missing. Updated existing tests broken by the type/version change and added a new `SaveManager.CURRENT_VERSION` and `SaveManager.registerMigration` describe block.
+
+**Key Decisions:**
+- `load()` now has a fast-path for the current version that bypasses the migration loop entirely, keeping the common case efficient and type-safe without casting.
+- After a migration chain completes the returned `SaveSlot.version` is always `CURRENT_VERSION`, not the original stored version — callers should not rely on the slot version as a historical record.
+- The migration function signature `(unknown) => GameSaveState` is intentionally loose on input so each function can cast to whatever internal shape it expects, enabling forward-compatible migration authoring.
+
+**Pitfalls Encountered:**
+- Existing load tests asserted `result!.version === 1`; bumping to `CURRENT_VERSION = 2` broke them. Any future version bump must audit all test assertions on `SaveSlot.version`.
+- The old migration test only registered a v0 migration; with `CURRENT_VERSION = 2` the loop also needs a v1 migration registered or it hits the AC04 null-return path. The test was updated to register both steps.
+- The "migration not called when versions match" test registered a migration for v1 that returned `data` (typed as `unknown`). The new stricter return type required `data as GameSaveState`.
+
+**Useful Context for Future Agents:**
+- `SaveManager.CURRENT_VERSION` (static) is the canonical version constant — update it (and register a corresponding migration) whenever the save schema changes.
+- The migration chain input to step N is the `GameSaveState` output of step N-1; only the very first migration in a chain receives the raw `SaveData`-shaped object from localStorage.
+- Tests live in `framework/__tests__/SaveManager.test.ts`; the US-006 describe blocks (`SaveManager.CURRENT_VERSION`, `SaveManager.registerMigration`) are inserted between `SaveManager.autoSave` and `SaveManager.load`.
