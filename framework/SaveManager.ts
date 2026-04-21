@@ -1,4 +1,8 @@
-import type { GameSaveState, SaveData, SlotInfo } from './types/save.d.ts'
+import type { GameSaveState, SaveData, SaveSlot, SlotInfo } from './types/save.d.ts'
+
+const SCHEMA_VERSION = 1
+
+type MigrationFn = (data: SaveData) => SaveData
 
 interface SaveManagerOptions {
   gameId: string
@@ -10,6 +14,7 @@ export class SaveManager {
   #gameId: string
   #slots: number
   #autoSaveEnabled: boolean
+  #migrations: Map<number, MigrationFn> = new Map()
 
   constructor({ gameId, slots = 5, autoSave = true }: SaveManagerOptions) {
     this.#gameId = gameId
@@ -22,6 +27,16 @@ export class SaveManager {
   }
 
   /**
+   * Register a migration function that upgrades data from `fromVersion` to `fromVersion + 1`.
+   * Called automatically by `load()` when stored data is at an older schema version.
+   * @param fromVersion - The version the migration reads from.
+   * @param fn - Pure function that transforms the old `SaveData` shape into the new one.
+   */
+  registerMigration(fromVersion: number, fn: MigrationFn): void {
+    this.#migrations.set(fromVersion, fn)
+  }
+
+  /**
    * Persist a typed game-state snapshot to localStorage.
    * @param slot - Numeric slot index or `'auto'` for the auto-save slot.
    * @param state - Fully typed `GameSaveState` payload (meta + game variables).
@@ -29,7 +44,7 @@ export class SaveManager {
    */
   save(slot: number | 'auto', state: GameSaveState): void {
     const data: SaveData = {
-      version: 1,
+      version: SCHEMA_VERSION,
       timestamp: Date.now(),
       meta: state.meta,
       state: state.state,
@@ -42,15 +57,24 @@ export class SaveManager {
   }
 
   /**
-   * Load a previously persisted save from localStorage.
+   * Load a previously persisted save from localStorage, applying schema migrations if needed.
    * @param slot - Slot to load.
-   * @returns The `SaveData` object, or `null` if the slot is empty or unreadable.
+   * @returns A `SaveSlot` whose `state` field is typed as `GameSaveState`, or `null` if
+   *   the slot is empty, the stored JSON is unparseable, or localStorage is unavailable.
    */
-  load(slot: number | 'auto'): SaveData | null {
+  load(slot: number | 'auto'): SaveSlot | null {
     try {
       const raw = localStorage.getItem(this.#key(slot))
       if (!raw) return null
-      return JSON.parse(raw) as SaveData
+      let data = JSON.parse(raw) as SaveData
+      let v = data.version
+      while (v < SCHEMA_VERSION) {
+        const migrate = this.#migrations.get(v)
+        if (migrate) data = migrate(data)
+        v++
+      }
+      const gameState: GameSaveState = { meta: data.meta, state: data.state }
+      return { version: data.version, timestamp: data.timestamp, state: gameState }
     } catch {
       return null
     }

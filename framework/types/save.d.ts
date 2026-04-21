@@ -19,7 +19,15 @@ export interface SaveData {
   state: Record<string, unknown>
 }
 
+/** Typed object returned by `SaveManager.load()`. */
+export interface SaveSlot {
+  version: number
+  timestamp: number
+  /** Fully typed game payload with `meta` and `state` fields. */
+  state: GameSaveState
+}
+
 export interface SlotInfo {
   slot: number | 'auto'
-  data: SaveData
+  data: SaveSlot
 }
