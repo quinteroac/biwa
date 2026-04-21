@@ -68,3 +68,19 @@
 - `deleteSlot()` is the canonical delete API going forward; `delete()` is kept only for backward compatibility.
 - Tests for `deleteSlot()` live in the `SaveManager.deleteSlot` describe block, inserted between `SaveManager.listSlots` and `SaveManager.load` in `framework/__tests__/SaveManager.test.ts`.
 - The `console.warn` spy pattern used in AC02 tests requires `.mockImplementation(() => {})` immediately after `spyOn` to suppress real console output, followed by `warnSpy.mockRestore()` in cleanup.
+
+## US-005 — Auto-save
+
+**Summary:** `autoSave(state: GameSaveState): void` was already present in `SaveManager.ts` from prior work. Only tests were missing. Added a `SaveManager.autoSave` describe block with three tests covering all acceptance criteria: writing to `'auto'` slot when enabled (AC01), accepting a `GameSaveState` typed payload (AC02), and being a no-op without throwing when `autoSaveEnabled` is `false` (AC03).
+
+**Key Decisions:**
+- No production code changes were needed — the implementation was already correct.
+- The test block was inserted between `SaveManager.deleteSlot` and `SaveManager.load` to maintain logical ordering in the test file.
+
+**Pitfalls Encountered:**
+- None. The implementation pre-existed; this story was purely about test coverage.
+
+**Useful Context for Future Agents:**
+- `autoSave` delegates directly to `save('auto', state)` — it shares the same error-swallowing behaviour (try/catch + console.warn) for localStorage failures.
+- The `autoSaveEnabled` flag is set via `SaveManagerOptions.autoSave` (default `true`); tests that should NOT trigger auto-save must construct `SaveManager` with `autoSave: false`.
+- Tests for `autoSave()` live in the `SaveManager.autoSave` describe block in `framework/__tests__/SaveManager.test.ts`, between `SaveManager.deleteSlot` and `SaveManager.load`.

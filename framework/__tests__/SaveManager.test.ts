@@ -255,6 +255,44 @@ describe('SaveManager.deleteSlot', () => {
   })
 })
 
+// --- SaveManager.autoSave (US-005) --------------------------------------
+
+describe('SaveManager.autoSave', () => {
+  let sm: SaveManager
+
+  beforeEach(() => {
+    localStorageMock.clear()
+  })
+
+  // AC01 — calls save('auto', state) when autoSaveEnabled is true
+  it('AC01: writes to the auto slot when autoSaveEnabled is true', () => {
+    sm = new SaveManager({ gameId: 'test-game', slots: 3, autoSave: true })
+    const state = makeState()
+    sm.autoSave(state)
+    const raw = localStorage.getItem('vn:test-game:save:auto')
+    expect(raw).not.toBeNull()
+    const parsed = JSON.parse(raw!)
+    expect(parsed.meta.displayName).toBe('Chapter 1')
+    expect(parsed.state.health).toBe(100)
+  })
+
+  // AC02 — accepts a GameSaveState (same type as save())
+  it('AC02: accepts the same GameSaveState type as save()', () => {
+    sm = new SaveManager({ gameId: 'test-game', slots: 3, autoSave: true })
+    const state: GameSaveState = makeState({ state: { xp: 99 } })
+    sm.autoSave(state)
+    const parsed = JSON.parse(localStorage.getItem('vn:test-game:save:auto')!)
+    expect(parsed.state.xp).toBe(99)
+  })
+
+  // AC03 — no-op when autoSaveEnabled is false
+  it('AC03: is a no-op and does not throw when autoSaveEnabled is false', () => {
+    sm = new SaveManager({ gameId: 'test-game', slots: 3, autoSave: false })
+    expect(() => sm.autoSave(makeState())).not.toThrow()
+    expect(localStorage.getItem('vn:test-game:save:auto')).toBeNull()
+  })
+})
+
 describe('SaveManager.load', () => {
   let sm: SaveManager
 
