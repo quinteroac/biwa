@@ -4,6 +4,7 @@ import { ScriptRunner } from './ScriptRunner.ts'
 import { SaveManager } from '../SaveManager.ts'
 import { AssetLoader } from '../AssetLoader.ts'
 import { MinigameRegistry } from '../minigames/MinigameRegistry.ts'
+import type { GameSaveState } from '../types/save.d.ts'
 import type { GameConfig } from '../types/game-config.d.ts'
 
 const STATE = Object.freeze({
@@ -35,6 +36,7 @@ export class GameEngine {
   #saveManager!: SaveManager
   #assetLoader!: AssetLoader
   #minigameRegistry = new MinigameRegistry()
+  #currentSceneId: string | null = null
   #pendingChoices: ReturnType<ScriptRunner['choices']['slice']> | null = null
   #autoAdvance = false
   #data: GameData = { characters: {}, scenes: {} }
@@ -60,6 +62,36 @@ export class GameEngine {
   get vars(): VariableStore { return this.#vars }
   get state(): EngineState { return this.#state }
   get data(): GameData { return this.#data }
+
+  /** Expose the internal SaveManager instance for UI components. */
+  get saveManager(): SaveManager { return this.#saveManager }
+
+  /** Return a serialisable snapshot compatible with `SaveManager.save()` */
+  getState(): GameSaveState {
+    const meta = {
+      displayName: 'Manual save',
+      sceneName: this.#currentSceneId ?? 'unknown',
+      playtime: 0,
+    }
+    const state: Record<string, unknown> = {
+      story: this.#runner.saveState(),
+      vars: this.#vars.snapshot(),
+    }
+    return { meta, state }
+  }
+
+  /** Restore a previously saved `GameSaveState`. */
+  restoreState(saved: GameSaveState): void {
+    const s = saved.state as Record<string, unknown>
+    if (s['story'] && typeof s['story'] === 'string') {
+      this.#runner.loadState(s['story'] as string)
+    }
+    if (s['vars'] && typeof s['vars'] === 'object') {
+      this.#vars.restore(s['vars'] as Record<string, unknown>)
+    }
+    this.#setState(STATE.DIALOG)
+    void this.#advance()
+  }
 
   #setState(state: EngineState): void {
     this.#state = state
@@ -191,6 +223,7 @@ export class GameEngine {
     for (const tag of tags) {
       switch (tag.type) {
         case 'scene':
+          this.#currentSceneId = tag.id ?? null
           this.#bus.emit('engine:scene', { id: tag.id, data: this.#data.scenes[tag.id ?? ''] })
           break
         case 'bgm':

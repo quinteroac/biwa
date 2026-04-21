@@ -124,6 +124,18 @@ const ERROR_BANNER_STYLE: React.CSSProperties = {
   fontSize: 13,
 }
 
+const CONFIRM_BANNER_STYLE: React.CSSProperties = {
+  padding: '10px 14px',
+  borderRadius: 8,
+  background: 'rgba(40,40,40,0.9)',
+  border: '1px solid rgba(255,255,255,0.06)',
+  color: '#f8f8f8',
+  fontSize: 13,
+  display: 'flex',
+  alignItems: 'center',
+  gap: 12,
+}
+
 function SlotRow({
   slotKey,
   info,
@@ -233,6 +245,7 @@ export function SaveLoadMenu({ isOpen, onClose, saveManager, getState, onLoad }:
   const [saveError, setSaveError] = useState<string | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [saveCount, setSaveCount] = useState(0)
+  const [pendingOverwriteSlot, setPendingOverwriteSlot] = useState<number | 'auto' | null>(null)
 
   useEffect(() => {
     if (!isOpen) return
@@ -249,6 +262,11 @@ export function SaveLoadMenu({ isOpen, onClose, saveManager, getState, onLoad }:
   if (!isOpen) return null
 
   function handleSave(slot: number | 'auto') {
+    const occupied = occupiedByKey.has(String(slot))
+    if (occupied) {
+      setPendingOverwriteSlot(slot)
+      return
+    }
     const ok = saveManager.save(slot, getState())
     if (ok) {
       setSaveError(null)
@@ -256,6 +274,22 @@ export function SaveLoadMenu({ isOpen, onClose, saveManager, getState, onLoad }:
       setSaveError('Could not save — storage may be full or unavailable.')
     }
     setSaveCount(c => c + 1)
+  }
+
+  function confirmOverwrite() {
+    if (pendingOverwriteSlot === null) return
+    const ok = saveManager.save(pendingOverwriteSlot, getState())
+    if (ok) {
+      setSaveError(null)
+    } else {
+      setSaveError('Could not save — storage may be full or unavailable.')
+    }
+    setPendingOverwriteSlot(null)
+    setSaveCount(c => c + 1)
+  }
+
+  function cancelOverwrite() {
+    setPendingOverwriteSlot(null)
   }
 
   function handleLoad(slot: number | 'auto') {
@@ -284,7 +318,7 @@ export function SaveLoadMenu({ isOpen, onClose, saveManager, getState, onLoad }:
   return (
     <div
       style={OVERLAY_STYLE}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+      onClick={(e) => { e.stopPropagation(); if (e.target === e.currentTarget) onClose() }}
       role="dialog"
       aria-modal="true"
       aria-label="Save / Load"
@@ -311,6 +345,30 @@ export function SaveLoadMenu({ isOpen, onClose, saveManager, getState, onLoad }:
         {loadError !== null && (
           <div style={ERROR_BANNER_STYLE} role="alert">
             {loadError}
+          </div>
+        )}
+
+        {pendingOverwriteSlot !== null && (
+          <div style={CONFIRM_BANNER_STYLE} role="alertdialog" aria-live="polite">
+            <div style={{ flex: 1 }}>
+              {pendingOverwriteSlot === 'auto' ? 'Auto save slot already exists.' : `Slot ${pendingOverwriteSlot} already contains a save.`}
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={confirmOverwrite}
+                style={SAVE_BTN_STYLE}
+                type="button"
+              >
+                Overwrite
+              </button>
+              <button
+                onClick={cancelOverwrite}
+                style={LOAD_BTN_STYLE}
+                type="button"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         )}
 

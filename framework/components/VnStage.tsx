@@ -4,6 +4,7 @@ import { VnCharacter } from './VnCharacter.tsx'
 import { VnDialog } from './VnDialog.tsx'
 import { VnChoices } from './VnChoices.tsx'
 import { VnTransition } from './VnTransition.tsx'
+import { VnSaveMenu } from './VnSaveMenu.tsx'
 import type { GameEngine } from '../engine/GameEngine.ts'
 import type { DialogOptions, VnDialogHandle } from './VnDialog.tsx'
 import type { StepChoice } from '../engine/ScriptRunner.ts'
@@ -82,6 +83,7 @@ const GLOBAL_CSS = `
 `
 
 export function VnStage({ engine }: { engine: GameEngine }) {
+  const [menuOpen, setMenuOpen] = useState(false)
   const [scene, setScene]           = useState<SceneState | null>(null)
   const [characters, setCharacters] = useState<Map<string, CharacterState>>(new Map())
   const [dialog, setDialog]         = useState<DialogOptions | null>(null)
@@ -160,6 +162,19 @@ export function VnStage({ engine }: { engine: GameEngine }) {
     return () => window.removeEventListener('keydown', handler)
   }, [engine, choices])
 
+  // Open save menu with Escape when it's closed (avoid interfering when menu is open).
+  useEffect(() => {
+    if (menuOpen) return
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setMenuOpen(true)
+      }
+    }
+    window.addEventListener('keydown', esc)
+    return () => window.removeEventListener('keydown', esc)
+  }, [menuOpen])
+
   const handleStageClick = useCallback(() => {
     if (choices) return
     if (dialogRef.current?.isTyping) {
@@ -216,6 +231,16 @@ export function VnStage({ engine }: { engine: GameEngine }) {
         </div>
 
         <VnDialog ref={dialogRef} dialog={dialog} onComplete={handleDialogComplete} />
+
+        <VnSaveMenu
+          isOpen={menuOpen}
+          onClose={() => setMenuOpen(false)}
+          saveManager={engine.saveManager}
+          getState={() => engine.getState()}
+          onLoad={(state) => {
+            engine.restoreState(state)
+          }}
+        />
 
         {choices && (
           <VnChoices choices={choices} onChoose={handleChoose} />
