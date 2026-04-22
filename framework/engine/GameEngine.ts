@@ -168,6 +168,10 @@ export class GameEngine {
 
     if (step === null) {
       this.#setState(STATE.ENDED)
+      this.#bus.emit('end_screen', {
+        title:   this.#config.endScreen?.title,
+        message: this.#config.endScreen?.message,
+      })
       this.#bus.emit('engine:end', {})
       return
     }
@@ -315,6 +319,9 @@ export class GameEngine {
   }
 
   start(): void {
+    if (this.#state === STATE.ENDED) {
+      this.#runner.reset()
+    }
     this.#setState(STATE.DIALOG)
     void this.#advance()
   }

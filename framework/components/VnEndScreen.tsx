@@ -23,13 +23,13 @@ export function VnEndScreen({ title = 'The End', message, onReturnToMenu }: VnEn
       style={{
         position: 'fixed',
         inset: 0,
-        background: '#000',
+        background: 'var(--vn-end-bg, #000)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         fontFamily: 'var(--vn-font, "Georgia", serif)',
-        color: '#fff',
+        color: 'var(--vn-end-color, #fff)',
         textAlign: 'center',
         padding: '2rem',
         userSelect: 'none',
@@ -80,7 +80,7 @@ export function VnEndScreen({ title = 'The End', message, onReturnToMenu }: VnEn
           onMouseEnter={e => {
             const btn = e.currentTarget
             btn.style.background = 'var(--vn-accent, #c084fc)'
-            btn.style.color = '#0a0014'
+            btn.style.color = 'var(--vn-end-bg, #0a0014)'
           }}
           onMouseLeave={e => {
             const btn = e.currentTarget

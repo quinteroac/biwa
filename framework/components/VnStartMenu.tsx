@@ -38,9 +38,9 @@ const MENU_STYLES = {
     flexDirection: 'column' as const,
     alignItems: 'center',
     justifyContent: 'center',
-    background: 'linear-gradient(160deg, #0a0014 0%, #1a0030 55%, #0d001e 100%)',
+    background: 'var(--vn-menu-bg, linear-gradient(160deg, #0a0014 0%, #1a0030 55%, #0d001e 100%))',
     fontFamily: 'var(--vn-font, "Georgia", serif)',
-    color: '#e2e8f0',
+    color: 'var(--vn-menu-text, #e2e8f0)',
     userSelect: 'none' as const,
   },
   decorLine: {
@@ -81,7 +81,7 @@ const MENU_STYLES = {
   },
   confirmMessage: {
     fontSize: '0.875rem',
-    color: '#cbd5e1',
+    color: 'var(--vn-menu-text-muted, #cbd5e1)',
     letterSpacing: '0.04em',
     textAlign: 'center' as const,
     margin: '0 0 0.25rem',
@@ -171,7 +171,7 @@ export function VnStartMenu({
               onMouseEnter={e => {
                 const btn = e.currentTarget
                 btn.style.background = 'var(--vn-accent, #c084fc)'
-                btn.style.color = '#0a0014'
+                btn.style.color = 'var(--vn-menu-bg-solid, #0a0014)'
               }}
               onMouseLeave={e => {
                 const btn = e.currentTarget
@@ -187,8 +187,8 @@ export function VnStartMenu({
               data-testid="vn-cancel-new-game"
               onMouseEnter={e => {
                 const btn = e.currentTarget
-                btn.style.background = 'rgba(226,232,240,0.1)'
-                btn.style.color = '#e2e8f0'
+                btn.style.background = 'var(--vn-menu-cancel-hover-bg, rgba(226,232,240,0.1))'
+                btn.style.color = 'var(--vn-menu-text, #e2e8f0)'
               }}
               onMouseLeave={e => {
                 const btn = e.currentTarget

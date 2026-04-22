@@ -242,7 +242,7 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
         onClick={handleStageClick}
         style={{
           position: 'fixed', inset: 0, overflow: 'hidden',
-          background: '#000', cursor: 'pointer', userSelect: 'none',
+          background: 'var(--vn-stage-bg, #000)', cursor: 'pointer', userSelect: 'none',
           fontFamily: 'var(--vn-font, "Georgia", serif)',
         }}
       >

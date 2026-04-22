@@ -1,0 +1,215 @@
+{
+  "goals": [
+    "Move audio logic out of `VnStage.tsx` and into a dedicated `AudioManager` engine class.",
+    "Complete the missing functionality: `stop` command, configurable `loop`, and `voice` channel.",
+    "Keep full backwards compatibility with the existing `engine:bgm` / `engine:sfx` / `engine:ambience` EventBus events.",
+    "Use no external audio libraries — only the browser's native `<audio>` element."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Developer can control BGM via Ink tags",
+      "description": "As a game developer, I want to play and stop background music with configurable loop and volume from an Ink tag so that the game's soundtrack changes dynamically as the story progresses. Tag syntax: ``` # bgm: play, src:audio/music/theme.mp3, loop:true, volume:0.8 # bgm: stop # bgm: volume, level:0.5 ```",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "Writing `# bgm: play, src:<path>, loop:true, volume:0.8` in Ink starts the BGM track at the given volume with looping enabled."
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "Writing `# bgm: play, src:<path>, loop:false` plays the track once and stops when it ends."
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "Writing `# bgm: stop` stops the BGM channel immediately."
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "Writing `# bgm: volume, level:0.5` adjusts the BGM volume without stopping the track."
+        },
+        {
+          "id": "US-001-AC05",
+          "text": "Starting a new BGM while one is already playing stops the previous track before starting the new one."
+        },
+        {
+          "id": "US-001-AC06",
+          "text": "Typecheck / lint passes."
+        },
+        {
+          "id": "US-001-AC07",
+          "text": "Visually and aurally verified in browser: BGM plays, loops, and stops as expected."
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Developer can control SFX via Ink tags",
+      "description": "As a game developer, I want to trigger sound effects with configurable loop and volume from an Ink tag so that key moments in the story are punctuated with audio feedback. Tag syntax: ``` # sfx: play, src:audio/fx/click.mp3, volume:1.0 # sfx: stop # sfx: volume, level:0.6 ```",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "Writing `# sfx: play, src:<path>, volume:1.0` plays the sound effect at the given volume."
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "`loop` parameter is supported (defaults to `false` if omitted)."
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "Writing `# sfx: stop` stops the SFX channel."
+        },
+        {
+          "id": "US-002-AC04",
+          "text": "Writing `# sfx: volume, level:<v>` adjusts volume without stopping the current sound."
+        },
+        {
+          "id": "US-002-AC05",
+          "text": "Typecheck / lint passes."
+        },
+        {
+          "id": "US-002-AC06",
+          "text": "Aurally verified in browser: SFX plays at the correct moment in the script."
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "Developer can control Ambience via Ink tags",
+      "description": "As a game developer, I want to set an ambient soundscape with configurable loop and volume from an Ink tag so that locations and moods are reinforced through continuous background audio distinct from the music track. Tag syntax: ``` # ambience: play, src:audio/ambience/rain.mp3, loop:true, volume:0.4 # ambience: stop # ambience: volume, level:0.3 ```",
+      "acceptanceCriteria": [
+        {
+          "id": "US-003-AC01",
+          "text": "Writing `# ambience: play, src:<path>, loop:true, volume:0.4` starts the ambience track looping."
+        },
+        {
+          "id": "US-003-AC02",
+          "text": "Writing `# ambience: stop` stops the ambience channel without affecting BGM, SFX, or Voice."
+        },
+        {
+          "id": "US-003-AC03",
+          "text": "Changing ambience via a new play tag stops the previous ambience before starting the new one."
+        },
+        {
+          "id": "US-003-AC04",
+          "text": "Writing `# ambience: volume, level:<v>` adjusts volume independently of other channels."
+        },
+        {
+          "id": "US-003-AC05",
+          "text": "Typecheck / lint passes."
+        },
+        {
+          "id": "US-003-AC06",
+          "text": "Aurally verified in browser: ambience runs independently alongside BGM."
+        }
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "Developer can control Voice via Ink tags",
+      "description": "As a game developer, I want to play voiced dialog lines with configurable volume from an Ink tag so that character voice acting accompanies the written dialog. Tag syntax: ``` # voice: play, src:audio/voice/char01_line03.mp3, volume:1.0 # voice: stop # voice: volume, level:0.9 ```",
+      "acceptanceCriteria": [
+        {
+          "id": "US-004-AC01",
+          "text": "Writing `# voice: play, src:<path>, volume:1.0` plays the voice file once (loop defaults to `false`)."
+        },
+        {
+          "id": "US-004-AC02",
+          "text": "Writing `# voice: stop` stops voice playback immediately."
+        },
+        {
+          "id": "US-004-AC03",
+          "text": "Starting a new voice line while one is playing stops the previous line first."
+        },
+        {
+          "id": "US-004-AC04",
+          "text": "Writing `# voice: volume, level:<v>` adjusts voice volume without stopping playback."
+        },
+        {
+          "id": "US-004-AC05",
+          "text": "Typecheck / lint passes."
+        },
+        {
+          "id": "US-004-AC06",
+          "text": "Aurally verified in browser: voice line plays in sync with the corresponding dialog step."
+        }
+      ]
+    },
+    {
+      "id": "US-005",
+      "title": "Dead audio code is removed from AssetLoader",
+      "description": "As a framework maintainer, I want `AssetLoader` to handle only image assets so that audio element lifecycle is owned exclusively by `AudioManager` with no ambiguity.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-005-AC01",
+          "text": "`AUDIO_EXTS` constant is removed from `AssetLoader.ts`."
+        },
+        {
+          "id": "US-005-AC02",
+          "text": "The `HTMLAudioElement` branch inside `AssetLoader.#loadOne` is removed."
+        },
+        {
+          "id": "US-005-AC03",
+          "text": "`LoadedAsset` type is updated to `HTMLImageElement` only."
+        },
+        {
+          "id": "US-005-AC04",
+          "text": "No existing call site passes an audio URL to `AssetLoader.preload()` or `AssetLoader.get()` (verified by grep)."
+        },
+        {
+          "id": "US-005-AC05",
+          "text": "Typecheck / lint passes."
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "** Create `framework/engine/AudioManager.ts` — a class that owns four named channels: `bgm`, `sfx`, `ambience`, `voice`."
+    },
+    {
+      "id": "FR-2",
+      "description": "** Each channel wraps a single `HTMLAudioElement` and exposes `play(src: string, loop: boolean, volume: number): void`, `stop(): void`, and `setVolume(volume: number): void`."
+    },
+    {
+      "id": "FR-3",
+      "description": "** All four channels are single-track: calling `play()` on a channel that is already playing stops and replaces the current audio."
+    },
+    {
+      "id": "FR-4",
+      "description": "** `AudioManager` uses the native HTML5 `<audio>` element exclusively — no external audio libraries."
+    },
+    {
+      "id": "FR-5",
+      "description": "** `GameEngine` instantiates `AudioManager` and holds a reference to it. The existing `AudioController` class inside `VnStage.tsx` is removed."
+    },
+    {
+      "id": "FR-6",
+      "description": "** `GameEngine` detects `TagCommand` objects whose `type` is `bgm`, `sfx`, `ambience`, or `voice` and delegates them to `AudioManager`. The existing `engine:bgm`, `engine:sfx`, `engine:ambience` EventBus emissions in `GameEngine` are replaced by direct `AudioManager` calls; `VnStage` no longer subscribes to those events for audio purposes."
+    },
+    {
+      "id": "FR-7",
+      "description": "** `AudioManager` interprets `id: 'play'` (with `src`, optional `loop`, optional `volume`), `id: 'stop'`, and `id: 'volume'` (with `level`) within each channel."
+    },
+    {
+      "id": "FR-8",
+      "description": "** The `src` path in audio tags is treated as a URL relative to the page's base URL, consistent with how `AssetLoader` resolves asset paths."
+    },
+    {
+      "id": "FR-9",
+      "description": "** Volume values are floating-point numbers in the range `[0, 1]`. Values outside this range are clamped."
+    },
+    {
+      "id": "FR-10",
+      "description": "** Missing optional parameters fall back to sensible defaults: `loop` → `false`, `volume` → `1.0`."
+    },
+    {
+      "id": "FR-11",
+      "description": "** `AudioManager` emits typed `EventBus` events on every channel state change: `audio:<channel>:play` (payload: `{ src, loop, volume }`) and `audio:<channel>:stop` (no payload) — e.g., `audio:bgm:play`, `audio:sfx:stop`."
+    },
+    {
+      "id": "FR-12",
+      "description": "** Remove `AUDIO_EXTS`, the `HTMLAudioElement` branch in `AssetLoader.#loadOne`, and update the `LoadedAsset` type to `HTMLImageElement` only. `AssetLoader` becomes image-only."
+    }
+  ]
+}

@@ -56,6 +56,49 @@ React UI (framework/components/)
 - `games/` — individual game instances consuming the framework
 - `manager/` — CLI tooling (`bun run dev/build/new/list`)
 
+## Theming / CSS Variables Convention
+All components use CSS custom properties (variables) for every color and font value, never hardcoded literals.
+`GameEngine.applyTheme()` sets variables on `document.documentElement` from `game.config.ts → theme`.
+Games override any variable via `theme.cssVars` in their `game.config.ts`.
+
+### Available CSS variables (with fallbacks)
+| Variable | Fallback | Controls |
+|---|---|---|
+| `--vn-font` | `"Georgia", serif` | All component fonts |
+| `--vn-accent` | `#c084fc` | Buttons, borders, arrow indicator |
+| `--vn-dialog-bg` | `rgba(10,10,20,0.85)` | Dialog box and unfocused choices |
+| `--vn-dialog-text` | `#f8f8f8` | Dialog body text, choice text |
+| `--vn-name-color` | `#e2e8f0` | Speaker name in dialog |
+| `--vn-choice-hover` | `rgba(192,132,252,0.15)` | Focused/hovered choice background |
+| `--vn-menu-bg` | `linear-gradient(160deg, #0a0014 …)` | Start menu full background |
+| `--vn-menu-bg-solid` | `#0a0014` | Hover text color on accent buttons (start menu) |
+| `--vn-menu-text` | `#e2e8f0` | Start menu general text and Cancel hover text |
+| `--vn-menu-text-muted` | `#cbd5e1` | Start menu confirmation message |
+| `--vn-menu-cancel-hover-bg` | `rgba(226,232,240,0.1)` | Cancel button hover background |
+| `--vn-end-bg` | `#000` | End screen background and button hover text |
+| `--vn-end-color` | `#fff` | End screen text color |
+| `--vn-stage-bg` | `#000` | Stage base container background |
+
+### Pattern — DO / DON'T
+```ts
+// ✅ correct
+color: 'var(--vn-dialog-text, #f8f8f8)'
+
+// ❌ wrong — breaks theming
+color: '#f8f8f8'
+```
+
+## Component Customization Strategy
+
+Games **never modify framework source files**. Two levels are available:
+
+1. **CSS variables** — override colors, fonts, spacing via `game.config.ts → theme.cssVars`. All framework components read every visual value from CSS custom properties. This is always the first option.
+2. **Full replacement** — skip `mountVnApp`, write a `main.tsx` in the game folder, and compose your own React shell using framework pieces (`VnStage`, `GameEngine`, `EventBus`, etc.).
+
+`GameEngine`, `ScriptRunner`, `SaveManager`, and `EventBus` have no React dependency and can be used without any framework UI component.
+
+> Full guide: [`framework/docs/customizing-components.md`](../framework/docs/customizing-components.md)
+
 ## Implemented Capabilities
 <!-- Updated at the end of each iteration -->
 - (none yet — populated after first Refactor)

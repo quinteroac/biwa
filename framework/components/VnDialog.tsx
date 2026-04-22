@@ -106,7 +106,7 @@ export const VnDialog = forwardRef<VnDialogHandle, VnDialogProps>(function VnDia
             {dialog.speaker}
           </div>
         )}
-        <div style={{ fontSize: '1.1rem', lineHeight: 1.7, color: '#f8f8f8', minHeight: '3.4em' }}>
+        <div style={{ fontSize: '1.1rem', lineHeight: 1.7, color: 'var(--vn-dialog-text, #f8f8f8)', minHeight: '3.4em' }}>
           <span>{revealed}</span>
           <span style={{ color: 'transparent', userSelect: 'none' }}>{ghost}</span>
         </div>

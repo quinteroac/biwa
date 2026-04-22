@@ -46,7 +46,7 @@ export function VnChoices({ choices, onChoose }: VnChoicesProps) {
             width: '100%', maxWidth: 600,
             padding: '12px 20px',
             background: i === focused ? 'var(--vn-choice-hover, rgba(192,132,252,0.15))' : 'var(--vn-dialog-bg, rgba(10,10,20,0.85))',
-            color: '#f8f8f8',
+            color: 'var(--vn-dialog-text, #f8f8f8)',
             border: '1px solid var(--vn-accent, #c084fc)',
             borderRadius: 8,
             fontSize: 16,

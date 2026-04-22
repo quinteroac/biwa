@@ -24,6 +24,7 @@ export type StepResult =
 
 export class ScriptRunner {
   #story: Story | null = null
+  #storyJson: string | null = null
   #bus: EventBus
   #currentSpeaker: string | null = null
   #pendingMinigame: string | null = null
@@ -35,8 +36,19 @@ export class ScriptRunner {
   async load(url: string): Promise<void> {
     const res = await fetch(url)
     if (!res.ok) throw new Error(`[ScriptRunner] Failed to fetch story: ${url} (${res.status})`)
-    const json = await res.text()
-    this.#story = new Story(json)
+    this.#storyJson = await res.text()
+    this.#createStory()
+  }
+
+  reset(): void {
+    this.#currentSpeaker = null
+    this.#pendingMinigame = null
+    this.#createStory()
+  }
+
+  #createStory(): void {
+    if (!this.#storyJson) return
+    this.#story = new Story(this.#storyJson)
     this.#story.onVariableChange = (name: string, value: unknown) => {
       this.#bus.emit('variable:change', { name, value })
     }
