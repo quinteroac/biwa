@@ -7,6 +7,8 @@ import type { GameSaveState } from '../types/save.d.ts'
 
 interface VnAppProps {
   engine: GameEngine
+  showNewGame?: boolean
+  showContinue?: boolean
 }
 
 /**
@@ -15,7 +17,7 @@ interface VnAppProps {
  * Renders {@link VnStartMenu} first. VnStage (and therefore engine.start())
  * is mounted only after the player picks an action from the start menu.
  */
-function VnApp({ engine }: VnAppProps) {
+function VnApp({ engine, showNewGame, showContinue }: VnAppProps) {
   const [started, setStarted] = useState(false)
   const [resumeSave, setResumeSave] = useState<GameSaveState | null>(null)
 
@@ -45,6 +47,8 @@ function VnApp({ engine }: VnAppProps) {
         onStart={handleStart}
         hasSaves={hasSaves}
         onContinue={handleContinue}
+        showNewGame={showNewGame}
+        showContinue={showContinue}
       />
     )
   }
@@ -57,11 +61,18 @@ function VnApp({ engine }: VnAppProps) {
  *
  * @param engine - Initialised GameEngine instance.
  * @param container - DOM element to render into.
+ * @param options - Optional display configuration for the start menu.
+ * @param options.showNewGame - When `false`, hides the "New Game" button. Defaults to `true`.
+ * @param options.showContinue - When `false`, hides the "Continue" button. Defaults to `true`.
  * @returns The React root so the caller can unmount if needed.
  */
-export function mountVnApp(engine: GameEngine, container: Element): ReturnType<typeof createRoot> {
+export function mountVnApp(
+  engine: GameEngine,
+  container: Element,
+  options?: { showNewGame?: boolean; showContinue?: boolean },
+): ReturnType<typeof createRoot> {
   const root = createRoot(container)
-  root.render(<VnApp engine={engine} />)
+  root.render(<VnApp engine={engine} showNewGame={options?.showNewGame} showContinue={options?.showContinue} />)
   return root
 }
 

@@ -24,6 +24,10 @@ export interface VnStartMenuProps {
    * `true`. If omitted the button is still rendered but will be disabled.
    */
   onContinue?: () => void
+  /** When `false`, the "New Game" button is hidden. Defaults to `true`. */
+  showNewGame?: boolean
+  /** When `false`, the "Continue" button is hidden. Defaults to `true`. */
+  showContinue?: boolean
 }
 
 const MENU_STYLES = {
@@ -120,7 +124,14 @@ const MENU_STYLES = {
   },
 }
 
-export function VnStartMenu({ title, onStart, hasSaves = false, onContinue }: VnStartMenuProps) {
+export function VnStartMenu({
+  title,
+  onStart,
+  hasSaves = false,
+  onContinue,
+  showNewGame = true,
+  showContinue = true,
+}: VnStartMenuProps) {
   const [confirming, setConfirming] = useState(false)
 
   function handleNewGame() {
@@ -191,25 +202,27 @@ export function VnStartMenu({ title, onStart, hasSaves = false, onContinue }: Vn
         </div>
       ) : (
         <div style={MENU_STYLES.menuButtons}>
-          <button
-            style={MENU_STYLES.button}
-            onClick={handleNewGame}
-            data-testid="vn-start-menu-start"
-            onMouseEnter={e => {
-              const btn = e.currentTarget
-              btn.style.background = 'var(--vn-accent, #c084fc)'
-              btn.style.color = '#0a0014'
-            }}
-            onMouseLeave={e => {
-              const btn = e.currentTarget
-              btn.style.background = 'transparent'
-              btn.style.color = 'var(--vn-accent, #c084fc)'
-            }}
-          >
-            New Game
-          </button>
+          {showNewGame && (
+            <button
+              style={MENU_STYLES.button}
+              onClick={handleNewGame}
+              data-testid="vn-start-menu-start"
+              onMouseEnter={e => {
+                const btn = e.currentTarget
+                btn.style.background = 'var(--vn-accent, #c084fc)'
+                btn.style.color = '#0a0014'
+              }}
+              onMouseLeave={e => {
+                const btn = e.currentTarget
+                btn.style.background = 'transparent'
+                btn.style.color = 'var(--vn-accent, #c084fc)'
+              }}
+            >
+              New Game
+            </button>
+          )}
 
-          {hasSaves ? (
+          {showContinue && (hasSaves ? (
             <button
               style={MENU_STYLES.button}
               onClick={onContinue}
@@ -236,7 +249,7 @@ export function VnStartMenu({ title, onStart, hasSaves = false, onContinue }: Vn
             >
               Continue
             </button>
-          )}
+          ))}
         </div>
       )}
     </div>

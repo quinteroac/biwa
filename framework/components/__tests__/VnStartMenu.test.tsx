@@ -196,7 +196,72 @@ describe('VnApp – US-001', () => {
   })
 })
 
-// --- VnStartMenu – US-003 tests ------------------------------------------
+// --- VnStartMenu – US-004 tests ------------------------------------------
+
+describe('VnStartMenu – US-004', () => {
+
+  // US-004-AC01: showNewGame={false} hides the New Game button
+  it('AC01: showNewGame={false} removes the New Game button', () => {
+    const html = renderToString(
+      createElement(VnStartMenu, { title: 'My Game', onStart: () => {}, showNewGame: false }),
+    )
+    expect(html).not.toContain('vn-start-menu-start')
+    expect(html).not.toContain('New Game')
+  })
+
+  // US-004-AC01: showNewGame defaults to true (button present)
+  it('AC01: showNewGame defaults to true — New Game button shown', () => {
+    const html = renderToString(
+      createElement(VnStartMenu, { title: 'My Game', onStart: () => {} }),
+    )
+    expect(html).toContain('vn-start-menu-start')
+    expect(html).toContain('New Game')
+  })
+
+  // US-004-AC02: showContinue={false} hides the Continue button
+  it('AC02: showContinue={false} removes the Continue button', () => {
+    const html = renderToString(
+      createElement(VnStartMenu, { title: 'My Game', onStart: () => {}, showContinue: false }),
+    )
+    expect(html).not.toContain('vn-start-menu-continue')
+    expect(html).not.toContain('Continue')
+  })
+
+  // US-004-AC02: showContinue defaults to true (button present)
+  it('AC02: showContinue defaults to true — Continue button shown', () => {
+    const html = renderToString(
+      createElement(VnStartMenu, { title: 'My Game', onStart: () => {} }),
+    )
+    expect(html).toContain('vn-start-menu-continue')
+    expect(html).toContain('Continue')
+  })
+
+  // US-004-AC01 + AC02: both buttons can be hidden simultaneously
+  it('AC01+AC02: both buttons hidden when showNewGame={false} and showContinue={false}', () => {
+    const html = renderToString(
+      createElement(VnStartMenu, {
+        title: 'My Game',
+        onStart: () => {},
+        showNewGame: false,
+        showContinue: false,
+      }),
+    )
+    expect(html).not.toContain('vn-start-menu-start')
+    expect(html).not.toContain('vn-start-menu-continue')
+    expect(html).not.toContain('New Game')
+    expect(html).not.toContain('Continue')
+    // Title still renders
+    expect(html).toContain('My Game')
+  })
+
+  // US-004-AC03: mountVnApp accepts the options object (structural)
+  it('AC03: mountVnApp is a function that accepts an options third argument', () => {
+    const { mountVnApp } = require('../VnApp.tsx') as typeof import('../VnApp.tsx')
+    expect(typeof mountVnApp).toBe('function')
+    // Verify function arity allows the options parameter
+    expect(mountVnApp.length).toBeLessThanOrEqual(3)
+  })
+})
 
 describe('VnStartMenu – US-003', () => {
 

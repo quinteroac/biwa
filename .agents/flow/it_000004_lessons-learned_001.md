@@ -57,3 +57,20 @@
 - `data-testid="vn-start-menu-continue"` is on *both* the enabled and disabled Continue button variants — use this for future E2E or jsdom tests.
 - `SaveManager.listSlots()` returns `SlotInfo[]` with `meta.timestamp` for each occupied slot. Sorting/reducing by `meta.timestamp` is the canonical way to find the most recently written save.
 - `engine.restoreState(state)` internally sets engine state to `DIALOG` and calls `#advance()` — it is a complete replacement for `engine.start()` when resuming.
+
+## US-004 — Developer can configure which menu options are visible
+
+**Summary:** Added `showNewGame?: boolean` and `showContinue?: boolean` optional props to `VnStartMenu`. Updated `VnApp`'s internal `VnAppProps` interface and `VnApp` component to accept and forward these props. Extended `mountVnApp` with an optional third `options` parameter so callers can pass the flags without breaking the existing two-argument signature.
+
+**Key Decisions:**
+- Both props default to `true` so all existing code continues to work with no changes.
+- The conditional rendering wraps each button independently: `{showNewGame && <button ...>}` / `{showContinue && (...)}`. This is cleaner than ternary logic and aligns with the existing `hasSaves` guard already present on the Continue button.
+- `mountVnApp` uses an optional `options?: { showNewGame?: boolean; showContinue?: boolean }` object rather than two additional positional parameters — easier to extend in the future and avoids positional confusion.
+
+**Pitfalls Encountered:**
+- None significant. The existing structure (separate rendering branches per button) made the change straightforward.
+
+**Useful Context for Future Agents:**
+- `showNewGame` and `showContinue` are purely render-time props — they do not affect engine state or save logic.
+- The `mountVnApp` options object is designed to be extended; any future start-menu visibility flags should be added there.
+- SSR tests (`renderToString`) are sufficient to verify presence/absence of DOM nodes — no jsdom needed.
