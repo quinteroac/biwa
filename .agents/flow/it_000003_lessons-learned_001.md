@@ -52,3 +52,22 @@
 - `SaveControlsBar` is now fully stateful (uses hooks). It cannot be rendered in a pure SSR context without the React hooks shim, but `renderToString` in tests still works because hooks are allowed server-side in React 18+.
 - Both `showQuickSave` and `showSlotMenu` are independent boolean props. Either button can be hidden separately.
 - The pre-existing `framework/engine/ScriptRunner.ts(177,72): error TS1003` is a baseline error unrelated to this story.
+
+## US-004 — Player can toggle auto save on/off from the controls bar
+
+**Summary:** Added `showAutoSave?: boolean` and `eventBus?: EventBus` props to `SaveControlsBar`. The toggle reads initial state from `localStorage` key `vn:autoSave` (defaults to `true`). When enabled, it subscribes to `engine:dialog` on the bus (via `useEffect`) and calls `saveManager.save('auto', getState())` on each event. Toggling persists to `localStorage`. The toggle uses an `aria-checked` role=switch label with an animated knob, consistent with the existing visual style.
+
+**Key Decisions:**
+- Used `useRef` to capture latest `saveManager`/`getState`/`autoSaveEnabled` values inside the event handler closure, avoiding stale-closure bugs without re-subscribing on every render.
+- `eventBus` is optional — when absent, the `useEffect` returns early so the component works in SSR tests and contexts without a bus.
+- Toggle UI uses a styled `<label>` with `role="switch"` and `aria-checked` (not a native `<input type="checkbox">`) to keep the visual consistent with the `createElement` approach already in use.
+- `AUTO_SAVE_KEY = 'vn:autoSave'` is a module-level constant to avoid magic strings.
+
+**Pitfalls Encountered:**
+- SSR tests (`renderToString`) don't run `useEffect`, so the event subscription cannot be tested via SSR rendering. The AC03 test verifies the toggle renders correctly; the actual save-on-emit behaviour is best tested in a DOM environment. The test covers the render path only.
+- `aria-checked` in SSR output is `aria-checked="true"` / `aria-checked="false"` (stringified boolean), which is what the test assertions check.
+
+**Useful Context for Future Agents:**
+- `SaveControlsBar` now has three independent visibility props: `showQuickSave`, `showSlotMenu`, `showAutoSave` — all default to `true`.
+- Pass `eventBus={engine.eventBus}` when mounting `SaveControlsBar` in a live game context for auto-save to function.
+- The `localStorage` key `vn:autoSave` is global (not per-game-id), intentionally, since auto-save preference is a player-level setting.
