@@ -247,6 +247,13 @@ export class GameEngine {
         case 'minigame':
           await this.#runMinigame(tag.id ?? '', tag)
           break
+        case 'end_screen':
+          this.#setState(STATE.ENDED)
+          this.#bus.emit('end_screen', {
+            title:   tag['title'] as string | undefined,
+            message: tag['message'] as string | undefined,
+          })
+          break
         case 'save':
           this.#autoSave()
           break

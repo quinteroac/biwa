@@ -1,7 +1,8 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { VnStage } from './VnStage.tsx'
 import { VnStartMenu } from './VnStartMenu.tsx'
+import { VnEndScreen } from './VnEndScreen.tsx'
 import type { GameEngine } from '../engine/GameEngine.ts'
 import type { GameSaveState } from '../types/save.d.ts'
 
@@ -11,17 +12,31 @@ interface VnAppProps {
   showContinue?: boolean
 }
 
+interface EndScreenPayload {
+  title?: string
+  message?: string
+}
+
 /**
  * Root application component.
  *
  * Renders {@link VnStartMenu} first. VnStage (and therefore engine.start())
  * is mounted only after the player picks an action from the start menu.
+ * When the engine emits `"end_screen"`, VnStage is replaced with
+ * {@link VnEndScreen}.
  */
 function VnApp({ engine, showNewGame, showContinue }: VnAppProps) {
   const [started, setStarted] = useState(false)
   const [resumeSave, setResumeSave] = useState<GameSaveState | null>(null)
+  const [endScreen, setEndScreen] = useState<EndScreenPayload | null>(null)
 
   const hasSaves = engine.saveManager.listSlots().length > 0
+
+  useEffect(() => {
+    return engine.bus.on<EndScreenPayload>('end_screen', payload => {
+      setEndScreen(payload ?? {})
+    })
+  }, [engine])
 
   const handleStart = useCallback(() => {
     setResumeSave(null)
@@ -39,6 +54,10 @@ function VnApp({ engine, showNewGame, showContinue }: VnAppProps) {
     setResumeSave(loaded.state)
     setStarted(true)
   }, [engine])
+
+  if (endScreen !== null) {
+    return <VnEndScreen title={endScreen.title} message={endScreen.message} />
+  }
 
   if (!started) {
     return (
