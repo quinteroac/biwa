@@ -137,4 +137,42 @@ describe('SaveControlsBar', () => {
     const html = render({ showSlotMenu: false })
     expect(html).toContain('Quick Save')
   })
+
+  // US-003-AC01: Quick Save button renders when showQuickSave is true (default)
+  it('US-003-AC01: renders Quick Save button when showQuickSave is true (default)', () => {
+    const html = render()
+    expect(html).toContain('aria-label="Quick save"')
+    expect(html).toContain('Quick Save')
+  })
+
+  // US-003-AC01: explicit showQuickSave={true} also renders the button
+  it('US-003-AC01: renders Quick Save button when showQuickSave is explicitly true', () => {
+    const html = render({ showQuickSave: true })
+    expect(html).toContain('aria-label="Quick save"')
+  })
+
+  // US-003-AC03: ARIA live region for toast feedback is always present
+  it('US-003-AC03: renders an aria-live status region for save feedback', () => {
+    const html = render()
+    expect(html).toContain('role="status"')
+    expect(html).toContain('aria-live="polite"')
+  })
+
+  // US-003-AC03: toast region is present even when showQuickSave is false
+  it('US-003-AC03: aria-live region present even when showQuickSave is false', () => {
+    const html = render({ showQuickSave: false })
+    expect(html).toContain('role="status"')
+  })
+
+  // US-003-AC04: Quick Save button is hidden when showQuickSave is false
+  it('US-003-AC04: hides Quick Save button when showQuickSave is false', () => {
+    const html = render({ showQuickSave: false })
+    expect(html).not.toContain('aria-label="Quick save"')
+  })
+
+  // US-003-AC04: Save / Load button still renders when showQuickSave is false
+  it('US-003-AC04: Save / Load button still renders when showQuickSave is false', () => {
+    const html = render({ showQuickSave: false })
+    expect(html).toContain('Save / Load')
+  })
 })

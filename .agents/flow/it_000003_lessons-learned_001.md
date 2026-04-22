@@ -34,3 +34,21 @@
 **Useful Context for Future Agents:**
 - `SaveControlsBar` now conditionally renders the slot-menu button. Use `showSlotMenu={false}` in game scenes where the player should not be able to save (e.g., during a cutscene or minigame).
 - The `onOpenMenu` callback signature is unchanged; any parent that already provided it continues to work as-is.
+
+## US-003 — Player can trigger quick save from the controls bar
+
+**Summary:** Added `showQuickSave?: boolean` prop (default `true`) to `SaveControlsBar`. When `false`, the Quick Save button is not rendered. Added toast feedback (ARIA live region + opacity toggle) reusing the same pattern from `VnQuickSave`. `handleQuickSave` now captures the boolean return of `quickSave()` and sets a toast message accordingly.
+
+**Key Decisions:**
+- Added `useState<string | null>` + `useEffect` with `setTimeout` (2000 ms) for toast — same pattern as `VnQuickSave` so UX is consistent.
+- Added `useEffect` import alongside `useState`; `createElement` was already imported.
+- Toast `div` (role=`status`, aria-live=`polite`) is always rendered (opacity toggles) so screen readers receive save feedback.
+- `showQuickSave` defaults to `true` via destructuring default, keeping all existing call sites valid.
+
+**Pitfalls Encountered:**
+- None significant. The component was already structured with `createElement`; adding hooks was straightforward.
+
+**Useful Context for Future Agents:**
+- `SaveControlsBar` is now fully stateful (uses hooks). It cannot be rendered in a pure SSR context without the React hooks shim, but `renderToString` in tests still works because hooks are allowed server-side in React 18+.
+- Both `showQuickSave` and `showSlotMenu` are independent boolean props. Either button can be hidden separately.
+- The pre-existing `framework/engine/ScriptRunner.ts(177,72): error TS1003` is a baseline error unrelated to this story.

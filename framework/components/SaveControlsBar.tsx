@@ -1,4 +1,4 @@
-import { createElement } from 'react'
+import { createElement, useEffect, useState } from 'react'
 import type { SaveManager } from '../SaveManager.ts'
 import type { GameSaveState } from '../types/save.d.ts'
 import { quickSave } from './VnQuickSave.tsx'
@@ -23,6 +23,12 @@ export interface SaveControlsBarProps {
    * Typically opens the full `VnSaveMenu` overlay.
    */
   onOpenMenu: () => void
+
+  /**
+   * When `true` (default), renders the "Quick Save" button that saves to slot 1.
+   * Set to `false` to hide the button, e.g. in scenes where saving is disabled.
+   */
+  showQuickSave?: boolean
 
   /**
    * When `true` (default), renders the "Save / Load" button that opens the
@@ -56,6 +62,22 @@ const BTN_STYLE: React.CSSProperties = {
   pointerEvents: 'auto',
 }
 
+const TOAST_STYLE: React.CSSProperties = {
+  position: 'fixed',
+  bottom: 32,
+  right: 32,
+  padding: '10px 18px',
+  borderRadius: 8,
+  background: 'rgba(10,10,20,0.92)',
+  border: '1px solid var(--vn-accent, #c084fc)',
+  color: '#f8f8f8',
+  fontFamily: 'var(--vn-font, "Georgia", serif)',
+  fontSize: 14,
+  zIndex: 200,
+  pointerEvents: 'none',
+  transition: 'opacity 0.4s ease',
+}
+
 /**
  * A slim horizontal controls bar that exposes quick-save and slot-menu
  * actions without obscuring the stage or interfering with click-to-advance.
@@ -77,10 +99,19 @@ const BTN_STYLE: React.CSSProperties = {
  * @param props - {@link SaveControlsBarProps}
  * @returns A React element with the Quick Save and (optionally) Save / Load buttons.
  */
-export function SaveControlsBar({ saveManager, getState, onOpenMenu, showSlotMenu = true }: SaveControlsBarProps): React.ReactElement {
+export function SaveControlsBar({ saveManager, getState, onOpenMenu, showQuickSave = true, showSlotMenu = true }: SaveControlsBarProps): React.ReactElement {
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (toastMessage === null) return
+    const id = setTimeout(() => setToastMessage(null), 2000)
+    return () => clearTimeout(id)
+  }, [toastMessage])
+
   function handleQuickSave(e: React.MouseEvent) {
     e.stopPropagation()
-    quickSave(saveManager, getState)
+    const ok = quickSave(saveManager, getState)
+    setToastMessage(ok ? 'Game saved' : 'Save failed')
   }
 
   function handleOpenMenu(e: React.MouseEvent) {
@@ -91,16 +122,18 @@ export function SaveControlsBar({ saveManager, getState, onOpenMenu, showSlotMen
   return createElement(
     'div',
     { style: BAR_STYLE },
-    createElement(
-      'button',
-      {
-        type: 'button',
-        style: BTN_STYLE,
-        onClick: handleQuickSave,
-        'aria-label': 'Quick save',
-      },
-      'Quick Save',
-    ),
+    showQuickSave
+      ? createElement(
+          'button',
+          {
+            type: 'button',
+            style: BTN_STYLE,
+            onClick: handleQuickSave,
+            'aria-label': 'Quick save',
+          },
+          'Quick Save',
+        )
+      : null,
     showSlotMenu
       ? createElement(
           'button',
@@ -113,5 +146,15 @@ export function SaveControlsBar({ saveManager, getState, onOpenMenu, showSlotMen
           'Save / Load',
         )
       : null,
+    createElement(
+      'div',
+      {
+        role: 'status',
+        'aria-live': 'polite',
+        'aria-atomic': 'true',
+        style: { ...TOAST_STYLE, opacity: toastMessage !== null ? 1 : 0 },
+      },
+      toastMessage ?? '',
+    ),
   )
 }
