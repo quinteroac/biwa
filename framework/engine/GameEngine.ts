@@ -6,6 +6,7 @@ import { AssetLoader } from '../AssetLoader.ts'
 import { MinigameRegistry } from '../minigames/MinigameRegistry.ts'
 import { BgmController } from './BgmController.ts'
 import { SfxController } from './SfxController.ts'
+import { AmbienceController } from './AmbienceController.ts'
 import type { GameSaveState } from '../types/save.d.ts'
 import type { GameConfig } from '../types/game-config.d.ts'
 
@@ -40,6 +41,7 @@ export class GameEngine {
   #minigameRegistry = new MinigameRegistry()
   #bgm: BgmController
   #sfx: SfxController
+  #ambience: AmbienceController
   #currentSceneId: string | null = null
   #pendingChoices: ReturnType<ScriptRunner['choices']['slice']> | null = null
   #autoAdvance = false
@@ -50,6 +52,7 @@ export class GameEngine {
     this.#runner = new ScriptRunner(this.#bus)
     this.#bgm = new BgmController(this.#bus)
     this.#sfx = new SfxController(this.#bus)
+    this.#ambience = new AmbienceController(this.#bus)
   }
 
   static async init(config: GameConfig): Promise<GameEngine> {

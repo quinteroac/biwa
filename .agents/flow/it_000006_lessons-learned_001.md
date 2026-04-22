@@ -35,3 +35,20 @@
 - An `AmbienceController` can be created with the exact same pattern targeting `engine:ambience`.
 - SFX `play` stops any previously playing SFX before starting the new one (single-channel behaviour). If multi-channel SFX is required in future, the architecture would need to change.
 - All tag values arrive as strings from the TagParser; `parseFloat(String(...))` handles both string and boolean coercions safely.
+
+## US-003 — Developer can control Ambience via Ink tags
+
+**Summary:** Implemented `AmbienceController` in `framework/engine/AmbienceController.ts` that subscribes to `engine:ambience` EventBus events. Handles `play`, `stop`, and `volume` commands using `HTMLAudioElement`. Wired into `GameEngine` constructor alongside `BgmController` and `SfxController`. Tests cover all acceptance criteria using the same `globalThis.Audio` stub pattern.
+
+**Key Decisions:**
+- Direct structural copy of `BgmController`/`SfxController` pattern — only the event channel (`engine:ambience`) and log prefix (`[AmbienceController]`) differ.
+- `GameEngine` already routed `engine:ambience` events (line 248-249) — only the consumer class was needed.
+- `loop` defaults to `false` when omitted, consistent with `HTMLAudioElement` defaults.
+
+**Pitfalls Encountered:**
+- None — the BgmController/SfxController pattern transferred cleanly.
+
+**Useful Context for Future Agents:**
+- All three audio controllers (BGM, SFX, Ambience) follow the same pattern. Any new audio channel can be added the same way.
+- The `GameEngine` already has `case 'voice':` routing — a `VoiceController` would follow the exact same pattern targeting `engine:voice`.
+- `GameEngine` does not have a top-level `destroy()` that cleans up controllers; they currently live for the engine's lifetime.
