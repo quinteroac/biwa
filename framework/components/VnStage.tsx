@@ -5,6 +5,7 @@ import { VnDialog } from './VnDialog.tsx'
 import { VnChoices } from './VnChoices.tsx'
 import { VnTransition } from './VnTransition.tsx'
 import { VnSaveMenu } from './VnSaveMenu.tsx'
+import { SaveControlsBar } from './SaveControlsBar.tsx'
 import type { GameEngine } from '../engine/GameEngine.ts'
 import type { DialogOptions, VnDialogHandle } from './VnDialog.tsx'
 import type { StepChoice } from '../engine/ScriptRunner.ts'
@@ -230,8 +231,6 @@ export function VnStage({ engine }: { engine: GameEngine }) {
           ))}
         </div>
 
-        <VnDialog ref={dialogRef} dialog={dialog} onComplete={handleDialogComplete} />
-
         <VnSaveMenu
           isOpen={menuOpen}
           onClose={() => setMenuOpen(false)}
@@ -241,6 +240,22 @@ export function VnStage({ engine }: { engine: GameEngine }) {
             engine.restoreState(state)
           }}
         />
+
+        {/* Bottom panel: dialog box stacked above the controls bar */}
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0,
+          display: 'flex', flexDirection: 'column',
+          pointerEvents: 'none',
+        }}>
+          <VnDialog ref={dialogRef} dialog={dialog} onComplete={handleDialogComplete} />
+          {dialog && (
+            <SaveControlsBar
+              saveManager={engine.saveManager}
+              getState={() => engine.getState()}
+              onOpenMenu={() => setMenuOpen(true)}
+            />
+          )}
+        </div>
 
         {choices && (
           <VnChoices choices={choices} onChoose={handleChoose} />
