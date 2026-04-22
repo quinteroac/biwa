@@ -27,6 +27,10 @@ export interface GameConfig {
     slots?: number;
     autoSave?: boolean;
   };
+  endScreen?: {
+    title?: string;
+    message?: string;
+  };
   distribution?: {
     mode?: 'portal' | 'static' | 'embedded' | string;
     basePath?: string;

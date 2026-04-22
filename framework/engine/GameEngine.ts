@@ -250,8 +250,8 @@ export class GameEngine {
         case 'end_screen':
           this.#setState(STATE.ENDED)
           this.#bus.emit('end_screen', {
-            title:   tag['title'] as string | undefined,
-            message: tag['message'] as string | undefined,
+            title:   (tag['title'] as string | undefined) ?? this.#config.endScreen?.title,
+            message: (tag['message'] as string | undefined) ?? this.#config.endScreen?.message,
           })
           break
         case 'save':
