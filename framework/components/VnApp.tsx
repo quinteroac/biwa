@@ -17,12 +17,14 @@ interface VnAppProps {
 function VnApp({ engine }: VnAppProps) {
   const [started, setStarted] = useState(false)
 
+  const hasSaves = engine.saveManager.listSlots().length > 0
+
   const handleStart = useCallback(() => {
     setStarted(true)
   }, [])
 
   if (!started) {
-    return <VnStartMenu title={engine.title} onStart={handleStart} />
+    return <VnStartMenu title={engine.title} onStart={handleStart} hasSaves={hasSaves} />
   }
 
   return <VnStage engine={engine} />

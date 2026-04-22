@@ -2,15 +2,22 @@
  * VnStartMenu
  *
  * Displayed by VnApp before VnStage mounts. Shows the game title and lets the
- * player choose an initial action (e.g. Start). Only after the player selects
+ * player choose an initial action (e.g. New Game). Only after the player selects
  * an action does VnStage mount and engine.start() get called.
  */
+
+import { useState } from 'react'
 
 export interface VnStartMenuProps {
   /** The game title shown prominently on screen. */
   title: string
-  /** Called when the player chooses to start the game. */
+  /** Called when the player confirms starting a new game. */
   onStart: () => void
+  /**
+   * Whether there is at least one existing save slot. When `true`, clicking
+   * "New Game" first shows an inline confirmation before calling `onStart`.
+   */
+  hasSaves?: boolean
 }
 
 const MENU_STYLES = {
@@ -56,9 +63,57 @@ const MENU_STYLES = {
     fontFamily: 'var(--vn-font, "Georgia", serif)',
     transition: 'background 0.2s, color 0.2s',
   },
+  confirmation: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    gap: '0.75rem',
+  },
+  confirmMessage: {
+    fontSize: '0.875rem',
+    color: '#cbd5e1',
+    letterSpacing: '0.04em',
+    textAlign: 'center' as const,
+    margin: '0 0 0.25rem',
+  },
+  confirmActions: {
+    display: 'flex',
+    gap: '0.75rem',
+  },
+  buttonSmall: {
+    padding: '0.5rem 1.5rem',
+    fontSize: '0.875rem',
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase' as const,
+    background: 'transparent',
+    color: 'var(--vn-accent, #c084fc)',
+    border: '1px solid var(--vn-accent, #c084fc)',
+    borderRadius: '2px',
+    cursor: 'pointer',
+    fontFamily: 'var(--vn-font, "Georgia", serif)',
+    transition: 'background 0.2s, color 0.2s',
+  },
 }
 
-export function VnStartMenu({ title, onStart }: VnStartMenuProps) {
+export function VnStartMenu({ title, onStart, hasSaves = false }: VnStartMenuProps) {
+  const [confirming, setConfirming] = useState(false)
+
+  function handleNewGame() {
+    if (hasSaves) {
+      setConfirming(true)
+    } else {
+      onStart()
+    }
+  }
+
+  function handleConfirm() {
+    onStart()
+  }
+
+  function handleCancel() {
+    setConfirming(false)
+  }
+
   return (
     <div style={MENU_STYLES.wrapper} data-testid="vn-start-menu">
       <div style={MENU_STYLES.decorLine} aria-hidden="true" />
@@ -67,23 +122,67 @@ export function VnStartMenu({ title, onStart }: VnStartMenuProps) {
         {title}
       </h1>
 
-      <button
-        style={MENU_STYLES.button}
-        onClick={onStart}
-        data-testid="vn-start-menu-start"
-        onMouseEnter={e => {
-          const btn = e.currentTarget
-          btn.style.background = 'var(--vn-accent, #c084fc)'
-          btn.style.color = '#0a0014'
-        }}
-        onMouseLeave={e => {
-          const btn = e.currentTarget
-          btn.style.background = 'transparent'
-          btn.style.color = 'var(--vn-accent, #c084fc)'
-        }}
-      >
-        Start
-      </button>
+      {confirming ? (
+        <div style={MENU_STYLES.confirmation} data-testid="vn-new-game-confirm">
+          <p style={MENU_STYLES.confirmMessage}>
+            Start over? Your saves will not be deleted.
+          </p>
+          <div style={MENU_STYLES.confirmActions}>
+            <button
+              style={MENU_STYLES.buttonSmall}
+              onClick={handleConfirm}
+              data-testid="vn-confirm-new-game"
+              onMouseEnter={e => {
+                const btn = e.currentTarget
+                btn.style.background = 'var(--vn-accent, #c084fc)'
+                btn.style.color = '#0a0014'
+              }}
+              onMouseLeave={e => {
+                const btn = e.currentTarget
+                btn.style.background = 'transparent'
+                btn.style.color = 'var(--vn-accent, #c084fc)'
+              }}
+            >
+              Confirm
+            </button>
+            <button
+              style={MENU_STYLES.buttonSmall}
+              onClick={handleCancel}
+              data-testid="vn-cancel-new-game"
+              onMouseEnter={e => {
+                const btn = e.currentTarget
+                btn.style.background = 'rgba(226,232,240,0.1)'
+                btn.style.color = '#e2e8f0'
+              }}
+              onMouseLeave={e => {
+                const btn = e.currentTarget
+                btn.style.background = 'transparent'
+                btn.style.color = 'var(--vn-accent, #c084fc)'
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          style={MENU_STYLES.button}
+          onClick={handleNewGame}
+          data-testid="vn-start-menu-start"
+          onMouseEnter={e => {
+            const btn = e.currentTarget
+            btn.style.background = 'var(--vn-accent, #c084fc)'
+            btn.style.color = '#0a0014'
+          }}
+          onMouseLeave={e => {
+            const btn = e.currentTarget
+            btn.style.background = 'transparent'
+            btn.style.color = 'var(--vn-accent, #c084fc)'
+          }}
+        >
+          New Game
+        </button>
+      )}
     </div>
   )
 }
