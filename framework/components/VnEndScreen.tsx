@@ -3,6 +3,8 @@ interface VnEndScreenProps {
   title?: string
   /** Optional message displayed beneath the title. */
   message?: string
+  /** Called when the player clicks "Return to Menu". */
+  onReturnToMenu?: () => void
 }
 
 /**
@@ -10,10 +12,11 @@ interface VnEndScreenProps {
  *
  * Rendered by {@link VnApp} in response to the `"end_screen"` EventBus event.
  *
- * @param title   - Heading text. Defaults to `"The End"`.
- * @param message - Optional subtitle / closing message.
+ * @param title           - Heading text. Defaults to `"The End"`.
+ * @param message         - Optional subtitle / closing message.
+ * @param onReturnToMenu  - Called when the player clicks "Return to Menu".
  */
-export function VnEndScreen({ title = 'The End', message }: VnEndScreenProps) {
+export function VnEndScreen({ title = 'The End', message, onReturnToMenu }: VnEndScreenProps) {
   return (
     <div
       data-testid="vn-end-screen"
@@ -55,6 +58,38 @@ export function VnEndScreen({ title = 'The End', message }: VnEndScreenProps) {
         >
           {message}
         </p>
+      )}
+      {onReturnToMenu && (
+        <button
+          data-testid="vn-end-screen-return"
+          onClick={onReturnToMenu}
+          style={{
+            marginTop: '3rem',
+            padding: '0.75rem 2.5rem',
+            fontSize: '1rem',
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            background: 'transparent',
+            color: 'var(--vn-accent, #c084fc)',
+            border: '1px solid var(--vn-accent, #c084fc)',
+            borderRadius: '2px',
+            cursor: 'pointer',
+            fontFamily: 'var(--vn-font, "Georgia", serif)',
+            transition: 'background 0.2s, color 0.2s',
+          }}
+          onMouseEnter={e => {
+            const btn = e.currentTarget
+            btn.style.background = 'var(--vn-accent, #c084fc)'
+            btn.style.color = '#0a0014'
+          }}
+          onMouseLeave={e => {
+            const btn = e.currentTarget
+            btn.style.background = 'transparent'
+            btn.style.color = 'var(--vn-accent, #c084fc)'
+          }}
+        >
+          Return to Menu
+        </button>
       )}
     </div>
   )

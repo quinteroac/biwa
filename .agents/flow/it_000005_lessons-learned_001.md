@@ -36,3 +36,21 @@
 - `GameConfig` is defined in `framework/types/game-config.d.ts` and has a catch-all `[key: string]: any` index signature — new optional fields should still be declared explicitly for type safety.
 - The `end_screen` event payload merging pattern (`tag value ?? config default`) established here can be reused for other config-driven tag defaults.
 - When testing `GameConfig` type acceptance, construct typed objects in test bodies — TypeScript strict-checks them at compile time, and Bun runs the type-checker as part of `bun test`.
+
+## US-003 — Player can return to the main menu from the end screen
+
+**Summary:** Added an optional `onReturnToMenu` prop to `VnEndScreen` that renders a "Return to Menu" button styled consistently with `VnStartMenu` buttons. Updated `VnApp` to wire a `handleReturnToMenu` callback that resets `endScreen`, `started`, and `resumeSave` state — causing the component to re-render `VnStartMenu` with a fresh `hasSaves` value derived from `engine.saveManager.listSlots()`.
+
+**Key Decisions:**
+- `onReturnToMenu` is optional — when omitted, no button is rendered, preserving backward compatibility with existing tests and any usage that doesn't need the button.
+- `VnApp.handleReturnToMenu` resets all three state pieces: `endScreen → null`, `started → false`, `resumeSave → null`. This is sufficient to navigate back to the start menu; `hasSaves` is computed inline from `engine.saveManager.listSlots()` so it is always fresh on re-render.
+- Button styling matches `VnStartMenu.MENU_STYLES.button` exactly: transparent background, `--vn-accent` color/border, uppercase text, `Georgia` font, hover invert effect via `onMouseEnter`/`onMouseLeave`.
+- Keyboard accessibility (AC03) is free: the button is a native `<button>` element, so Enter/Space activation and focus are built-in with no extra ARIA needed.
+
+**Pitfalls Encountered:**
+- None significant. The opt-in `onReturnToMenu` pattern avoided breaking any existing test that renders `VnEndScreen` without the prop.
+
+**Useful Context for Future Agents:**
+- `VnApp` manages the top-level screen state via three `useState` values: `started`, `resumeSave`, and `endScreen`. Resetting all three on return-to-menu is the correct approach to fully clear story session state.
+- `hasSaves` in `VnApp` is not stateful — it's recomputed on every render from `engine.saveManager.listSlots().length > 0`. So returning to the menu automatically reflects the current save state without extra logic.
+- Test pattern for optional-prop-driven rendering: write one test asserting the button renders when prop is provided and one asserting it does not render when prop is omitted.

@@ -55,8 +55,14 @@ function VnApp({ engine, showNewGame, showContinue }: VnAppProps) {
     setStarted(true)
   }, [engine])
 
+  const handleReturnToMenu = useCallback(() => {
+    setEndScreen(null)
+    setStarted(false)
+    setResumeSave(null)
+  }, [])
+
   if (endScreen !== null) {
-    return <VnEndScreen title={endScreen.title} message={endScreen.message} />
+    return <VnEndScreen title={endScreen.title} message={endScreen.message} onReturnToMenu={handleReturnToMenu} />
   }
 
   if (!started) {
