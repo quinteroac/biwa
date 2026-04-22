@@ -18,3 +18,19 @@
 - `VnDialog` no longer manages its own absolute positioning. Its parent (`VnStage`'s bottom panel div) owns `position: absolute; bottom: 0`. Any future component that needs to coexist at the bottom of `VnStage` should be added as another child of that flex-column panel.
 - `quickSave()` is exported from `VnQuickSave.tsx` as a bare utility function (not tied to the button component); it is safe to call imperatively from `SaveControlsBar` or any other component.
 - Tests use `renderToString` from `react-dom/server` (SSR snapshot style) — no DOM environment or `jsdom` required. Follow the same pattern for new component tests.
+
+## US-002 — Player can open the save/load slot menu from the controls bar
+
+**Summary:** Added `showSlotMenu?: boolean` prop (defaulting to `true`) to `SaveControlsBar`. Renamed the existing "Save Menu" button to "Save / Load" to match the user story copy. When `showSlotMenu` is `false`, the button is not rendered (returns `null` for that slot); Quick Save is unaffected.
+
+**Key Decisions:**
+- `showSlotMenu` defaults to `true` via destructuring default (`showSlotMenu = true`), so all existing call sites remain valid without changes.
+- Renamed button text "Save Menu" → "Save / Load" as required by AC01. The `aria-label` stays `"Open save menu"` (descriptive, unchanged).
+- No new wiring was needed for VnSaveMenu — the existing `onOpenMenu` callback already handles it; the prop just gates rendering.
+
+**Pitfalls Encountered:**
+- The existing test assertion `expect(html).toContain('Save Menu')` needed updating to `'Save / Load'` after the rename; forgetting this causes a silent regression in the test suite.
+
+**Useful Context for Future Agents:**
+- `SaveControlsBar` now conditionally renders the slot-menu button. Use `showSlotMenu={false}` in game scenes where the player should not be able to save (e.g., during a cutscene or minigame).
+- The `onOpenMenu` callback signature is unchanged; any parent that already provided it continues to work as-is.

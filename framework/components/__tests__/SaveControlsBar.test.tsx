@@ -60,7 +60,7 @@ describe('SaveControlsBar', () => {
   it('AC01: renders a Save Menu button', () => {
     const html = render()
     expect(html).toContain('aria-label="Open save menu"')
-    expect(html).toContain('Save Menu')
+    expect(html).toContain('Save / Load')
   })
 
   // US-001-AC01: container uses flex row layout for horizontal strip
@@ -104,5 +104,37 @@ describe('SaveControlsBar', () => {
         }),
       ),
     ).not.toThrow()
+  })
+
+  // US-002-AC01: "Save / Load" button renders when showSlotMenu is true (default)
+  it('US-002-AC01: renders "Save / Load" button when showSlotMenu is true (default)', () => {
+    const html = render()
+    expect(html).toContain('Save / Load')
+    expect(html).toContain('aria-label="Open save menu"')
+  })
+
+  // US-002-AC01: explicit showSlotMenu={true} also renders the button
+  it('US-002-AC01: renders "Save / Load" button when showSlotMenu is explicitly true', () => {
+    const html = render({ showSlotMenu: true })
+    expect(html).toContain('Save / Load')
+  })
+
+  // US-002-AC02: button is present so clicking it can open VnSaveMenu
+  it('US-002-AC02: "Save / Load" button is present (enables opening VnSaveMenu on click)', () => {
+    const html = render({ showSlotMenu: true })
+    expect(html).toContain('aria-label="Open save menu"')
+  })
+
+  // US-002-AC03: "Save / Load" button is absent when showSlotMenu is false
+  it('US-002-AC03: hides "Save / Load" button when showSlotMenu is false', () => {
+    const html = render({ showSlotMenu: false })
+    expect(html).not.toContain('Save / Load')
+    expect(html).not.toContain('aria-label="Open save menu"')
+  })
+
+  // US-002-AC03: Quick Save button still renders when showSlotMenu is false
+  it('US-002-AC03: Quick Save button still renders when showSlotMenu is false', () => {
+    const html = render({ showSlotMenu: false })
+    expect(html).toContain('Quick Save')
   })
 })

@@ -19,10 +19,17 @@ export interface SaveControlsBarProps {
   getState: () => GameSaveState
 
   /**
-   * Callback invoked when the player clicks the "Save Menu" button.
+   * Callback invoked when the player clicks the "Save / Load" button.
    * Typically opens the full `VnSaveMenu` overlay.
    */
   onOpenMenu: () => void
+
+  /**
+   * When `true` (default), renders the "Save / Load" button that opens the
+   * slot menu. Set to `false` to hide the button, e.g. in scenes where
+   * saving should be disabled.
+   */
+  showSlotMenu?: boolean
 }
 
 const BAR_STYLE: React.CSSProperties = {
@@ -50,7 +57,7 @@ const BTN_STYLE: React.CSSProperties = {
 }
 
 /**
- * A slim horizontal controls bar that exposes quick-save and menu-open
+ * A slim horizontal controls bar that exposes quick-save and slot-menu
  * actions without obscuring the stage or interfering with click-to-advance.
  *
  * The container uses `pointerEvents: none` so clicks on the empty strip
@@ -63,13 +70,14 @@ const BTN_STYLE: React.CSSProperties = {
  *   saveManager={engine.saveManager}
  *   getState={() => engine.getState()}
  *   onOpenMenu={() => setMenuOpen(true)}
+ *   showSlotMenu={true}
  * />
  * ```
  *
  * @param props - {@link SaveControlsBarProps}
- * @returns A React element with the Quick Save and Save Menu buttons.
+ * @returns A React element with the Quick Save and (optionally) Save / Load buttons.
  */
-export function SaveControlsBar({ saveManager, getState, onOpenMenu }: SaveControlsBarProps): React.ReactElement {
+export function SaveControlsBar({ saveManager, getState, onOpenMenu, showSlotMenu = true }: SaveControlsBarProps): React.ReactElement {
   function handleQuickSave(e: React.MouseEvent) {
     e.stopPropagation()
     quickSave(saveManager, getState)
@@ -93,15 +101,17 @@ export function SaveControlsBar({ saveManager, getState, onOpenMenu }: SaveContr
       },
       'Quick Save',
     ),
-    createElement(
-      'button',
-      {
-        type: 'button',
-        style: BTN_STYLE,
-        onClick: handleOpenMenu,
-        'aria-label': 'Open save menu',
-      },
-      'Save Menu',
-    ),
+    showSlotMenu
+      ? createElement(
+          'button',
+          {
+            type: 'button',
+            style: BTN_STYLE,
+            onClick: handleOpenMenu,
+            'aria-label': 'Open save menu',
+          },
+          'Save / Load',
+        )
+      : null,
   )
 }
