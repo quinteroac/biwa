@@ -83,7 +83,33 @@ const GLOBAL_CSS = `
   }
 `
 
-export function VnStage({ engine }: { engine: GameEngine }) {
+/**
+ * Props accepted by {@link VnStage}.
+ */
+export interface VnStageProps {
+  /** The game engine instance to drive this stage. */
+  engine: GameEngine
+
+  /**
+   * When `true` (default), the "Save / Load" slot-menu button is shown in
+   * the controls bar. Set to `false` to remove it from the DOM entirely.
+   */
+  showSlotMenu?: boolean
+
+  /**
+   * When `true` (default), the "Quick Save" button is shown in the controls
+   * bar. Set to `false` to remove it from the DOM entirely.
+   */
+  showQuickSave?: boolean
+
+  /**
+   * When `true` (default), the "Auto Save" toggle is shown in the controls
+   * bar. Set to `false` to remove it from the DOM entirely.
+   */
+  showAutoSave?: boolean
+}
+
+export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, showAutoSave = true }: VnStageProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [scene, setScene]           = useState<SceneState | null>(null)
   const [characters, setCharacters] = useState<Map<string, CharacterState>>(new Map())
@@ -253,6 +279,10 @@ export function VnStage({ engine }: { engine: GameEngine }) {
               saveManager={engine.saveManager}
               getState={() => engine.getState()}
               onOpenMenu={() => setMenuOpen(true)}
+              showSlotMenu={showSlotMenu}
+              showQuickSave={showQuickSave}
+              showAutoSave={showAutoSave}
+              eventBus={engine.bus}
             />
           )}
         </div>

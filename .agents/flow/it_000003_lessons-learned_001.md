@@ -71,3 +71,20 @@
 - `SaveControlsBar` now has three independent visibility props: `showQuickSave`, `showSlotMenu`, `showAutoSave` — all default to `true`.
 - Pass `eventBus={engine.eventBus}` when mounting `SaveControlsBar` in a live game context for auto-save to function.
 - The `localStorage` key `vn:autoSave` is global (not per-game-id), intentionally, since auto-save preference is a player-level setting.
+
+## US-005 — Developer can configure which controls are visible at mount time
+
+**Summary:** Added `showSlotMenu?`, `showQuickSave?`, and `showAutoSave?` optional boolean props (all defaulting to `true`) to `VnStage`. These are forwarded directly to `SaveControlsBar`, meaning developers can now pass `<VnStage engine={engine} showQuickSave={false} />` to hide individual controls without mounting `SaveControlsBar` separately.
+
+**Key Decisions:**
+- Introduced a `VnStageProps` interface (exported) to hold the engine + three visibility props, replacing the inline `{ engine: GameEngine }` type.
+- Defaults of `true` via destructuring (`showSlotMenu = true` etc.) preserve backward compatibility — no existing call sites need updating.
+- Also forwarded `eventBus={engine.bus}` to `SaveControlsBar` at the same time, since that prop existed on `SaveControlsBar` but was previously not wired from `VnStage`.
+
+**Pitfalls Encountered:**
+- `VnStage` only renders `SaveControlsBar` when `dialog !== null` (dialog-gated). In SSR (`renderToString`), `useEffect` doesn't run and state stays at its initial value (`dialog = null`), so `SaveControlsBar` never appears in the SSR snapshot. Tests for AC02/AC03 must therefore target `SaveControlsBar` directly rather than via VnStage's rendered output.
+
+**Useful Context for Future Agents:**
+- `VnStage` now also passes `eventBus={engine.bus}` to `SaveControlsBar`. Previously this was omitted, meaning auto-save would not function even when `SaveControlsBar` was rendered from VnStage.
+- The `VnStageProps` interface is exported from `VnStage.tsx` — use it if you need to type a wrapper or higher-order component around `VnStage`.
+- For SSR-compatible tests of VnStage's prop forwarding, test `SaveControlsBar` directly with the same prop values; the forwarding is validated by TypeScript's strict checking at compile time.
