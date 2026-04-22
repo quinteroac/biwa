@@ -1,0 +1,89 @@
+/**
+ * VnStartMenu
+ *
+ * Displayed by VnApp before VnStage mounts. Shows the game title and lets the
+ * player choose an initial action (e.g. Start). Only after the player selects
+ * an action does VnStage mount and engine.start() get called.
+ */
+
+export interface VnStartMenuProps {
+  /** The game title shown prominently on screen. */
+  title: string
+  /** Called when the player chooses to start the game. */
+  onStart: () => void
+}
+
+const MENU_STYLES = {
+  wrapper: {
+    position: 'fixed' as const,
+    inset: 0,
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'linear-gradient(160deg, #0a0014 0%, #1a0030 55%, #0d001e 100%)',
+    fontFamily: 'var(--vn-font, "Georgia", serif)',
+    color: '#e2e8f0',
+    userSelect: 'none' as const,
+  },
+  decorLine: {
+    width: '2px',
+    height: '80px',
+    background: 'linear-gradient(to bottom, transparent, var(--vn-accent, #c084fc), transparent)',
+    marginBottom: '2.5rem',
+  },
+  title: {
+    fontSize: 'clamp(2rem, 6vw, 3.75rem)',
+    fontWeight: 'normal' as const,
+    letterSpacing: '0.08em',
+    textAlign: 'center' as const,
+    color: 'var(--vn-accent, #c084fc)',
+    textShadow: '0 0 48px rgba(192, 132, 252, 0.45), 0 2px 8px rgba(0,0,0,0.8)',
+    marginBottom: '3.5rem',
+    lineHeight: 1.2,
+    maxWidth: '80vw',
+  },
+  button: {
+    padding: '0.75rem 2.5rem',
+    fontSize: '1rem',
+    letterSpacing: '0.12em',
+    textTransform: 'uppercase' as const,
+    background: 'transparent',
+    color: 'var(--vn-accent, #c084fc)',
+    border: '1px solid var(--vn-accent, #c084fc)',
+    borderRadius: '2px',
+    cursor: 'pointer',
+    fontFamily: 'var(--vn-font, "Georgia", serif)',
+    transition: 'background 0.2s, color 0.2s',
+  },
+}
+
+export function VnStartMenu({ title, onStart }: VnStartMenuProps) {
+  return (
+    <div style={MENU_STYLES.wrapper} data-testid="vn-start-menu">
+      <div style={MENU_STYLES.decorLine} aria-hidden="true" />
+
+      <h1 style={MENU_STYLES.title} data-testid="vn-start-menu-title">
+        {title}
+      </h1>
+
+      <button
+        style={MENU_STYLES.button}
+        onClick={onStart}
+        data-testid="vn-start-menu-start"
+        onMouseEnter={e => {
+          const btn = e.currentTarget
+          btn.style.background = 'var(--vn-accent, #c084fc)'
+          btn.style.color = '#0a0014'
+        }}
+        onMouseLeave={e => {
+          const btn = e.currentTarget
+          btn.style.background = 'transparent'
+          btn.style.color = 'var(--vn-accent, #c084fc)'
+        }}
+      >
+        Start
+      </button>
+    </div>
+  )
+}

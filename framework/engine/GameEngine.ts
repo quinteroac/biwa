@@ -63,6 +63,9 @@ export class GameEngine {
   get state(): EngineState { return this.#state }
   get data(): GameData { return this.#data }
 
+  /** The game title from the loaded config. */
+  get title(): string { return this.#config.title }
+
   /** Expose the internal SaveManager instance for UI components. */
   get saveManager(): SaveManager { return this.#saveManager }
 
