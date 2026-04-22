@@ -7,6 +7,7 @@ import { MinigameRegistry } from '../minigames/MinigameRegistry.ts'
 import { BgmController } from './BgmController.ts'
 import { SfxController } from './SfxController.ts'
 import { AmbienceController } from './AmbienceController.ts'
+import { VoiceController } from './VoiceController.ts'
 import type { GameSaveState } from '../types/save.d.ts'
 import type { GameConfig } from '../types/game-config.d.ts'
 
@@ -42,6 +43,7 @@ export class GameEngine {
   #bgm: BgmController
   #sfx: SfxController
   #ambience: AmbienceController
+  #voice: VoiceController
   #currentSceneId: string | null = null
   #pendingChoices: ReturnType<ScriptRunner['choices']['slice']> | null = null
   #autoAdvance = false
@@ -53,6 +55,7 @@ export class GameEngine {
     this.#bgm = new BgmController(this.#bus)
     this.#sfx = new SfxController(this.#bus)
     this.#ambience = new AmbienceController(this.#bus)
+    this.#voice = new VoiceController(this.#bus)
   }
 
   static async init(config: GameConfig): Promise<GameEngine> {
@@ -250,6 +253,9 @@ export class GameEngine {
           break
         case 'ambience':
           this.#bus.emit('engine:ambience', tag)
+          break
+        case 'voice':
+          this.#bus.emit('engine:voice', tag)
           break
         case 'character':
           this.#bus.emit('engine:character', tag)
