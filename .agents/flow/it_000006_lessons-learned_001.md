@@ -18,3 +18,20 @@
 - The `TagParser` (and the identical inline parser in `ScriptRunner`) converts `# bgm: play, src:audio/theme.mp3, loop:true, volume:0.8` into `{ type: 'bgm', id: 'play', src: 'audio/theme.mp3', loop: 'true', volume: '0.8' }` — all values are strings.
 - The first positional token after the type colon becomes `id`; subsequent `key:value` tokens become direct properties on the command.
 - `GameEngine` already emits `engine:sfx` and `engine:ambience` events the same way — a `SfxController` and `AmbienceController` can follow the exact same pattern as `BgmController`.
+
+## US-002 — Developer can control SFX via Ink tags
+
+**Summary:** Implemented `SfxController` in `framework/engine/SfxController.ts` that subscribes to `engine:sfx` EventBus events. Handles `play`, `stop`, and `volume` commands using `HTMLAudioElement`. Wired into `GameEngine` constructor alongside `BgmController`. Tests cover all acceptance criteria using the same `globalThis.Audio` stub pattern from US-001.
+
+**Key Decisions:**
+- `SfxController` is a direct structural copy of `BgmController` — same private fields, same three command handlers, same `destroy()` pattern. Only the event channel (`engine:sfx`) and log prefix (`[SfxController]`) differ.
+- `loop` defaults to `false` when the `loop` param is omitted (AC02), consistent with standard `HTMLAudioElement` behaviour.
+- `GameEngine` already routed `engine:sfx` events — only the consumer class was needed.
+
+**Pitfalls Encountered:**
+- None — the BgmController pattern transferred cleanly. Reusing the same test stub setup worked without modification.
+
+**Useful Context for Future Agents:**
+- An `AmbienceController` can be created with the exact same pattern targeting `engine:ambience`.
+- SFX `play` stops any previously playing SFX before starting the new one (single-channel behaviour). If multi-channel SFX is required in future, the architecture would need to change.
+- All tag values arrive as strings from the TagParser; `parseFloat(String(...))` handles both string and boolean coercions safely.
