@@ -1,7 +1,6 @@
 const IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'])
-const AUDIO_EXTS = new Set(['mp3', 'ogg', 'wav', 'webm'])
 
-type LoadedAsset = HTMLImageElement | HTMLAudioElement
+type LoadedAsset = HTMLImageElement
 
 export class AssetLoader {
   #cache = new Map<string, LoadedAsset>()
@@ -31,11 +30,6 @@ export class AssetLoader {
         img.onload = () => { this.#cache.set(resolved, img); resolve(img) }
         img.onerror = reject
         img.src = resolved
-      } else if (AUDIO_EXTS.has(ext)) {
-        const audio = new Audio()
-        audio.oncanplaythrough = () => { this.#cache.set(resolved, audio); resolve(audio) }
-        audio.onerror = reject
-        audio.src = resolved
       } else {
         reject(new Error(`Unsupported asset type: ${ext}`))
       }

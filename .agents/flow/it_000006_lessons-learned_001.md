@@ -68,3 +68,18 @@
 **Useful Context for Future Agents:**
 - All four audio controllers (BGM, SFX, Ambience, Voice) now follow the same pattern. Any new audio channel can be added by: (1) create a new `XxxController.ts` following the same structure, (2) add `case 'xxx':` + `this.#bus.emit('engine:xxx', tag)` in `GameEngine.#processTags`, (3) add a field, import, and constructor call in `GameEngine`.
 - Voice-specific: the tag syntax omits `loop` — it is always `false`. Volume defaults to `1.0` when omitted.
+
+## US-005 — Dead audio code is removed from AssetLoader
+
+**Summary:** Removed `AUDIO_EXTS` constant, the `HTMLAudioElement` branch in `#loadOne`, and narrowed `LoadedAsset` from `HTMLImageElement | HTMLAudioElement` to `HTMLImageElement` only. No call sites were passing audio URLs to `AssetLoader`. Added `framework/__tests__/AssetLoader.test.ts` covering all ACs.
+
+**Key Decisions:**
+- Change was purely subtractive — no new logic needed. The audio branch simply fell out, leaving the image path and the `Unsupported asset type` rejection.
+- Tests verify: image URLs resolve (AC01–AC03), audio extensions reject with the unsupported-type error (AC02), and `get()` returns `undefined` for uncached audio URLs (AC04).
+
+**Pitfalls Encountered:**
+- The `FakeImage` stub must use `Object.defineProperty` on the returned plain object (not a class instance) to intercept the `src` setter and fire `onload`. Using a class with a setter on an instance property doesn't work because Bun's test environment sees `new Image()` calling the stub constructor — the returned value is what the code works with, so the define must happen on that object directly.
+
+**Useful Context for Future Agents:**
+- `AssetLoader` now handles images only. Any future audio preloading should go through `AudioManager` or one of the audio controllers (BgmController, SfxController, etc.).
+- The `Image` stub pattern (plain object + `Object.defineProperty` for `src`) is the correct approach for Bun test environments without a DOM.
