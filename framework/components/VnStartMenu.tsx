@@ -16,8 +16,14 @@ export interface VnStartMenuProps {
   /**
    * Whether there is at least one existing save slot. When `true`, clicking
    * "New Game" first shows an inline confirmation before calling `onStart`.
+   * The "Continue" button is also enabled when `true`.
    */
   hasSaves?: boolean
+  /**
+   * Called when the player clicks "Continue". Only invoked when `hasSaves` is
+   * `true`. If omitted the button is still rendered but will be disabled.
+   */
+  onContinue?: () => void
 }
 
 const MENU_STYLES = {
@@ -93,9 +99,28 @@ const MENU_STYLES = {
     fontFamily: 'var(--vn-font, "Georgia", serif)',
     transition: 'background 0.2s, color 0.2s',
   },
+  buttonDisabled: {
+    padding: '0.75rem 2.5rem',
+    fontSize: '1rem',
+    letterSpacing: '0.12em',
+    textTransform: 'uppercase' as const,
+    background: 'transparent',
+    color: 'var(--vn-accent, #c084fc)',
+    border: '1px solid var(--vn-accent, #c084fc)',
+    borderRadius: '2px',
+    cursor: 'not-allowed',
+    fontFamily: 'var(--vn-font, "Georgia", serif)',
+    opacity: 0.35,
+  },
+  menuButtons: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    alignItems: 'center',
+    gap: '0.875rem',
+  },
 }
 
-export function VnStartMenu({ title, onStart, hasSaves = false }: VnStartMenuProps) {
+export function VnStartMenu({ title, onStart, hasSaves = false, onContinue }: VnStartMenuProps) {
   const [confirming, setConfirming] = useState(false)
 
   function handleNewGame() {
@@ -165,23 +190,54 @@ export function VnStartMenu({ title, onStart, hasSaves = false }: VnStartMenuPro
           </div>
         </div>
       ) : (
-        <button
-          style={MENU_STYLES.button}
-          onClick={handleNewGame}
-          data-testid="vn-start-menu-start"
-          onMouseEnter={e => {
-            const btn = e.currentTarget
-            btn.style.background = 'var(--vn-accent, #c084fc)'
-            btn.style.color = '#0a0014'
-          }}
-          onMouseLeave={e => {
-            const btn = e.currentTarget
-            btn.style.background = 'transparent'
-            btn.style.color = 'var(--vn-accent, #c084fc)'
-          }}
-        >
-          New Game
-        </button>
+        <div style={MENU_STYLES.menuButtons}>
+          <button
+            style={MENU_STYLES.button}
+            onClick={handleNewGame}
+            data-testid="vn-start-menu-start"
+            onMouseEnter={e => {
+              const btn = e.currentTarget
+              btn.style.background = 'var(--vn-accent, #c084fc)'
+              btn.style.color = '#0a0014'
+            }}
+            onMouseLeave={e => {
+              const btn = e.currentTarget
+              btn.style.background = 'transparent'
+              btn.style.color = 'var(--vn-accent, #c084fc)'
+            }}
+          >
+            New Game
+          </button>
+
+          {hasSaves ? (
+            <button
+              style={MENU_STYLES.button}
+              onClick={onContinue}
+              data-testid="vn-start-menu-continue"
+              onMouseEnter={e => {
+                const btn = e.currentTarget
+                btn.style.background = 'var(--vn-accent, #c084fc)'
+                btn.style.color = '#0a0014'
+              }}
+              onMouseLeave={e => {
+                const btn = e.currentTarget
+                btn.style.background = 'transparent'
+                btn.style.color = 'var(--vn-accent, #c084fc)'
+              }}
+            >
+              Continue
+            </button>
+          ) : (
+            <button
+              style={MENU_STYLES.buttonDisabled}
+              disabled
+              data-testid="vn-start-menu-continue"
+              aria-disabled="true"
+            >
+              Continue
+            </button>
+          )}
+        </div>
       )}
     </div>
   )

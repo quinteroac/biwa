@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { VnStage } from './VnStage.tsx'
 import { VnStartMenu } from './VnStartMenu.tsx'
 import type { GameEngine } from '../engine/GameEngine.ts'
+import type { GameSaveState } from '../types/save.d.ts'
 
 interface VnAppProps {
   engine: GameEngine
@@ -16,18 +17,39 @@ interface VnAppProps {
  */
 function VnApp({ engine }: VnAppProps) {
   const [started, setStarted] = useState(false)
+  const [resumeSave, setResumeSave] = useState<GameSaveState | null>(null)
 
   const hasSaves = engine.saveManager.listSlots().length > 0
 
   const handleStart = useCallback(() => {
+    setResumeSave(null)
     setStarted(true)
   }, [])
 
+  const handleContinue = useCallback(() => {
+    const slots = engine.saveManager.listSlots()
+    if (slots.length === 0) return
+    const mostRecent = slots.reduce((prev, curr) =>
+      curr.meta.timestamp > prev.meta.timestamp ? curr : prev
+    )
+    const loaded = engine.saveManager.load(mostRecent.slot)
+    if (!loaded) return
+    setResumeSave(loaded.state)
+    setStarted(true)
+  }, [engine])
+
   if (!started) {
-    return <VnStartMenu title={engine.title} onStart={handleStart} hasSaves={hasSaves} />
+    return (
+      <VnStartMenu
+        title={engine.title}
+        onStart={handleStart}
+        hasSaves={hasSaves}
+        onContinue={handleContinue}
+      />
+    )
   }
 
-  return <VnStage engine={engine} />
+  return <VnStage engine={engine} resumeFrom={resumeSave ?? undefined} />
 }
 
 /**

@@ -7,6 +7,7 @@ import { VnTransition } from './VnTransition.tsx'
 import { VnSaveMenu } from './VnSaveMenu.tsx'
 import { SaveControlsBar } from './SaveControlsBar.tsx'
 import type { GameEngine } from '../engine/GameEngine.ts'
+import type { GameSaveState } from '../types/save.d.ts'
 import type { DialogOptions, VnDialogHandle } from './VnDialog.tsx'
 import type { StepChoice } from '../engine/ScriptRunner.ts'
 
@@ -103,13 +104,13 @@ export interface VnStageProps {
   showQuickSave?: boolean
 
   /**
-   * When `true` (default), the "Auto Save" toggle is shown in the controls
-   * bar. Set to `false` to remove it from the DOM entirely.
+   * When provided, the stage resumes from this saved game state instead of
+   * calling `engine.start()`. Used by the "Continue" flow in {@link VnApp}.
    */
-  showAutoSave?: boolean
+  resumeFrom?: GameSaveState
 }
 
-export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, showAutoSave = true }: VnStageProps) {
+export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, showAutoSave = true, resumeFrom }: VnStageProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [scene, setScene]           = useState<SceneState | null>(null)
   const [characters, setCharacters] = useState<Map<string, CharacterState>>(new Map())
@@ -169,10 +170,14 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
       bus.on<{ id: string } & Record<string, unknown>>('engine:ambience', ({ id, ...data }) => audio.playAmbience(id, data as { file?: string; volume?: number })),
     ]
 
-    engine.start()
+    if (resumeFrom) {
+      engine.restoreState(resumeFrom)
+    } else {
+      engine.start()
+    }
 
     return () => unsubs.forEach(fn => fn())
-  }, [engine])
+  }, [engine, resumeFrom])
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {

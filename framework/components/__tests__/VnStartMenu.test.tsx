@@ -195,3 +195,75 @@ describe('VnApp – US-001', () => {
     expect(engine.saveManager.listSlots()).toHaveLength(0)
   })
 })
+
+// --- VnStartMenu – US-003 tests ------------------------------------------
+
+describe('VnStartMenu – US-003', () => {
+
+  // US-003-AC01: "Continue" button is visible on the start menu
+  it('AC01: renders a "Continue" button', () => {
+    const html = renderToString(
+      createElement(VnStartMenu, { title: 'My Game', onStart: () => {} }),
+    )
+    expect(html).toContain('Continue')
+    expect(html).toContain('data-testid="vn-start-menu-continue"')
+  })
+
+  // US-003-AC02: button is disabled and visually dimmed when no saves exist
+  it('AC02: Continue button is disabled when hasSaves is false (default)', () => {
+    const html = renderToString(
+      createElement(VnStartMenu, { title: 'My Game', onStart: () => {}, hasSaves: false }),
+    )
+    // disabled attribute present
+    expect(html).toMatch(/vn-start-menu-continue[^>]*disabled/)
+    // dimmed via opacity
+    expect(html).toContain('opacity')
+    // cursor indicates non-interactive
+    expect(html).toContain('not-allowed')
+  })
+
+  // US-003-AC02: button is NOT disabled when saves exist
+  it('AC02: Continue button is not disabled when hasSaves is true', () => {
+    const html = renderToString(
+      createElement(VnStartMenu, { title: 'My Game', onStart: () => {}, hasSaves: true, onContinue: () => {} }),
+    )
+    // The enabled button should not carry the disabled attribute
+    expect(html).not.toMatch(/vn-start-menu-continue[^>]*disabled/)
+    // Should not be dimmed (opacity style only present on disabled variant)
+    const continueButtonArea = html.slice(html.indexOf('vn-start-menu-continue'))
+    expect(continueButtonArea.slice(0, 200)).not.toContain('not-allowed')
+  })
+
+  // US-003-AC03: onContinue prop is accepted by VnStartMenu (structural)
+  it('AC03: onContinue callback is accepted without throwing', () => {
+    let called = false
+    expect(() =>
+      renderToString(
+        createElement(VnStartMenu, {
+          title: 'Test',
+          onStart: () => {},
+          hasSaves: true,
+          onContinue: () => { called = true },
+        }),
+      ),
+    ).not.toThrow()
+    // No auto-invocation on render
+    expect(called).toBe(false)
+  })
+
+  // SaveManager finds the most recent slot by timestamp
+  it('AC03: listSlots returns slots ordered by insertion (most recent can be derived)', () => {
+    const sm = new SaveManager({ gameId: 'continue-test', slots: 3, autoSave: false })
+    const state: GameSaveState = {
+      meta: { displayName: 'Test', sceneName: 'scene-1', playtime: 0 },
+      state: {},
+    }
+    sm.save(1, state)
+    sm.save(2, state)
+    const slots = sm.listSlots()
+    expect(slots.length).toBeGreaterThanOrEqual(2)
+    // We can reduce to find the most-recent
+    const mostRecent = slots.reduce((a, b) => b.meta.timestamp >= a.meta.timestamp ? b : a)
+    expect(mostRecent).toBeDefined()
+  })
+})

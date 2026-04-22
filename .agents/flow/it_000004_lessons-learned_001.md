@@ -38,3 +38,22 @@
 - The confirmation prompt elements use `data-testid="vn-new-game-confirm"`, `"vn-confirm-new-game"`, and `"vn-cancel-new-game"` — use these for any future E2E or jsdom tests.
 - `SaveManager.listSlots()` iterates over all configured slots + `'auto'` and calls `localStorage.getItem` for each. It is safe to call at render time in a browser environment; the localStorage stub in the test file covers this in tests.
 - If a future story adds more buttons to `VnStartMenu` (e.g. "Continue", "Load Game"), the `hasSaves` prop is already in place to conditionally enable them.
+
+## US-003 — Player can continue a saved game from the menu
+
+**Summary:** Added a "Continue" button to `VnStartMenu`, wired `VnApp` to find the most recent save slot and pass the `GameSaveState` to `VnStage` via a new `resumeFrom` prop, and updated `VnStage` to call `engine.restoreState()` instead of `engine.start()` when a save is provided.
+
+**Key Decisions:**
+- Added `onContinue?: () => void` and the disabled Continue button to `VnStartMenu`. Both New Game and Continue sit in a `menuButtons` flex column (not an either/or render branch) so they're always visible together.
+- `VnApp` holds `resumeSave: GameSaveState | null` state. `handleContinue` uses `listSlots()` + `reduce` to find the most-recent slot by `meta.timestamp`, then calls `saveManager.load()` to get the typed `SaveSlot` (whose `.state` is `GameSaveState`).
+- `VnStage` received a new optional `resumeFrom?: GameSaveState` prop. When set, `useEffect` calls `engine.restoreState(resumeFrom)` instead of `engine.start()`. The dependency array includes `resumeFrom` to satisfy exhaustive-deps rules.
+- The disabled Continue button uses a separate `buttonDisabled` style object (opacity 0.35, cursor not-allowed) rather than an inline conditional — keeps the enabled/disabled styles clear and avoids a dynamic style object merge.
+
+**Pitfalls Encountered:**
+- `VnStage` already called `engine.start()` unconditionally inside its `useEffect`. If `restoreState` were called *before* mounting `VnStage` (in `VnApp`), `engine.start()` would then double-advance the story. Passing `resumeFrom` into `VnStage` and switching the call there is the only safe approach.
+- The SSR test for the "disabled" button needed a regex that accounts for other attributes between `data-testid` and `disabled` — `/vn-start-menu-continue[^>]*disabled/` handles this robustly.
+
+**Useful Context for Future Agents:**
+- `data-testid="vn-start-menu-continue"` is on *both* the enabled and disabled Continue button variants — use this for future E2E or jsdom tests.
+- `SaveManager.listSlots()` returns `SlotInfo[]` with `meta.timestamp` for each occupied slot. Sorting/reducing by `meta.timestamp` is the canonical way to find the most recently written save.
+- `engine.restoreState(state)` internally sets engine state to `DIALOG` and calls `#advance()` — it is a complete replacement for `engine.start()` when resuming.
