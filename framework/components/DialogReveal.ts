@@ -37,5 +37,6 @@ export function createDialogRevealPlan(text: string, advanceMode: DialogOptions[
 export function getDialogCompletionAdvanceMode(
   advanceMode: DialogOptions['advanceMode'],
 ): DialogOptions['advanceMode'] | null {
-  return advanceMode === 'choices' ? null : advanceMode
+  void advanceMode
+  return null
 }

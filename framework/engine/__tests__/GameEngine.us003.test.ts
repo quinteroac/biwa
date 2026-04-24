@@ -27,6 +27,7 @@ interface Deferred<T> {
 
 interface DialogPayload {
   text: string
+  advanceMode: 'none' | 'next' | 'choices'
 }
 
 interface ChoicesPayload {
@@ -273,5 +274,31 @@ describe('GameEngine - US-003 duplicate advance guard', () => {
     expect(scenes).toEqual(['cafe_exterior'])
     expect(dialogs).toEqual(['Tagged line'])
     expect(engine.state).toBe('CHOICES')
+  })
+
+  it('does not mark post-choice dialog for automatic advance', async () => {
+    const engine = await createEngine('Pick a path.\n* [First]\n  After choice\n  Next manual line\n')
+    const dialogs: DialogPayload[] = []
+    let choicesCount = 0
+
+    engine.bus.on<DialogPayload>('engine:dialog', payload => {
+      dialogs.push(payload)
+    })
+    engine.bus.on<ChoicesPayload>('engine:choices', payload => {
+      choicesCount = payload.choices.length
+    })
+
+    engine.start()
+    await waitUntil(() => dialogs.length === 1)
+    engine.advance()
+    await waitUntil(() => choicesCount === 1)
+
+    engine.choose(0)
+    await waitUntil(() => dialogs.length === 2)
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    expect(dialogs.map(dialog => dialog.text)).toEqual(['Pick a path.', 'After choice'])
+    expect(dialogs[1]?.advanceMode).toBe('none')
+    expect(engine.state).toBe('DIALOG')
   })
 })

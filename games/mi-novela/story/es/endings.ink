@@ -1,6 +1,9 @@
 === endings ===
 # scene: cafe_exterior
 # bgm: finale
+# character: sara, exit
+# character: kai, exit
+# character: antagonist, exit
 
 { minigame_completed && minigame_score >= 500:
     -> ending_good

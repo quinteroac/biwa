@@ -12,6 +12,15 @@ interface AsepriteAtlas {
   }
 }
 
+interface CharacterLayer {
+  id: string
+  animation: {
+    type: string
+    sprites?: Record<string, string>
+  }
+  default: string
+}
+
 interface CharacterData {
   displayName?: string
   nameColor?: string
@@ -22,6 +31,7 @@ interface CharacterData {
     atlas?: string
     expressions?: Record<string, string>
   }
+  layers?: CharacterLayer[]
 }
 
 interface VnCharacterProps {
@@ -127,7 +137,9 @@ export function VnCharacter({ id, charData, position, expression, exiting, onExi
     return () => clearTimeout(timer)
   }, [exiting, id, onExited])
 
-  const anim = charData?.animation
+  const anim   = charData?.animation
+  const layers = charData?.layers
+
   let spriteSrc: string | null = null
   if (anim?.type === 'sprites' && anim.sprites) {
     const sprites = anim.sprites
@@ -169,6 +181,26 @@ export function VnCharacter({ id, charData, position, expression, exiting, onExi
           style={{ display: 'block', width: '100%', height: 'auto', userSelect: 'none' }}
         />
       )}
+      {layers && layers.length > 0 && (() => {
+        const layerImgs = layers.flatMap(layer => {
+          const sprites = layer.animation?.sprites
+          if (!sprites) return []
+          const path = sprites[expression] ?? sprites[layer.default] ?? Object.values(sprites)[0]
+          if (!path) return []
+          return [<img
+            key={layer.id}
+            src={`./assets/${path}`}
+            alt={`${charData?.displayName ?? id} - ${layer.id}`}
+            style={{ display: 'block', position: 'absolute', bottom: 0, left: 0, width: '100%', height: 'auto', userSelect: 'none' }}
+          />]
+        })
+        if (layerImgs.length === 0) return null
+        return (
+          <div style={{ position: 'relative', width: '100%', aspectRatio: '1 / 2' }}>
+            {layerImgs}
+          </div>
+        )
+      })()}
     </div>
   )
 }

@@ -1,0 +1,212 @@
+{
+  "goals": [
+    "Provide game developers with a ready-to-use volume control system (framework-level)",
+    "Support 4 independent audio channels: master, BGM, SFX, voice",
+    "Persist volume settings across sessions via `localStorage`",
+    "Offer a drop-in React component (`VnVolumeControl`) for start menus and overlays",
+    "Include a global mute toggle that restores previous levels on unmute"
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "VolumeController Module",
+      "description": "As a game developer, I want a `VolumeController` class that can set and get volume per channel so that I can control audio levels programmatically in my game.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "`VolumeController` class in `framework/engine/VolumeController.ts`"
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "Methods: `setVolume(channel, value)` and `getVolume(channel)` for channels: master, bgm, sfx, voice"
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "Volume values are normalized 0.0–1.0"
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "Setting volume on a channel applies it to all active audio sources in that channel"
+        },
+        {
+          "id": "US-001-AC05",
+          "text": "Throws if channel name is invalid"
+        },
+        {
+          "id": "US-001-AC06",
+          "text": "Typecheck / lint passes"
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Volume Persistence",
+      "description": "As a game developer, I want volume settings to persist across browser sessions so that players don't have to re-adjust volume every time they play.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "Volume settings saved to `localStorage` under key `vn:{gameId}:volume`"
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "Settings auto-load on `VolumeController` instantiation"
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "Default values: all channels at 1.0 (full volume), mute = false"
+        },
+        {
+          "id": "US-002-AC04",
+          "text": "Settings saved after every `setVolume` call"
+        },
+        {
+          "id": "US-002-AC05",
+          "text": "Typecheck / lint passes"
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "VnVolumeControl UI Component",
+      "description": "As a game developer, I want a `VnVolumeControl` React component with per-channel sliders so that I can add a volume settings UI to my game's start menu or overlay without building it from scratch.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-003-AC01",
+          "text": "`VnVolumeControl` component in `framework/components/VnVolumeControl.tsx`"
+        },
+        {
+          "id": "US-003-AC02",
+          "text": "Renders a slider (range input) for each channel: master, BGM, SFX, voice"
+        },
+        {
+          "id": "US-003-AC03",
+          "text": "Each slider shows channel label and current volume percentage"
+        },
+        {
+          "id": "US-003-AC04",
+          "text": "All sliders use CSS custom properties for styling (per theming convention)"
+        },
+        {
+          "id": "US-003-AC05",
+          "text": "Component accepts `onVolumeChange` callback prop"
+        },
+        {
+          "id": "US-003-AC06",
+          "text": "Visually verified in browser"
+        },
+        {
+          "id": "US-003-AC07",
+          "text": "Typecheck / lint passes"
+        }
+      ]
+    },
+    {
+      "id": "US-004",
+      "title": "Per-Channel Volume (Master, BGM, SFX, Voice)",
+      "description": "As a game developer, I want 4 independent audio channels (master, BGM, SFX, voice) so that players can fine-tune their audio experience (e.g., lower SFX while keeping BGM loud).",
+      "acceptanceCriteria": [
+        {
+          "id": "US-004-AC01",
+          "text": "4 channels defined in `framework/types/audio.d.ts` or equivalent type definition"
+        },
+        {
+          "id": "US-004-AC02",
+          "text": "Master volume acts as a multiplier on all other channels (effective volume = master × channel)"
+        },
+        {
+          "id": "US-004-AC03",
+          "text": "Changing one channel does not affect others"
+        },
+        {
+          "id": "US-004-AC04",
+          "text": "`VolumeController.getChannelNames()` returns the list of available channels"
+        },
+        {
+          "id": "US-004-AC05",
+          "text": "Ink tag `# volume <channel> <value>` is supported via TagParser (e.g. `# volume bgm 0.5`)"
+        },
+        {
+          "id": "US-004-AC06",
+          "text": "Typecheck / lint passes"
+        }
+      ]
+    },
+    {
+      "id": "US-005",
+      "title": "Mute Toggle",
+      "description": "As a game developer, I want a global mute toggle that silences all audio and restores previous levels when unmuted so that players can quickly silence the game without losing their volume configuration.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-005-AC01",
+          "text": "`VolumeController.setMuted(boolean)` and `VolumeController.isMuted()` methods"
+        },
+        {
+          "id": "US-005-AC02",
+          "text": "When muted, all channels output silence (volume effectively 0)"
+        },
+        {
+          "id": "US-005-AC03",
+          "text": "Previous per-channel volumes are preserved while muted"
+        },
+        {
+          "id": "US-005-AC04",
+          "text": "When unmuted, channels restore to their pre-mute levels"
+        },
+        {
+          "id": "US-005-AC05",
+          "text": "`VnVolumeControl` includes a mute button alongside the sliders"
+        },
+        {
+          "id": "US-005-AC06",
+          "text": "Mute state persists in `localStorage`"
+        },
+        {
+          "id": "US-005-AC07",
+          "text": "Visually verified in browser"
+        },
+        {
+          "id": "US-005-AC08",
+          "text": "Typecheck / lint passes"
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "`VolumeController` must be a singleton accessible via `GameEngine.getVolumeController()`"
+    },
+    {
+      "id": "FR-2",
+      "description": "Volume values are floating-point numbers in range [0.0, 1.0]; values outside range are clamped"
+    },
+    {
+      "id": "FR-3",
+      "description": "All volume operations must emit events on the `EventBus` (e.g., `volume:changed`, `volume:muted`)"
+    },
+    {
+      "id": "FR-4",
+      "description": "`localStorage` key must follow the existing pattern: `vn:{gameId}:volume`"
+    },
+    {
+      "id": "FR-5",
+      "description": "`VnVolumeControl` must be themeable via CSS custom properties (no hardcoded colors or fonts)"
+    },
+    {
+      "id": "FR-6",
+      "description": "Mute must be a binary override — individual channel volumes remain unchanged internally while muted"
+    },
+    {
+      "id": "FR-7",
+      "description": "`VolumeController` must handle the case where no audio is loaded (no-op, no errors)"
+    },
+    {
+      "id": "FR-8",
+      "description": "Ink tag `# volume <channel> <value>` must be parsed by TagParser and routed to `VolumeController.setVolume(channel, value)`"
+    },
+    {
+      "id": "FR-9",
+      "description": "Invalid Ink volume tags (bad channel, out-of-range value) must log a warning and not crash"
+    }
+  ]
+}

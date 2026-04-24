@@ -6,8 +6,8 @@ describe('DialogReveal - US-002 delayed choices', () => {
     expect(getDialogCompletionAdvanceMode('choices')).toBeNull()
   })
 
-  it('AC03: non-choice completion modes keep their previous callback behavior', () => {
-    expect(getDialogCompletionAdvanceMode('next')).toBe('next')
-    expect(getDialogCompletionAdvanceMode('none')).toBe('none')
+  it('AC03: non-choice completion modes also wait for explicit advance input', () => {
+    expect(getDialogCompletionAdvanceMode('next')).toBeNull()
+    expect(getDialogCompletionAdvanceMode('none')).toBeNull()
   })
 })

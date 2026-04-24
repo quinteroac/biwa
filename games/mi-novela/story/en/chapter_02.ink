@@ -42,6 +42,8 @@ Kai looks around the café for a way out. There isn't one.
 === chapter_02_window ===
 # scene: cafe_exterior
 # bgm: battle_theme
+# character: sara, exit
+# character: kai, exit
 
 In the window's reflection stands a figure that shouldn't be there.
 # character: antagonist, position: center, expression: neutral
@@ -52,6 +54,8 @@ In the window's reflection stands a figure that shouldn't be there.
 # scene: cafe_interior
 # bgm: battle_theme
 # character: antagonist, position: center, expression: menacing
+# character: sara, position: left, expression: neutral
+# character: kai, position: right, expression: neutral
 
 ???: Found you.
 

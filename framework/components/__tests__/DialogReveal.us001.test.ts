@@ -24,8 +24,8 @@ describe('DialogReveal - US-001 choice-preface dialog', () => {
     expect(getDialogCompletionAdvanceMode('choices')).toBeNull()
   })
 
-  it('AC04: non-choice completion modes remain unchanged', () => {
-    expect(getDialogCompletionAdvanceMode('none')).toBe('none')
-    expect(getDialogCompletionAdvanceMode('next')).toBe('next')
+  it('AC04: non-choice completion modes also require player input', () => {
+    expect(getDialogCompletionAdvanceMode('none')).toBeNull()
+    expect(getDialogCompletionAdvanceMode('next')).toBeNull()
   })
 })

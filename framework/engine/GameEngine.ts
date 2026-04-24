@@ -48,7 +48,6 @@ export class GameEngine {
   #currentSceneId: string | null = null
   #pendingChoices: ReturnType<ScriptRunner['choices']['slice']> | null = null
   #advanceInProgress = false
-  #autoAdvance = false
   #data: GameData = { characters: {}, scenes: {} }
 
   constructor(config: GameConfig) {
@@ -219,9 +218,7 @@ export class GameEngine {
 
       const advanceMode = !step.canContinue && step.hasChoices
         ? 'choices'
-        : this.#autoAdvance
-          ? 'next'
-          : 'none'
+        : 'none'
 
       if (!step.canContinue && step.hasChoices) {
         this.#pendingChoices = this.#runner.choices.slice()
@@ -234,7 +231,6 @@ export class GameEngine {
         canContinue: step.canContinue,
         advanceMode,
       })
-      this.#autoAdvance = false
     } else if (step.type === 'tags-only') {
       await this.#advance()
     }
@@ -335,7 +331,6 @@ export class GameEngine {
   #choose(index: number): void {
     this.#runner.choose(index)
     this.#setState(STATE.DIALOG)
-    this.#autoAdvance = true
     this.#requestAdvance()
   }
 
