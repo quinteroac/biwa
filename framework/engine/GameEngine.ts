@@ -47,6 +47,7 @@ export class GameEngine {
   #voice: VoiceController
   #currentSceneId: string | null = null
   #pendingChoices: ReturnType<ScriptRunner['choices']['slice']> | null = null
+  #advanceInProgress = false
   #autoAdvance = false
   #data: GameData = { characters: {}, scenes: {} }
 
@@ -106,7 +107,7 @@ export class GameEngine {
       this.#vars.restore(s['vars'] as Record<string, unknown>)
     }
     this.#setState(STATE.DIALOG)
-    void this.#advance()
+    this.#requestAdvance()
   }
 
   #setState(state: EngineState): void {
@@ -239,6 +240,14 @@ export class GameEngine {
     }
   }
 
+  #requestAdvance(): void {
+    if (this.#advanceInProgress) return
+    this.#advanceInProgress = true
+    void this.#advance().finally(() => {
+      this.#advanceInProgress = false
+    })
+  }
+
   async #processTags(tags: TagCommand[]): Promise<void> {
     for (const tag of tags) {
       switch (tag.type) {
@@ -327,7 +336,7 @@ export class GameEngine {
     this.#runner.choose(index)
     this.#setState(STATE.DIALOG)
     this.#autoAdvance = true
-    void this.#advance()
+    this.#requestAdvance()
   }
 
   start(): void {
@@ -335,7 +344,7 @@ export class GameEngine {
       this.#runner.reset()
     }
     this.#setState(STATE.DIALOG)
-    void this.#advance()
+    this.#requestAdvance()
   }
 
   advance(): void {
@@ -346,7 +355,7 @@ export class GameEngine {
       this.#setState(STATE.CHOICES)
       this.#bus.emit('engine:choices', { choices })
     } else {
-      void this.#advance()
+      this.#requestAdvance()
     }
   }
 

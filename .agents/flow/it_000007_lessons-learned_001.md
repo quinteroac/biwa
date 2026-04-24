@@ -19,3 +19,13 @@
 **Pitfalls Encountered:** The first manual browser script expected choices one input too early; the actual contract requires one input to reveal typing text and a later input to emit choices. Full `bun test` and broad `tsc --noEmit` still expose unrelated baseline failures in older UI tests and strict typing issues outside this story.
 
 **Useful Context for Future Agents:** Visual verification used the Spanish default story: after starting the game, Space reveals the first line, Enter advances to `Kai mira la entrada sin moverse.`, ArrowRight reveals that line, and a later click shows `Entrar al café` / `Seguir caminando`.
+
+## US-003 — Guard Against Duplicate Advances
+
+**Summary:** `GameEngine` now routes public advancement requests through a single in-flight guard so rapid clicks, key presses, auto-advance callbacks, transitions, and minigames cannot process concurrent story steps.
+
+**Key Decisions:** Kept duplicate requests as ignored rather than queued because the existing UI contract treats each completed dialog line as requiring a separate player action. Internal tag-only recursion still calls the private advance method directly so empty/tag-only Ink steps continue to collapse into the next visible result.
+
+**Pitfalls Encountered:** Minigame test fixtures should return `{}` unless the compiled Ink story declares variables for result keys; otherwise `ScriptRunner.setVariable()` throws when exporting undeclared result fields. Headless Firefox screenshots can capture a blank frame if taken before React mounts, so a delayed wrapper page was useful for browser verification.
+
+**Useful Context for Future Agents:** Dynamic imports with query strings give each engine test a fresh `GameEngine` singleton. The new `framework/types/inkjs-compiler.d.ts` declaration covers the existing `inkjs/compiler/*` runtime imports used by manager commands and the engine test fixture compiler.
