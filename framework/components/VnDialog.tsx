@@ -1,6 +1,5 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react'
-
-const TYPE_MS = 30
+import { DIALOG_TYPE_MS, createDialogRevealPlan, getDialogCompletionAdvanceMode } from './DialogReveal.ts'
 
 export interface DialogOptions {
   text: string
@@ -35,7 +34,8 @@ export const VnDialog = forwardRef<VnDialogHandle, VnDialogProps>(function VnDia
   const skip = useCallback(() => {
     if (!typingRef.current) return
     finishTyping()
-    onComplete(dialog?.advanceMode ?? 'none')
+    const completionAdvanceMode = getDialogCompletionAdvanceMode(dialog?.advanceMode ?? 'none')
+    if (completionAdvanceMode) onComplete(completionAdvanceMode)
   }, [finishTyping, dialog, onComplete])
 
   useImperativeHandle(ref, () => ({
@@ -47,14 +47,14 @@ export const VnDialog = forwardRef<VnDialogHandle, VnDialogProps>(function VnDia
     if (!dialog) return
 
     if (timerRef.current !== null) clearTimeout(timerRef.current)
-    const chars = [...dialog.text]
+    const plan = createDialogRevealPlan(dialog.text, dialog.advanceMode)
+    const chars = plan.characters
     charsRef.current = chars
-    setRevealedLen(0)
+    setRevealedLen(plan.initialRevealedLen)
 
-    if (dialog.advanceMode === 'choices') {
+    if (!plan.isTyping) {
       typingRef.current = false
-      setRevealedLen(chars.length)
-      onComplete(dialog.advanceMode)
+      if (plan.completionAdvanceMode) onComplete(plan.completionAdvanceMode)
       return
     }
 
@@ -65,12 +65,12 @@ export const VnDialog = forwardRef<VnDialogHandle, VnDialogProps>(function VnDia
       setRevealedLen(i)
       if (i >= chars.length) {
         typingRef.current = false
-        onComplete(dialog.advanceMode)
+        if (plan.completionAdvanceMode) onComplete(plan.completionAdvanceMode)
         return
       }
-      timerRef.current = setTimeout(tick, TYPE_MS)
+      timerRef.current = setTimeout(tick, DIALOG_TYPE_MS)
     }
-    timerRef.current = setTimeout(tick, TYPE_MS)
+    timerRef.current = setTimeout(tick, DIALOG_TYPE_MS)
 
     return () => {
       if (timerRef.current !== null) clearTimeout(timerRef.current)

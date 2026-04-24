@@ -48,11 +48,13 @@ export class ScriptRunner {
 
   #createStory(): void {
     if (!this.#storyJson) return
-    this.#story = new Story(this.#storyJson)
-    this.#story.onVariableChange = (name: string, value: unknown) => {
+    const story = new Story(this.#storyJson)
+    this.#story = story
+    const variableStory = story as Story & { onVariableChange?: (name: string, value: unknown) => void }
+    variableStory.onVariableChange = (name: string, value: unknown) => {
       this.#bus.emit('variable:change', { name, value })
     }
-    this.#story.BindExternalFunction('launch_minigame', (name: string) => {
+    story.BindExternalFunction('launch_minigame', (name: string) => {
       this.#pendingMinigame = name
     }, false)
   }
@@ -72,7 +74,7 @@ export class ScriptRunner {
       }
     }
 
-    const rawText = story.Continue()
+    const rawText = story.Continue() ?? ''
     const tags = story.currentTags ?? []
     const text = rawText.trim()
 
@@ -186,7 +188,7 @@ export class ScriptRunner {
   }
 
   getVariable(name: string): unknown {
-    return this.#story?.variablesState[name as keyof typeof this.#story.variablesState]
+    return (this.#story?.variablesState as Record<string, unknown> | undefined)?.[name]
   }
 
   setVariable(name: string, value: unknown): void {
