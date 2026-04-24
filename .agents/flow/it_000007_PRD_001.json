@@ -1,0 +1,137 @@
+{
+  "goals": [
+    "Ensure dialog that precedes choices is presented at the normal dialog pace instead of appearing and advancing instantly.",
+    "Ensure choices appear only after the preceding dialog is complete and the player confirms advancement.",
+    "Prevent duplicate advancement caused by rapid clicks, keyboard input, typing completion callbacks, or async engine work.",
+    "Preserve compatibility with existing Ink files, tags, game configuration, and game content."
+  ],
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Present Pre-Choice Dialog Normally",
+      "description": "As a framework dialog flow, I want dialog that precedes choices to use the standard typing/reveal behavior so that the player can read the line before the choices become available.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-001-AC01",
+          "text": "When a story step contains dialog followed by choices, the dialog text is not revealed instantly because of `advanceMode: 'choices'`."
+        },
+        {
+          "id": "US-001-AC02",
+          "text": "The dialog uses the same typing cadence and skip behavior as normal dialog lines."
+        },
+        {
+          "id": "US-001-AC03",
+          "text": "Skipping a typing dialog reveals the full line but does not immediately show choices unless the player advances again."
+        },
+        {
+          "id": "US-001-AC04",
+          "text": "Existing non-choice dialog behavior remains unchanged."
+        },
+        {
+          "id": "US-001-AC05",
+          "text": "Typecheck / lint passes."
+        },
+        {
+          "id": "US-001-AC06",
+          "text": "Visually verified in browser."
+        }
+      ]
+    },
+    {
+      "id": "US-002",
+      "title": "Show Choices Only After Player Confirmation",
+      "description": "As a framework dialog flow, I want choices to appear only after the player confirms that the preceding dialog can advance so that the player does not lose reading context before selecting an option.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-002-AC01",
+          "text": "When dialog has pending choices, the choices are stored until the player clicks or presses an accepted advance key after the dialog is fully revealed."
+        },
+        {
+          "id": "US-002-AC02",
+          "text": "Choices are not emitted from `engine:choices` automatically from a dialog completion callback."
+        },
+        {
+          "id": "US-002-AC03",
+          "text": "Click, Enter, Space, and ArrowRight reveal text first when typing, then show choices only on a later advance action."
+        },
+        {
+          "id": "US-002-AC04",
+          "text": "Existing Ink story files and tag/config formats require no changes."
+        },
+        {
+          "id": "US-002-AC05",
+          "text": "Typecheck / lint passes."
+        },
+        {
+          "id": "US-002-AC06",
+          "text": "Visually verified in browser."
+        }
+      ]
+    },
+    {
+      "id": "US-003",
+      "title": "Guard Against Duplicate Advances",
+      "description": "As a framework engine, I want a clear guard around advancement processing so that rapid input, callbacks, tags, transitions, or async work cannot skip dialog lines or process multiple steps concurrently.",
+      "acceptanceCriteria": [
+        {
+          "id": "US-003-AC01",
+          "text": "The engine ignores or queues duplicate advance requests while an advance operation is already in progress."
+        },
+        {
+          "id": "US-003-AC02",
+          "text": "Rapid repeated clicks or key presses do not skip multiple dialog lines."
+        },
+        {
+          "id": "US-003-AC03",
+          "text": "Advance requests are blocked while the engine is in non-dialog states such as `CHOICES`, `TRANSITION`, `MINIGAME`, or `ENDED`."
+        },
+        {
+          "id": "US-003-AC04",
+          "text": "Transition and minigame flows still complete and return control to dialog without deadlocking."
+        },
+        {
+          "id": "US-003-AC05",
+          "text": "Existing Ink story files and tag/config formats require no changes."
+        },
+        {
+          "id": "US-003-AC06",
+          "text": "Typecheck / lint passes."
+        },
+        {
+          "id": "US-003-AC07",
+          "text": "Visually verified in browser."
+        }
+      ]
+    }
+  ],
+  "functionalRequirements": [
+    {
+      "id": "FR-1",
+      "description": "The framework must remove the instant-complete behavior for dialog lines whose next step is choices."
+    },
+    {
+      "id": "FR-2",
+      "description": "The framework must keep pending choices hidden until the player explicitly advances after the preceding dialog is fully revealed."
+    },
+    {
+      "id": "FR-3",
+      "description": "The framework must preserve the current input contract: click, Enter, Space, and ArrowRight advance dialog, while choice selection remains handled by the choices UI."
+    },
+    {
+      "id": "FR-4",
+      "description": "The framework must prevent concurrent or duplicate calls into the engine advancement flow."
+    },
+    {
+      "id": "FR-5",
+      "description": "The framework must continue to process existing tags, transitions, minigames, audio events, saves, and end screens without requiring story or config migrations."
+    },
+    {
+      "id": "FR-6",
+      "description": "The implementation must stay within framework-level dialog/engine/UI flow files and must not require edits to `games/mi-novela` content."
+    },
+    {
+      "id": "FR-7",
+      "description": "The implementation must preserve existing public APIs unless a minimal internal API adjustment is required for the advance guard."
+    }
+  ]
+}
