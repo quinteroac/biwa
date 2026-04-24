@@ -19,3 +19,21 @@
 - Games can add this component to their start menu or settings overlay by importing `VnVolumeControl` and wiring `onVolumeChange` to a `VolumeController.setVolume()` call.
 - If the CSS variables need to be themed, games can set them via `game.config.ts → theme.cssVars` (e.g., `--vn-vol-track-fill: 'rgba(255,255,255,0.4)'`).
 - The component is designed to be self-contained — it does not depend on `GameEngine`, `EventBus`, or any engine pieces.
+
+## US-004 — Per-Channel Volume (Master, BGM, SFX, Voice)
+
+**Summary:** Implemented 4-channel volume control system with master multiplier, channel independence, `getChannelNames()` API, and Ink tag parsing for `# volume <channel> <value>`.
+
+**Key Decisions:**
+- Moved `AudioChannel` type to `framework/types/audio.d.ts` (co-located with `AudioCategory`) per project convention of types in `framework/types/*.d.ts`. VolumeController re-exports it via `export type { AudioChannel }` for backward compatibility.
+- `getChannelNames()` is a static method returning the frozen `#CHANNELS` array directly — no copy needed since the array is already `Object.freeze`'d.
+- Extended TagParser's no-colon branch to handle space-separated `volume <channel> <value>` format. This is type-specific: only the `volume` command gets special treatment; other space-separated tags continue returning bare `{ type }` as before.
+- The `value` in the parsed volume command is stored as a parsed float (`parseFloat`), not as a string — downstream consumers (e.g., GameEngine) can use it directly.
+
+**Pitfalls Encountered:**
+- Initial `export { AudioChannel }` caused TS1205 error with `verbatimModuleSyntax` — needed `export type { AudioChannel }` instead.
+- The project has many pre-existing TypeScript errors (import extension issues, exactOptionalPropertyTypes mismatches, manager CLI issues) unrelated to this story. Only the verbatim module syntax error on my re-export was new and needed fixing.
+
+**Useful Context for Future Agents:**
+- The controllers (BgmController, SfxController, VoiceController) currently manage volume independently via per-instance `audio.volume` assignments. They are not yet wired up to VolumeController. Future stories may need to integrate them so that VolumeController's effective volume (master × channel) is applied at playback time.
+- `AudioChannel` in audio.d.ts = `('master' | 'bgm' | 'sfx' | 'voice')` — note this differs from `AudioCategory` which includes `'ambience'` but excludes `'master'`. Use `AudioChannel` for volume control, `AudioCategory` for asset metadata.

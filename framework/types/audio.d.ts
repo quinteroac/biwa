@@ -1,4 +1,5 @@
 export type AudioCategory = 'bgm' | 'sfx' | 'ambience' | 'voice';
+export type AudioChannel = 'master' | 'bgm' | 'sfx' | 'voice';
 
 export interface AudioLayer {
   id: string;

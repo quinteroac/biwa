@@ -171,4 +171,54 @@ describe('VolumeController', () => {
     controller.setVolume('master', 0.01)
     expect(controller.getVolume('master')).toBeCloseTo(0.01, 2)
   })
+
+  // US-004-AC04: getChannelNames() returns available channels
+  it('AC04: getChannelNames() returns all four channels', () => {
+    const names = VolumeController.getChannelNames()
+    expect(names).toEqual(['master', 'bgm', 'sfx', 'voice'])
+  })
+
+  it('AC04: getChannelNames() returns a readonly array', () => {
+    const names = VolumeController.getChannelNames()
+    expect(Array.isArray(names)).toBe(true)
+    expect(names.length).toBe(4)
+  })
+
+  // US-004-AC02: Master volume acts as multiplier
+  it('AC02: effective volume is master × channel for bgm', () => {
+    const stub = makeAudioStub('bgm.mp3')
+    controller.setVolume('bgm', 0.8)
+    controller.setVolume('master', 0.5)
+    controller.registerSource('bgm', stub as unknown as HTMLAudioElement)
+    // effective = 0.8 * 0.5 = 0.4
+    expect(stub.volume).toBeCloseTo(0.4)
+  })
+
+  it('AC02: effective volume is master × channel for voice', () => {
+    const stub = makeAudioStub('voice.mp3')
+    controller.setVolume('voice', 0.6)
+    controller.setVolume('master', 0.25)
+    controller.registerSource('voice', stub as unknown as HTMLAudioElement)
+    // effective = 0.6 * 0.25 = 0.15
+    expect(stub.volume).toBeCloseTo(0.15)
+  })
+
+  // US-004-AC03: Changing one channel does not affect others
+  it('AC03: changing bgm volume does not affect sfx stored volume', () => {
+    controller.setVolume('bgm', 0.3)
+    controller.setVolume('sfx', 0.7)
+    controller.setVolume('bgm', 0.9)
+    // sfx stored value unchanged
+    expect(controller.getVolume('sfx')).toBeCloseTo(0.7)
+  })
+
+  it('AC03: changing master does not change individual channel stored values', () => {
+    controller.setVolume('bgm', 0.6)
+    controller.setVolume('sfx', 0.4)
+    controller.setVolume('master', 0.5)
+    // stored values remain unchanged
+    expect(controller.getVolume('bgm')).toBeCloseTo(0.6)
+    expect(controller.getVolume('sfx')).toBeCloseTo(0.4)
+    expect(controller.getVolume('master')).toBeCloseTo(0.5)
+  })
 })

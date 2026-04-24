@@ -19,6 +19,24 @@ export class TagParser {
     const colonIdx = first.indexOf(':')
 
     if (colonIdx === -1) {
+      // Check for space-separated arguments (e.g. "volume bgm 0.5")
+      const spaceIdx = first.indexOf(' ')
+      if (spaceIdx === -1) {
+        return { type: first.trim() }
+      }
+      const type = first.slice(0, spaceIdx).trim()
+      const remaining = first.slice(spaceIdx + 1).trim()
+      if (type === 'volume') {
+        const tokens = remaining.split(/\s+/)
+        const cmd: TagCommand = { type }
+        if (tokens[0]) {
+          cmd.channel = tokens[0]
+        }
+        if (tokens[1]) {
+          cmd.value = parseFloat(tokens[1])
+        }
+        return cmd
+      }
       return { type: first.trim() }
     }
 

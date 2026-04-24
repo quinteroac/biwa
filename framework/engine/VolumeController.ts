@@ -1,7 +1,6 @@
-/**
- * Audio channel identifiers for volume control.
- */
-export type AudioChannel = 'master' | 'bgm' | 'sfx' | 'voice'
+import type { AudioChannel } from '../types/audio.d.ts'
+
+export type { AudioChannel }
 
 /**
  * Manages volume levels across audio channels.
@@ -9,7 +8,7 @@ export type AudioChannel = 'master' | 'bgm' | 'sfx' | 'voice'
  * to all active sources immediately.
  */
 export class VolumeController {
-  static readonly #CHANNELS = Object.freeze(['master', 'bgm', 'sfx', 'voice'] as const)
+  static readonly #CHANNELS: readonly AudioChannel[] = Object.freeze(['master', 'bgm', 'sfx', 'voice'] as const)
 
   #volumes: Map<AudioChannel, number>
   #sources: Map<AudioChannel, Set<HTMLAudioElement>>
@@ -118,5 +117,13 @@ export class VolumeController {
 
   #normalize(value: number): number {
     return Math.max(0, Math.min(1, value))
+  }
+
+  /**
+   * Returns the list of available audio channel names.
+   * @returns A readonly array of channel name strings.
+   */
+  static getChannelNames(): readonly AudioChannel[] {
+    return VolumeController.#CHANNELS
   }
 }
