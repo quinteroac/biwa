@@ -1,7 +1,6 @@
 === chapter_02 ===
 # scene: cafe_interior
 # bgm: tension
-# ambience: storm_night
 
 La tormenta llega sin previo aviso. Las luces del café parpadean.
 # character: sara, position: left, expression: neutral

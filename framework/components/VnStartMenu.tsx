@@ -38,51 +38,52 @@ const MENU_STYLES = {
     flexDirection: 'column' as const,
     alignItems: 'center',
     justifyContent: 'center',
-    background: 'var(--vn-menu-bg, linear-gradient(160deg, #0a0014 0%, #1a0030 55%, #0d001e 100%))',
-    fontFamily: 'var(--vn-font, "Georgia", serif)',
-    color: 'var(--vn-menu-text, #e2e8f0)',
+    background: '#131313',
+    fontFamily: 'var(--vn-font, "Manrope", sans-serif)',
+    color: '#e5e2e1',
     userSelect: 'none' as const,
   },
   decorLine: {
-    width: '2px',
-    height: '80px',
-    background: 'linear-gradient(to bottom, transparent, var(--vn-accent, #c084fc), transparent)',
-    marginBottom: '2.5rem',
+    display: 'none' as const,
   },
   title: {
-    fontSize: 'clamp(2rem, 6vw, 3.75rem)',
-    fontWeight: 'normal' as const,
-    letterSpacing: '0.08em',
+    fontSize: 'clamp(2rem, 6vw, 42px)',
+    fontWeight: '200' as const,
+    letterSpacing: '-0.02em',
     textAlign: 'center' as const,
-    color: 'var(--vn-accent, #c084fc)',
-    textShadow: '0 0 48px rgba(192, 132, 252, 0.45), 0 2px 8px rgba(0,0,0,0.8)',
+    color: '#ffffff',
     marginBottom: '3.5rem',
     lineHeight: 1.2,
     maxWidth: '80vw',
+    margin: '0 0 3.5rem',
   },
   button: {
-    padding: '0.75rem 2.5rem',
-    fontSize: '1rem',
-    letterSpacing: '0.12em',
+    padding: '0',
+    width: 200,
+    height: 48,
+    fontSize: 11,
+    letterSpacing: '0.2em',
     textTransform: 'uppercase' as const,
+    fontWeight: '500' as const,
     background: 'transparent',
-    color: 'var(--vn-accent, #c084fc)',
-    border: '1px solid var(--vn-accent, #c084fc)',
-    borderRadius: '2px',
+    color: 'rgba(229,226,225,0.7)',
+    border: '1px solid rgba(255,255,255,0.2)',
+    borderRadius: 0,
     cursor: 'pointer',
-    fontFamily: 'var(--vn-font, "Georgia", serif)',
-    transition: 'background 0.2s, color 0.2s',
+    fontFamily: 'var(--vn-font, "Manrope", sans-serif)',
+    transition: 'color 0.1s linear, border-color 0.1s linear',
   },
   confirmation: {
     display: 'flex',
     flexDirection: 'column' as const,
     alignItems: 'center',
-    gap: '0.75rem',
+    gap: '1rem',
   },
   confirmMessage: {
-    fontSize: '0.875rem',
-    color: 'var(--vn-menu-text-muted, #cbd5e1)',
-    letterSpacing: '0.04em',
+    fontSize: 11,
+    color: 'rgba(229,226,225,0.5)',
+    letterSpacing: '0.1em',
+    textTransform: 'uppercase' as const,
     textAlign: 'center' as const,
     margin: '0 0 0.25rem',
   },
@@ -91,36 +92,42 @@ const MENU_STYLES = {
     gap: '0.75rem',
   },
   buttonSmall: {
-    padding: '0.5rem 1.5rem',
-    fontSize: '0.875rem',
-    letterSpacing: '0.08em',
+    padding: '0',
+    width: 120,
+    height: 40,
+    fontSize: 11,
+    letterSpacing: '0.2em',
     textTransform: 'uppercase' as const,
+    fontWeight: '500' as const,
     background: 'transparent',
-    color: 'var(--vn-accent, #c084fc)',
-    border: '1px solid var(--vn-accent, #c084fc)',
-    borderRadius: '2px',
+    color: 'rgba(229,226,225,0.7)',
+    border: '1px solid rgba(255,255,255,0.2)',
+    borderRadius: 0,
     cursor: 'pointer',
-    fontFamily: 'var(--vn-font, "Georgia", serif)',
-    transition: 'background 0.2s, color 0.2s',
+    fontFamily: 'var(--vn-font, "Manrope", sans-serif)',
+    transition: 'color 0.1s linear, border-color 0.1s linear',
   },
   buttonDisabled: {
-    padding: '0.75rem 2.5rem',
-    fontSize: '1rem',
-    letterSpacing: '0.12em',
+    padding: '0',
+    width: 200,
+    height: 48,
+    fontSize: 11,
+    letterSpacing: '0.2em',
     textTransform: 'uppercase' as const,
+    fontWeight: '500' as const,
     background: 'transparent',
-    color: 'var(--vn-accent, #c084fc)',
-    border: '1px solid var(--vn-accent, #c084fc)',
-    borderRadius: '2px',
+    color: 'rgba(229,226,225,0.7)',
+    border: '1px solid rgba(255,255,255,0.2)',
+    borderRadius: 0,
     cursor: 'not-allowed',
-    fontFamily: 'var(--vn-font, "Georgia", serif)',
-    opacity: 0.35,
+    fontFamily: 'var(--vn-font, "Manrope", sans-serif)',
+    opacity: 0.25,
   },
   menuButtons: {
     display: 'flex',
     flexDirection: 'column' as const,
     alignItems: 'center',
-    gap: '0.875rem',
+    gap: '1rem',
   },
 }
 
@@ -170,13 +177,13 @@ export function VnStartMenu({
               data-testid="vn-confirm-new-game"
               onMouseEnter={e => {
                 const btn = e.currentTarget
-                btn.style.background = 'var(--vn-accent, #c084fc)'
-                btn.style.color = 'var(--vn-menu-bg-solid, #0a0014)'
+                btn.style.color = '#ffffff'
+                btn.style.borderColor = 'rgba(255,255,255,0.6)'
               }}
               onMouseLeave={e => {
                 const btn = e.currentTarget
-                btn.style.background = 'transparent'
-                btn.style.color = 'var(--vn-accent, #c084fc)'
+                btn.style.color = 'rgba(229,226,225,0.7)'
+                btn.style.borderColor = 'rgba(255,255,255,0.2)'
               }}
             >
               Confirm
@@ -187,13 +194,13 @@ export function VnStartMenu({
               data-testid="vn-cancel-new-game"
               onMouseEnter={e => {
                 const btn = e.currentTarget
-                btn.style.background = 'var(--vn-menu-cancel-hover-bg, rgba(226,232,240,0.1))'
-                btn.style.color = 'var(--vn-menu-text, #e2e8f0)'
+                btn.style.color = '#ffffff'
+                btn.style.borderColor = 'rgba(255,255,255,0.6)'
               }}
               onMouseLeave={e => {
                 const btn = e.currentTarget
-                btn.style.background = 'transparent'
-                btn.style.color = 'var(--vn-accent, #c084fc)'
+                btn.style.color = 'rgba(229,226,225,0.7)'
+                btn.style.borderColor = 'rgba(255,255,255,0.2)'
               }}
             >
               Cancel
@@ -209,13 +216,13 @@ export function VnStartMenu({
               data-testid="vn-start-menu-start"
               onMouseEnter={e => {
                 const btn = e.currentTarget
-                btn.style.background = 'var(--vn-accent, #c084fc)'
-                btn.style.color = '#0a0014'
+                btn.style.color = '#ffffff'
+                btn.style.borderColor = 'rgba(255,255,255,0.6)'
               }}
               onMouseLeave={e => {
                 const btn = e.currentTarget
-                btn.style.background = 'transparent'
-                btn.style.color = 'var(--vn-accent, #c084fc)'
+                btn.style.color = 'rgba(229,226,225,0.7)'
+                btn.style.borderColor = 'rgba(255,255,255,0.2)'
               }}
             >
               New Game
@@ -229,13 +236,13 @@ export function VnStartMenu({
               data-testid="vn-start-menu-continue"
               onMouseEnter={e => {
                 const btn = e.currentTarget
-                btn.style.background = 'var(--vn-accent, #c084fc)'
-                btn.style.color = '#0a0014'
+                btn.style.color = '#ffffff'
+                btn.style.borderColor = 'rgba(255,255,255,0.6)'
               }}
               onMouseLeave={e => {
                 const btn = e.currentTarget
-                btn.style.background = 'transparent'
-                btn.style.color = 'var(--vn-accent, #c084fc)'
+                btn.style.color = 'rgba(229,226,225,0.7)'
+                btn.style.borderColor = 'rgba(255,255,255,0.2)'
               }}
             >
               Continue

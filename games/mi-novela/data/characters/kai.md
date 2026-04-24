@@ -6,12 +6,14 @@ defaultPosition: right
 defaultExpression: neutral
 
 animation:
-  type: sprites
-  sprites:
-    neutral:   characters/kai/neutral.png
-    happy:     characters/kai/happy.png
-    sad:       characters/kai/sad.png
-    surprised: characters/kai/surprised.png
+  type: spritesheet
+  file:  characters/kai/spritesheet.png
+  atlas: characters/kai/spritesheet_map.json
+  expressions:
+    neutral:   neutral
+    happy:     happy
+    sad:       sad
+    surprised: surprised
 
 voice:
   folder: audio/voice/kai/

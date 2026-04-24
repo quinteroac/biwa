@@ -57,6 +57,11 @@ class AudioManager {
     audio.volume = audioData?.volume ?? 1.0
     void audio.play().catch(() => {})
   }
+
+  stopAll(): void {
+    this.#stopBgm()
+    this.#stopAmbience()
+  }
 }
 
 interface CharacterState {
@@ -78,6 +83,8 @@ interface TransitionState {
 }
 
 const GLOBAL_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500&display=swap');
+
   @keyframes vn-bounce {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-6px); }
@@ -176,7 +183,10 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
       engine.start()
     }
 
-    return () => unsubs.forEach(fn => fn())
+    return () => {
+      audio.stopAll()
+      unsubs.forEach(fn => fn())
+    }
   }, [engine, resumeFrom])
 
   useEffect(() => {
@@ -242,8 +252,8 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
         onClick={handleStageClick}
         style={{
           position: 'fixed', inset: 0, overflow: 'hidden',
-          background: 'var(--vn-stage-bg, #000)', cursor: 'pointer', userSelect: 'none',
-          fontFamily: 'var(--vn-font, "Georgia", serif)',
+          background: 'var(--vn-stage-bg, #131313)', cursor: 'pointer', userSelect: 'none',
+          fontFamily: 'var(--vn-font, "Manrope", sans-serif)',
         }}
       >
         <VnBackground scene={scene as Parameters<typeof VnBackground>[0]['scene']} />

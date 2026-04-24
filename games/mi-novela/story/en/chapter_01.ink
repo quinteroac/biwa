@@ -1,7 +1,6 @@
 === chapter_01 ===
 # scene: cafe_exterior
 # bgm: morning_theme
-# ambience: city_morning
 
 Rain falls on the cobblestones outside a café that shouldn't exist.
 # character: kai, position: right, expression: neutral

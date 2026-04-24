@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "skills": {
+    "approve-prototype": {
+      "source": "/tmp/nvst-skills-1776912212732",
+      "sourceType": "local",
+      "computedHash": "adbc333dc96ec021a4db68077b58bd144a60d0d7bca29ac659eece3c68e6fe8f"
+    },
+    "audit-prototype": {
+      "source": "/tmp/nvst-skills-1776912212732",
+      "sourceType": "local",
+      "computedHash": "259fdc526d869eb1a00ffad736f0684d8527244790918833c89b80d5b449eec3"
+    },
+    "create-project-context": {
+      "source": "/tmp/nvst-skills-1776912212732",
+      "sourceType": "local",
+      "computedHash": "7f3ba93409a2ff3374987e0c3c53b105b3aaa2fa36c082069e2c79a41180eede"
+    },
+    "create-prototype": {
+      "source": "/tmp/nvst-skills-1776912212732",
+      "sourceType": "local",
+      "computedHash": "62299669131aff7ae78d488c8030f7c019474e249c6d7dbe8c409d6414ca279d"
+    },
+    "define-requirement": {
+      "source": "/tmp/nvst-skills-1776912212732",
+      "sourceType": "local",
+      "computedHash": "c5565480a02c0e36c8cb080e15f3dbdffbd7bc662071847de083209c41236033"
+    },
+    "execute-automated-fix": {
+      "source": "/tmp/nvst-skills-1776912212732",
+      "sourceType": "local",
+      "computedHash": "52ae7a4834420364480b997d2cbcdbae645e370b414637e79fcd2e4ea693f0f4"
+    },
+    "refactor-prototype": {
+      "source": "/tmp/nvst-skills-1776912212732",
+      "sourceType": "local",
+      "computedHash": "da8c48c834d7f0c44abd32424ca7609aa2881e25f67581573cd7f6445e56b288"
+    },
+    "refine-project-context": {
+      "source": "/tmp/nvst-skills-1776912212732",
+      "sourceType": "local",
+      "computedHash": "07453bb6167992177d35845091f550484aeb8bcb4e2688c222d4bc94b5f6a2b9"
+    },
+    "refine-requirement": {
+      "source": "/tmp/nvst-skills-1776912212732",
+      "sourceType": "local",
+      "computedHash": "9ea622aa48ea6223f81ed26404a22ac5de7a706472ec693f66e19b216ef6ec87"
+    },
+    "ui-design": {
+      "source": "/tmp/nvst-skills-1776912212732",
+      "sourceType": "local",
+      "computedHash": "d5c7b7fc04717322f3f8f99f3d61cc88739a0b9bf5012a2a24449af7f22700ba"
+    }
+  }
+}

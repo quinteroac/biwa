@@ -23,25 +23,26 @@ export function VnEndScreen({ title = 'The End', message, onReturnToMenu }: VnEn
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'var(--vn-end-bg, #000)',
+        background: '#131313',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        fontFamily: 'var(--vn-font, "Georgia", serif)',
-        color: 'var(--vn-end-color, #fff)',
+        fontFamily: 'var(--vn-font, "Manrope", sans-serif)',
+        color: '#e5e2e1',
         textAlign: 'center',
-        padding: '2rem',
+        padding: '64px',
         userSelect: 'none',
       }}
     >
       <h1
         style={{
-          fontSize: 'clamp(2rem, 6vw, 4rem)',
-          fontWeight: 'bold',
-          letterSpacing: '0.1em',
+          fontSize: 'clamp(2rem, 6vw, 42px)',
+          fontWeight: 200,
+          letterSpacing: '-0.02em',
           margin: 0,
-          opacity: 0.95,
+          color: '#ffffff',
+          lineHeight: 1.2,
         }}
       >
         {title}
@@ -50,10 +51,12 @@ export function VnEndScreen({ title = 'The End', message, onReturnToMenu }: VnEn
         <p
           style={{
             marginTop: '1.5rem',
-            fontSize: 'clamp(1rem, 2.5vw, 1.4rem)',
-            opacity: 0.75,
+            fontSize: 14,
+            fontWeight: 300,
+            color: 'rgba(229,226,225,0.55)',
             maxWidth: '36rem',
             lineHeight: 1.6,
+            letterSpacing: '0.02em',
           }}
         >
           {message}
@@ -65,27 +68,30 @@ export function VnEndScreen({ title = 'The End', message, onReturnToMenu }: VnEn
           onClick={onReturnToMenu}
           style={{
             marginTop: '3rem',
-            padding: '0.75rem 2.5rem',
-            fontSize: '1rem',
-            letterSpacing: '0.12em',
+            padding: '0',
+            width: 200,
+            height: 48,
+            fontSize: 11,
+            letterSpacing: '0.2em',
             textTransform: 'uppercase',
+            fontWeight: 500,
             background: 'transparent',
-            color: 'var(--vn-accent, #c084fc)',
-            border: '1px solid var(--vn-accent, #c084fc)',
-            borderRadius: '2px',
+            color: 'rgba(229,226,225,0.7)',
+            border: '1px solid rgba(255,255,255,0.2)',
+            borderRadius: 0,
             cursor: 'pointer',
-            fontFamily: 'var(--vn-font, "Georgia", serif)',
-            transition: 'background 0.2s, color 0.2s',
+            fontFamily: 'var(--vn-font, "Manrope", sans-serif)',
+            transition: 'color 0.1s linear, border-color 0.1s linear',
           }}
           onMouseEnter={e => {
             const btn = e.currentTarget
-            btn.style.background = 'var(--vn-accent, #c084fc)'
-            btn.style.color = 'var(--vn-end-bg, #0a0014)'
+            btn.style.color = '#ffffff'
+            btn.style.borderColor = 'rgba(255,255,255,0.6)'
           }}
           onMouseLeave={e => {
             const btn = e.currentTarget
-            btn.style.background = 'transparent'
-            btn.style.color = 'var(--vn-accent, #c084fc)'
+            btn.style.color = 'rgba(229,226,225,0.7)'
+            btn.style.borderColor = 'rgba(255,255,255,0.2)'
           }}
         >
           Return to Menu

@@ -88,36 +88,48 @@ export const VnDialog = forwardRef<VnDialogHandle, VnDialogProps>(function VnDia
   return (
     <div style={{
       display: 'flex', justifyContent: 'center',
-      padding: 24,
+      padding: '0 64px 24px',
       pointerEvents: 'none',
     }}>
       <div style={{
         width: '100%', maxWidth: 900,
-        background: 'var(--vn-dialog-bg, rgba(10,10,20,0.85))',
-        borderRadius: 12,
-        padding: '20px 24px',
-        fontFamily: 'var(--vn-font, "Georgia", serif)',
+        background: 'rgba(0,0,0,0.65)',
+        borderTop: '0.5px solid rgba(255,255,255,0.15)',
+        padding: '20px 24px 8px',
+        fontFamily: 'var(--vn-font, "Manrope", sans-serif)',
       }}>
         {dialog.speaker && (
           <div style={{
-            fontSize: 16, fontWeight: 'bold', marginBottom: 8,
-            color: dialog.nameColor ?? 'var(--vn-name-color, #e2e8f0)',
+            fontSize: 11,
+            fontWeight: 500,
+            marginBottom: 12,
+            color: '#ffffff',
+            textTransform: 'uppercase',
+            letterSpacing: '0.2em',
+            lineHeight: 1,
           }}>
             {dialog.speaker}
           </div>
         )}
-        <div style={{ fontSize: '1.1rem', lineHeight: 1.7, color: 'var(--vn-dialog-text, #f8f8f8)', minHeight: '3.4em' }}>
+        <div style={{
+          fontSize: 18,
+          fontWeight: 300,
+          lineHeight: 1.8,
+          letterSpacing: '0.01em',
+          color: '#e5e2e1',
+          minHeight: '3.6em',
+        }}>
           <span>{revealed}</span>
           <span style={{ color: 'transparent', userSelect: 'none' }}>{ghost}</span>
         </div>
         {isComplete && (
           <div style={{
             textAlign: 'right',
-            color: 'var(--vn-accent, #c084fc)',
-            fontSize: 19,
-            animation: 'vn-bounce 0.8s ease-in-out infinite',
+            color: 'rgba(255,255,255,0.35)',
+            fontSize: 12,
             marginTop: 4,
-          }}>▼</div>
+            letterSpacing: '0.1em',
+          }}>›</div>
         )}
       </div>
     </div>

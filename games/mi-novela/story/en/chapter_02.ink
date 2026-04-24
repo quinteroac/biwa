@@ -1,7 +1,6 @@
 === chapter_02 ===
 # scene: cafe_interior
 # bgm: tension
-# ambience: storm_night
 
 The storm arrives without warning. The café lights flicker.
 # character: sara, position: left, expression: neutral

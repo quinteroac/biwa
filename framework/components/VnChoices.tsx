@@ -33,7 +33,7 @@ export function VnChoices({ choices, onChoose }: VnChoicesProps) {
         position: 'absolute', top: '50%', left: 0, right: 0,
         transform: 'translateY(-50%)',
         display: 'flex', flexDirection: 'column', alignItems: 'center',
-        padding: 24, gap: 10,
+        padding: '0 64px', gap: 20,
         zIndex: 10,
       }}
     >
@@ -44,17 +44,19 @@ export function VnChoices({ choices, onChoose }: VnChoicesProps) {
           onMouseEnter={() => setFocused(i)}
           style={{
             width: '100%', maxWidth: 600,
-            padding: '12px 20px',
-            background: i === focused ? 'var(--vn-choice-hover, rgba(192,132,252,0.15))' : 'var(--vn-dialog-bg, rgba(10,10,20,0.85))',
-            color: 'var(--vn-dialog-text, #f8f8f8)',
-            border: '1px solid var(--vn-accent, #c084fc)',
-            borderRadius: 8,
-            fontSize: 16,
-            fontFamily: 'var(--vn-font, "Georgia", serif)',
+            padding: '14px 24px',
+            background: i === focused ? 'rgba(0,0,0,0.72)' : 'rgba(0,0,0,0.62)',
+            color: i === focused ? '#ffffff' : '#e5e2e1',
+            border: i === focused ? '1px solid rgba(255,255,255,0.45)' : '1px solid rgba(255,255,255,0.18)',
+            borderRadius: 0,
+            fontSize: 14,
+            fontFamily: 'var(--vn-font, "Manrope", sans-serif)',
+            fontWeight: 300,
+            letterSpacing: '0.02em',
+            lineHeight: 1.6,
             cursor: 'pointer',
             textAlign: 'left',
-            transform: i === focused ? 'translateX(4px)' : 'none',
-            transition: 'background 0.15s, transform 0.15s',
+            transition: 'color 0.1s linear, border-color 0.1s linear',
           }}
         >
           {choice.text}

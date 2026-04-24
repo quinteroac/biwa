@@ -27,19 +27,18 @@ const OVERLAY_STYLE: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  background: 'rgba(0,0,0,0.7)',
-  backdropFilter: 'blur(4px)',
+  background: 'rgba(0,0,0,0.75)',
 }
 
 const PANEL_STYLE: React.CSSProperties = {
   width: '100%',
   maxWidth: 540,
-  background: 'var(--vn-dialog-bg, rgba(10,10,20,0.95))',
-  border: '1px solid var(--vn-accent, #c084fc)',
-  borderRadius: 14,
+  background: '#201f1f',
+  border: '1px solid rgba(255,255,255,0.12)',
+  borderRadius: 0,
   padding: '28px 32px',
-  fontFamily: 'var(--vn-font, "Georgia", serif)',
-  color: '#f8f8f8',
+  fontFamily: 'var(--vn-font, "Manrope", sans-serif)',
+  color: '#e5e2e1',
   display: 'flex',
   flexDirection: 'column',
   gap: 20,
@@ -51,86 +50,95 @@ const HEADER_STYLE: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
+  borderBottom: '0.5px solid rgba(255,255,255,0.1)',
+  paddingBottom: 16,
 }
 
 const TITLE_STYLE: React.CSSProperties = {
   margin: 0,
-  fontSize: 22,
-  fontWeight: 'bold',
-  color: 'var(--vn-accent, #c084fc)',
-  letterSpacing: '0.03em',
+  fontSize: 11,
+  fontWeight: 500,
+  color: '#ffffff',
+  letterSpacing: '0.2em',
+  textTransform: 'uppercase',
 }
 
 const CLOSE_BTN_STYLE: React.CSSProperties = {
   background: 'transparent',
   border: '1px solid rgba(255,255,255,0.2)',
-  borderRadius: 6,
-  color: '#f8f8f8',
-  fontSize: 20,
-  width: 36,
-  height: 36,
+  borderRadius: 0,
+  color: 'rgba(229,226,225,0.6)',
+  fontSize: 16,
+  width: 28,
+  height: 28,
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   cursor: 'pointer',
-  transition: 'background 0.15s',
+  transition: 'color 0.1s linear, border-color 0.1s linear',
   flexShrink: 0,
 }
 
 const SLOT_LIST_STYLE: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
-  gap: 10,
+  gap: 0,
 }
 
 const SAVE_BTN_STYLE: React.CSSProperties = {
   marginLeft: 'auto',
   flexShrink: 0,
-  padding: '5px 14px',
+  padding: '0 12px',
+  height: 28,
   background: 'transparent',
-  border: '1px solid var(--vn-accent, #c084fc)',
-  borderRadius: 6,
-  color: 'var(--vn-accent, #c084fc)',
+  border: '1px solid rgba(255,255,255,0.2)',
+  borderRadius: 0,
+  color: 'rgba(229,226,225,0.6)',
   fontFamily: 'inherit',
-  fontSize: 13,
-  fontWeight: 'bold',
+  fontSize: 11,
+  fontWeight: 500,
+  letterSpacing: '0.15em',
+  textTransform: 'uppercase',
   cursor: 'pointer',
-  letterSpacing: '0.04em',
-  transition: 'background 0.15s, color 0.15s',
+  transition: 'color 0.1s linear, border-color 0.1s linear',
 }
 
 const LOAD_BTN_STYLE: React.CSSProperties = {
   marginLeft: 8,
   flexShrink: 0,
-  padding: '5px 14px',
+  padding: '0 12px',
+  height: 28,
   background: 'transparent',
-  border: '1px solid rgba(255,255,255,0.35)',
-  borderRadius: 6,
-  color: 'rgba(255,255,255,0.75)',
+  border: '1px solid rgba(255,255,255,0.12)',
+  borderRadius: 0,
+  color: 'rgba(229,226,225,0.45)',
   fontFamily: 'inherit',
-  fontSize: 13,
-  fontWeight: 'bold',
+  fontSize: 11,
+  fontWeight: 500,
+  letterSpacing: '0.15em',
+  textTransform: 'uppercase',
   cursor: 'pointer',
-  letterSpacing: '0.04em',
-  transition: 'background 0.15s, color 0.15s',
+  transition: 'color 0.1s linear, border-color 0.1s linear',
 }
 
 const ERROR_BANNER_STYLE: React.CSSProperties = {
   padding: '10px 14px',
-  borderRadius: 8,
-  background: 'rgba(220,50,50,0.15)',
-  border: '1px solid rgba(220,50,50,0.5)',
-  color: '#fca5a5',
-  fontSize: 13,
+  borderRadius: 0,
+  background: 'rgba(255,180,171,0.05)',
+  border: '1px solid rgba(255,180,171,0.3)',
+  color: '#ffb4ab',
+  fontSize: 11,
+  letterSpacing: '0.05em',
 }
 
 const CONFIRM_BANNER_STYLE: React.CSSProperties = {
   padding: '10px 14px',
-  borderRadius: 8,
-  background: 'rgba(40,40,40,0.9)',
-  border: '1px solid rgba(255,255,255,0.06)',
-  color: '#f8f8f8',
-  fontSize: 13,
+  borderRadius: 0,
+  background: 'rgba(255,255,255,0.03)',
+  border: '1px solid rgba(255,255,255,0.1)',
+  color: '#e5e2e1',
+  fontSize: 11,
+  letterSpacing: '0.05em',
   display: 'flex',
   alignItems: 'center',
   gap: 12,
@@ -156,24 +164,19 @@ function SlotRow({
         display: 'flex',
         alignItems: 'center',
         gap: 16,
-        padding: '12px 16px',
-        borderRadius: 8,
-        background: isOccupied
-          ? 'var(--vn-choice-hover, rgba(192,132,252,0.1))'
-          : 'rgba(255,255,255,0.03)',
-        border: `1px solid ${isOccupied ? 'var(--vn-accent, #c084fc)' : 'rgba(255,255,255,0.1)'}`,
-        transition: 'background 0.15s',
+        padding: '12px 0',
+        borderBottom: '0.5px solid rgba(255,255,255,0.08)',
       }}
     >
       <div
         style={{
-          width: 80,
+          width: 72,
           flexShrink: 0,
-          fontSize: 13,
-          fontWeight: 'bold',
-          color: isOccupied ? 'var(--vn-accent, #c084fc)' : 'rgba(255,255,255,0.35)',
+          fontSize: 11,
+          fontWeight: 500,
+          color: isOccupied ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.2)',
           textTransform: 'uppercase',
-          letterSpacing: '0.05em',
+          letterSpacing: '0.15em',
         }}
       >
         {label}
@@ -183,9 +186,9 @@ function SlotRow({
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
           <span
             style={{
-              fontSize: 15,
-              fontWeight: 'bold',
-              color: '#f8f8f8',
+              fontSize: 14,
+              fontWeight: 300,
+              color: '#e5e2e1',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
@@ -193,22 +196,23 @@ function SlotRow({
           >
             {info.meta.displayName}
           </span>
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>
+          <span style={{ fontSize: 11, fontWeight: 400, color: 'rgba(229,226,225,0.4)', letterSpacing: '0.05em' }}>
             {info.meta.sceneName}
           </span>
-          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)' }}>
+          <span style={{ fontSize: 11, fontWeight: 400, color: 'rgba(229,226,225,0.3)', letterSpacing: '0.05em' }}>
             {formatTimestamp(info.meta.timestamp)}
           </span>
         </div>
       ) : (
         <span
           style={{
-            fontSize: 14,
-            color: 'rgba(255,255,255,0.3)',
-            fontStyle: 'italic',
+            fontSize: 11,
+            fontWeight: 300,
+            color: 'rgba(229,226,225,0.25)',
+            letterSpacing: '0.05em',
           }}
         >
-          Empty slot
+          Empty
         </span>
       )}
       <button

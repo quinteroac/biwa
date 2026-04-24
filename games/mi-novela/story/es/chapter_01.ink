@@ -1,7 +1,6 @@
 === chapter_01 ===
 # scene: cafe_exterior
 # bgm: morning_theme
-# ambience: city_morning
 
 La lluvia cae sobre los adoquines frente al café que no debería existir.
 # character: kai, position: right, expression: neutral
