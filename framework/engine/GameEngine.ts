@@ -10,6 +10,7 @@ import { AmbienceController } from './AmbienceController.ts'
 import { VoiceController } from './VoiceController.ts'
 import type { GameSaveState } from '../types/save.d.ts'
 import type { GameConfig } from '../types/game-config.d.ts'
+import type { TagCommand } from './ScriptRunner.ts'
 
 const STATE = Object.freeze({
   IDLE:       'IDLE',
@@ -222,7 +223,7 @@ export class GameEngine {
           : 'none'
 
       if (!step.canContinue && step.hasChoices) {
-        this.#pendingChoices = this.#runner.choices
+        this.#pendingChoices = this.#runner.choices.slice()
       }
 
       this.#bus.emit('engine:dialog', {
@@ -238,7 +239,7 @@ export class GameEngine {
     }
   }
 
-  async #processTags(tags: ReturnType<ScriptRunner['step']> extends { tags: infer T } ? T : never): Promise<void> {
+  async #processTags(tags: TagCommand[]): Promise<void> {
     for (const tag of tags) {
       switch (tag.type) {
         case 'scene':
@@ -319,11 +320,7 @@ export class GameEngine {
   }
 
   #autoSave(): void {
-    const state = {
-      story: this.#runner.saveState(),
-      vars: this.#vars.snapshot(),
-    }
-    this.#saveManager.autoSave(state)
+    this.#saveManager.autoSave(this.getState())
   }
 
   #choose(index: number): void {

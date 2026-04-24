@@ -6,6 +6,7 @@ import { VnChoices } from './VnChoices.tsx'
 import { VnTransition } from './VnTransition.tsx'
 import { VnSaveMenu } from './VnSaveMenu.tsx'
 import { SaveControlsBar } from './SaveControlsBar.tsx'
+import { getStageAdvanceAction, isAcceptedAdvanceKey } from './VnStageAdvance.ts'
 import type { GameEngine } from '../engine/GameEngine.ts'
 import type { GameSaveState } from '../types/save.d.ts'
 import type { DialogOptions, VnDialogHandle } from './VnDialog.tsx'
@@ -111,6 +112,12 @@ export interface VnStageProps {
   showQuickSave?: boolean
 
   /**
+   * When `true` (default), the "Auto Save" toggle is shown in the controls
+   * bar. Set to `false` to remove it from the DOM entirely.
+   */
+  showAutoSave?: boolean
+
+  /**
    * When provided, the stage resumes from this saved game state instead of
    * calling `engine.start()`. Used by the "Continue" flow in {@link VnApp}.
    */
@@ -191,11 +198,12 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key !== ' ' && e.key !== 'Enter' && e.key !== 'ArrowRight') return
-      if (choices) return
+      if (!isAcceptedAdvanceKey(e.key)) return
+      const action = getStageAdvanceAction(choices !== null, dialogRef.current?.isTyping ?? false)
+      if (action === 'ignore') return
       e.preventDefault()
-      if (dialogRef.current?.isTyping) {
-        dialogRef.current.skip()
+      if (action === 'reveal') {
+        dialogRef.current?.skip()
       } else {
         engine.advance()
       }
@@ -218,16 +226,17 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
   }, [menuOpen])
 
   const handleStageClick = useCallback(() => {
-    if (choices) return
-    if (dialogRef.current?.isTyping) {
-      dialogRef.current.skip()
+    const action = getStageAdvanceAction(choices !== null, dialogRef.current?.isTyping ?? false)
+    if (action === 'ignore') return
+    if (action === 'reveal') {
+      dialogRef.current?.skip()
     } else {
       engine.advance()
     }
   }, [engine, choices])
 
   const handleDialogComplete = useCallback((advanceMode: DialogOptions['advanceMode']) => {
-    if (advanceMode === 'next' || advanceMode === 'choices') {
+    if (advanceMode === 'next') {
       engine.advance()
     }
   }, [engine])
