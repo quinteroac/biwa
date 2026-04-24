@@ -1,0 +1,174 @@
+import { describe, it, expect, beforeEach } from 'bun:test'
+import { VolumeController } from '../engine/VolumeController.ts'
+
+// ---------------------------------------------------------------------------
+// Minimal HTMLAudioElement stub
+// ---------------------------------------------------------------------------
+interface AudioStub {
+  src: string
+  volume: number
+}
+
+function makeAudioStub(src: string): AudioStub {
+  return { src, volume: 1 }
+}
+
+function installAudioMock(): () => AudioStub[] {
+  const instances: AudioStub[] = []
+  ;(globalThis as Record<string, unknown>)['Audio'] = function (src?: string) {
+    const stub = makeAudioStub(src ?? '')
+    instances.push(stub)
+    return stub
+  }
+  return () => instances
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+describe('VolumeController', () => {
+  let controller: VolumeController
+  let getInstances: () => AudioStub[]
+
+  beforeEach(() => {
+    controller = new VolumeController()
+    getInstances = installAudioMock()
+  })
+
+  // US-001-AC01: VolumeController class exists in framework/engine/VolumeController.ts
+  it('AC01: VolumeController is importable from framework/engine/VolumeController.ts', () => {
+    expect(typeof VolumeController).toBe('function')
+    expect(controller).toBeInstanceOf(VolumeController)
+  })
+
+  // US-001-AC02: setVolume and getVolume methods exist for all channels
+  it('AC02: setVolume and getVolume work for master channel', () => {
+    controller.setVolume('master', 0.75)
+    expect(controller.getVolume('master')).toBeCloseTo(0.75)
+  })
+
+  it('AC02: setVolume and getVolume work for bgm channel', () => {
+    controller.setVolume('bgm', 0.5)
+    expect(controller.getVolume('bgm')).toBeCloseTo(0.5)
+  })
+
+  it('AC02: setVolume and getVolume work for sfx channel', () => {
+    controller.setVolume('sfx', 0.3)
+    expect(controller.getVolume('sfx')).toBeCloseTo(0.3)
+  })
+
+  it('AC02: setVolume and getVolume work for voice channel', () => {
+    controller.setVolume('voice', 0.8)
+    expect(controller.getVolume('voice')).toBeCloseTo(0.8)
+  })
+
+  it('AC02: channels default to 1.0', () => {
+    expect(controller.getVolume('master')).toBeCloseTo(1.0)
+    expect(controller.getVolume('bgm')).toBeCloseTo(1.0)
+    expect(controller.getVolume('sfx')).toBeCloseTo(1.0)
+    expect(controller.getVolume('voice')).toBeCloseTo(1.0)
+  })
+
+  // US-001-AC03: Volume values are normalized to 0.0–1.0
+  it('AC03: volumes above 1.0 are clamped to 1.0', () => {
+    controller.setVolume('bgm', 1.5)
+    expect(controller.getVolume('bgm')).toBeCloseTo(1.0)
+  })
+
+  it('AC03: volumes below 0.0 are clamped to 0.0', () => {
+    controller.setVolume('sfx', -0.5)
+    expect(controller.getVolume('sfx')).toBeCloseTo(0.0)
+  })
+
+  it('AC03: boundary values 0.0 and 1.0 are accepted as-is', () => {
+    controller.setVolume('master', 0.0)
+    expect(controller.getVolume('master')).toBeCloseTo(0.0)
+    controller.setVolume('master', 1.0)
+    expect(controller.getVolume('master')).toBeCloseTo(1.0)
+  })
+
+  // US-001-AC04: Setting volume applies to all active audio sources in that channel
+  it('AC04: registering a source sets its volume to the channel volume', () => {
+    controller.setVolume('bgm', 0.6)
+    const stub = makeAudioStub('test.mp3')
+    controller.registerSource('bgm', stub as unknown as HTMLAudioElement)
+    expect(stub.volume).toBeCloseTo(0.6)
+  })
+
+  it('AC04: setting channel volume updates all registered sources', () => {
+    const stub1 = makeAudioStub('a.mp3')
+    const stub2 = makeAudioStub('b.mp3')
+    controller.registerSource('sfx', stub1 as unknown as HTMLAudioElement)
+    controller.registerSource('sfx', stub2 as unknown as HTMLAudioElement)
+
+    controller.setVolume('sfx', 0.4)
+    expect(stub1.volume).toBeCloseTo(0.4)
+    expect(stub2.volume).toBeCloseTo(0.4)
+  })
+
+  it('AC04: unregistering a source excludes it from volume changes', () => {
+    const stub1 = makeAudioStub('a.mp3')
+    const stub2 = makeAudioStub('b.mp3')
+    controller.registerSource('voice', stub1 as unknown as HTMLAudioElement)
+    controller.registerSource('voice', stub2 as unknown as HTMLAudioElement)
+
+    controller.unregisterSource('voice', stub2 as unknown as HTMLAudioElement)
+    controller.setVolume('voice', 0.2)
+
+    expect(stub1.volume).toBeCloseTo(0.2)
+    // stub2 was unregistered before the setVolume call, so it keeps its original volume
+    expect(stub2.volume).toBeCloseTo(1.0)
+  })
+
+  it('AC04: master volume affects all channels', () => {
+    const bgmStub = makeAudioStub('bgm.mp3')
+    const sfxStub = makeAudioStub('sfx.mp3')
+    controller.registerSource('bgm', bgmStub as unknown as HTMLAudioElement)
+    controller.registerSource('sfx', sfxStub as unknown as HTMLAudioElement)
+
+    controller.setVolume('bgm', 0.8)
+    controller.setVolume('sfx', 0.6)
+
+    // Set master to 0.5
+    controller.setVolume('master', 0.5)
+
+    // bgm: 0.8 * 0.5 = 0.4
+    expect(bgmStub.volume).toBeCloseTo(0.4)
+    // sfx: 0.6 * 0.5 = 0.3
+    expect(sfxStub.volume).toBeCloseTo(0.3)
+  })
+
+  // US-001-AC05: Throws if channel name is invalid
+  it('AC05: setVolume throws on invalid channel name', () => {
+    expect(() => controller.setVolume('music' as any, 0.5)).toThrow(/Invalid audio channel/)
+  })
+
+  it('AC05: getVolume throws on invalid channel name', () => {
+    expect(() => controller.getVolume('music' as any)).toThrow(/Invalid audio channel/)
+  })
+
+  it('AC05: registerSource throws on invalid channel name', () => {
+    const stub = makeAudioStub('test.mp3')
+    expect(() => controller.registerSource('music' as any, stub as unknown as HTMLAudioElement))
+      .toThrow(/Invalid audio channel/)
+  })
+
+  it('AC05: unregisterSource throws on invalid channel name', () => {
+    const stub = makeAudioStub('test.mp3')
+    expect(() => controller.unregisterSource('music' as any, stub as unknown as HTMLAudioElement))
+      .toThrow(/Invalid audio channel/)
+  })
+
+  // Edge cases
+  it('handles zero volume correctly', () => {
+    controller.setVolume('bgm', 0)
+    const stub = makeAudioStub('test.mp3')
+    controller.registerSource('bgm', stub as unknown as HTMLAudioElement)
+    expect(stub.volume).toBe(0)
+  })
+
+  it('handles very small volume values', () => {
+    controller.setVolume('master', 0.01)
+    expect(controller.getVolume('master')).toBeCloseTo(0.01, 2)
+  })
+})
