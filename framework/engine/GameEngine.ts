@@ -258,7 +258,7 @@ export class GameEngine {
       switch (tag.type) {
         case 'scene':
           this.#currentSceneId = tag.id ?? null
-          this.#bus.emit('engine:scene', { id: tag.id, data: this.#data.scenes[tag.id ?? ''] })
+          this.#bus.emit('engine:scene', { ...tag, data: this.#data.scenes[tag.id ?? ''] })
           break
         case 'bgm':
           this.#bus.emit('engine:bgm', this.#withAudioData(tag))

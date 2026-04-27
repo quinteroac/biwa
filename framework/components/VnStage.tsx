@@ -139,6 +139,7 @@ interface CharacterState {
 interface SceneState {
   id: string
   data: Record<string, unknown>
+  variant?: string
 }
 
 interface TransitionState {
@@ -203,8 +204,8 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
     const audio = audioRef.current
 
     const unsubs = [
-      bus.on<{ id: string; data: Record<string, unknown> }>('engine:scene', ({ id, data }) => {
-        setScene({ id, data })
+      bus.on<{ id: string; data: Record<string, unknown>; variant?: string }>('engine:scene', ({ id, data, variant }) => {
+        setScene({ id, data, ...(variant !== undefined ? { variant } : {}) })
         const ambSfx = (data?.['ambient'] as Record<string, unknown> | undefined)?.['sfx'] as string | undefined
         if (ambSfx) audio.playAmbience(ambSfx, null)
       }),
@@ -219,11 +220,13 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
           }
           const charData = (engine.data?.characters?.[id.toLowerCase()] as Record<string, unknown>) ?? null
           const existing = next.get(id)
+          const defaultPosition = charData?.['defaultPosition'] as 'left' | 'center' | 'right' | undefined
+          const defaultExpression = charData?.['defaultExpression'] as string | undefined
           next.set(id, {
             id,
             charData: charData ?? existing?.charData ?? null,
-            position: (position ?? existing?.position ?? 'center') as 'left' | 'center' | 'right',
-            expression: expression ?? existing?.expression ?? 'neutral',
+            position: (position ?? existing?.position ?? defaultPosition ?? 'center') as 'left' | 'center' | 'right',
+            expression: expression ?? existing?.expression ?? defaultExpression ?? 'neutral',
             exiting: false,
           })
           return next

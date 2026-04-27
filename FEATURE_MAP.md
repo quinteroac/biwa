@@ -208,6 +208,8 @@ Estado: iniciada.
 
 Objetivo: alinear lo que el framework promete con lo que renderiza.
 
+Estado: iniciada.
+
 ### Features base
 
 - Background static con `image`, `variants`, `fit` y `position`.
@@ -239,6 +241,18 @@ Objetivo: alinear lo que el framework promete con lo que renderiza.
 - Cada tipo documentado esta implementado o marcado experimental.
 - El demo no queda en blanco si falta un renderer.
 - Hay tests para seleccion de renderer y fallback.
+
+### Resultado del primer corte
+
+- `VnBackground` respeta `fit`, `position`, `poster` y variants para backgrounds static/video.
+- `VnBackground` soporta variants de parallax con layers e intensidad propias.
+- `GameEngine` conserva metadata del tag de escena, incluyendo `variant`, al emitir `engine:scene`.
+- `VnStage` pasa `variant` a `VnBackground`.
+- `VnStage` usa `defaultPosition` y `defaultExpression` de `characters.md` cuando el tag no los especifica.
+- `VnCharacter` aplica `scale` y `offset` desde character data.
+- `VnBackground` y `VnCharacter` muestran fallback visible para renderers no soportados.
+- Agregados tests de helpers de background y fallback/posicionamiento de personaje.
+- Verificacion final: `bun run check` pasa con 288 tests.
 
 ## Fase 5: Save/load serio
 

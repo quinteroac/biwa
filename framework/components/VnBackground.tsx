@@ -1,22 +1,73 @@
 import { useEffect, useRef } from 'react'
 
+type BackgroundFit = 'cover' | 'contain' | 'fill'
+
+interface BackgroundVariant {
+  image?: string
+  fit?: BackgroundFit
+  position?: string
+  layers?: Array<{ image: string; depth: number; fit?: BackgroundFit }>
+  intensity?: number
+}
+
+interface BackgroundConfig extends BackgroundVariant {
+  type: 'static' | 'parallax' | 'video' | 'canvas' | 'spine' | 'three'
+  poster?: string
+  variants?: Record<string, BackgroundVariant>
+  defaultVariant?: string
+  src?: string
+  file?: string
+}
+
 interface SceneData {
   data?: {
-    background?: {
-      type: 'static' | 'parallax' | 'video' | 'canvas' | 'spine' | 'three'
-      image?: string
-      variants?: Record<string, { image?: string }>
-      defaultVariant?: string
-      layers?: Array<{ image: string; depth: number }>
-      intensity?: number
-      src?: string
-      file?: string
-    }
+    background?: BackgroundConfig
   }
 }
 
 interface VnBackgroundProps {
-  scene: { id: string; data: SceneData['data'] } | null
+  scene: { id: string; data: SceneData['data']; variant?: string } | null
+}
+
+function resolveAsset(path: string | undefined): string | null {
+  if (!path) return null
+  if (path.startsWith('http') || path.startsWith('/')) return path
+  return `./assets/${path}`
+}
+
+export function backgroundSizeForFit(fit: BackgroundFit | undefined): string {
+  return fit === 'fill' ? '100% 100%' : fit ?? 'cover'
+}
+
+export function objectFitForFit(fit: BackgroundFit | undefined): string {
+  return fit ?? 'cover'
+}
+
+export function selectBackgroundVariant(
+  bg: { variants?: Record<string, BackgroundVariant>; defaultVariant?: string },
+  requestedVariant?: string,
+): BackgroundVariant {
+  if (!bg.variants) return {}
+  const variantKey = requestedVariant ?? bg.defaultVariant ?? Object.keys(bg.variants)[0]
+  return variantKey ? (bg.variants[variantKey] ?? {}) : {}
+}
+
+function renderUnsupportedBackground(el: HTMLDivElement, type: string): void {
+  const fallback = document.createElement('div')
+  fallback.style.cssText = [
+    'position:absolute',
+    'inset:0',
+    'display:flex',
+    'align-items:center',
+    'justify-content:center',
+    'background:#111',
+    'color:rgba(229,226,225,0.62)',
+    'font:11px var(--vn-font, "Manrope", sans-serif)',
+    'letter-spacing:0.18em',
+    'text-transform:uppercase',
+  ].join(';')
+  fallback.textContent = `Unsupported background renderer: ${type}`
+  el.appendChild(fallback)
 }
 
 export function VnBackground({ scene }: VnBackgroundProps) {
@@ -34,33 +85,38 @@ export function VnBackground({ scene }: VnBackgroundProps) {
       return
     }
 
-    const resolveImg = (path: string | undefined): string | null => {
-      if (!path) return null
-      if (path.startsWith('http') || path.startsWith('/')) return path
-      return `./assets/${path}`
-    }
-
     if (bg.type === 'static') {
-      let img = bg.image
-      if (!img && bg.variants) {
-        const defaultVariant = bg.defaultVariant ?? Object.keys(bg.variants)[0]!
-        img = defaultVariant ? bg.variants[defaultVariant]?.image : undefined
-      }
+      const selected = selectBackgroundVariant(bg, scene?.variant)
+      const img = selected.image ?? bg.image
       const div = document.createElement('div')
-      div.style.cssText = 'position:absolute;inset:0;background-size:cover;background-position:center;background-repeat:no-repeat;'
-      div.style.backgroundImage = img ? `url("${resolveImg(img)}")` : 'none'
+      div.style.cssText = [
+        'position:absolute',
+        'inset:0',
+        `background-size:${backgroundSizeForFit(selected.fit ?? bg.fit)}`,
+        `background-position:${selected.position ?? bg.position ?? 'center'}`,
+        'background-repeat:no-repeat',
+      ].join(';')
+      div.style.backgroundImage = img ? `url("${resolveAsset(img)}")` : 'none'
       el.appendChild(div)
     } else if (bg.type === 'parallax') {
-      const layers = bg.layers ?? []
+      const selected = selectBackgroundVariant(bg, scene?.variant)
+      const layers = selected.layers ?? bg.layers ?? []
       const layerEls: Array<{ el: HTMLDivElement; depth: number }> = []
       for (const layer of layers) {
         const div = document.createElement('div')
-        div.style.cssText = 'position:absolute;inset:0;background-size:cover;background-position:center;background-repeat:no-repeat;will-change:transform;'
-        div.style.backgroundImage = `url("${resolveImg(layer.image)}")`
+        div.style.cssText = [
+          'position:absolute',
+          'inset:0',
+          `background-size:${backgroundSizeForFit(layer.fit)}`,
+          'background-position:center',
+          'background-repeat:no-repeat',
+          'will-change:transform',
+        ].join(';')
+        div.style.backgroundImage = `url("${resolveAsset(layer.image)}")`
         el.appendChild(div)
         layerEls.push({ el: div, depth: layer.depth ?? 1 })
       }
-      const intensity = bg.intensity ?? 20
+      const intensity = selected.intensity ?? bg.intensity ?? 20
       const handler = (e: MouseEvent) => {
         const cx = window.innerWidth / 2, cy = window.innerHeight / 2
         const dx = (e.clientX - cx) / cx, dy = (e.clientY - cy) / cy
@@ -72,14 +128,18 @@ export function VnBackground({ scene }: VnBackgroundProps) {
       return () => window.removeEventListener('mousemove', handler)
     } else if (bg.type === 'video') {
       const video = document.createElement('video')
-      video.src = resolveImg(bg.src ?? bg.file) ?? ''
+      video.src = resolveAsset(bg.src ?? bg.file) ?? ''
+      const poster = resolveAsset(bg.poster)
+      if (poster) video.poster = poster
       video.autoplay = true
       video.loop = true
       video.muted = true
       video.playsInline = true
-      video.style.cssText = 'width:100%;height:100%;object-fit:cover;position:absolute;inset:0;'
+      video.style.cssText = `width:100%;height:100%;object-fit:${objectFitForFit(bg.fit)};position:absolute;inset:0;`
       el.appendChild(video)
       void video.play().catch(() => {})
+    } else {
+      renderUnsupportedBackground(el, bg.type)
     }
   }, [scene])
 

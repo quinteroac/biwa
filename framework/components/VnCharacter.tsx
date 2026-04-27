@@ -24,6 +24,10 @@ interface CharacterLayer {
 interface CharacterData {
   displayName?: string
   nameColor?: string
+  defaultPosition?: 'left' | 'center' | 'right'
+  defaultExpression?: string
+  scale?: number
+  offset?: { x?: number; y?: number }
   animation?: {
     type: string
     sprites?: Record<string, string>
@@ -151,15 +155,32 @@ export function VnCharacter({ id, charData, position, expression, exiting, onExi
   }
 
   const visible = entered && !exiting
+  const scale = charData?.scale ?? 1
+  const offsetX = charData?.offset?.x ?? 0
+  const offsetY = charData?.offset?.y ?? 0
 
   let posStyle: React.CSSProperties
   if (position === 'left') {
-    posStyle = { left: '2%', right: 'auto', transform: visible ? 'translateY(0)' : 'translateY(20px)' }
+    posStyle = {
+      left: `calc(2% + ${offsetX}px)`,
+      right: 'auto',
+      transform: visible ? `translateY(${offsetY}px) scale(${scale})` : `translateY(${offsetY + 20}px) scale(${scale})`,
+    }
   } else if (position === 'right') {
-    posStyle = { left: 'auto', right: '2%', transform: visible ? 'translateY(0)' : 'translateY(20px)' }
+    posStyle = {
+      left: 'auto',
+      right: `calc(2% - ${offsetX}px)`,
+      transform: visible ? `translateY(${offsetY}px) scale(${scale})` : `translateY(${offsetY + 20}px) scale(${scale})`,
+    }
   } else {
-    posStyle = { left: '50%', right: 'auto', transform: visible ? 'translateX(-50%) translateY(0)' : 'translateX(-50%) translateY(20px)' }
+    posStyle = {
+      left: `calc(50% + ${offsetX}px)`,
+      right: 'auto',
+      transform: visible ? `translateX(-50%) translateY(${offsetY}px) scale(${scale})` : `translateX(-50%) translateY(${offsetY + 20}px) scale(${scale})`,
+    }
   }
+
+  const unsupportedAnimationType = anim && !['sprites', 'spritesheet'].includes(anim.type) && (!layers || layers.length === 0)
 
   return (
     <div style={{
@@ -183,6 +204,25 @@ export function VnCharacter({ id, charData, position, expression, exiting, onExi
           alt={`${charData?.displayName ?? id} - ${expression}`}
           style={{ display: 'block', width: '100%', height: 'auto', userSelect: 'none' }}
         />
+      )}
+      {unsupportedAnimationType && (
+        <div
+          data-testid="vn-character-renderer-fallback"
+          style={{
+            minHeight: 280,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '1px solid rgba(255,255,255,0.16)',
+            color: 'rgba(229,226,225,0.62)',
+            fontSize: 11,
+            letterSpacing: '0.16em',
+            textTransform: 'uppercase',
+            background: 'rgba(0,0,0,0.28)',
+          }}
+        >
+          Unsupported character renderer: {anim.type}
+        </div>
       )}
       {layers && layers.length > 0 && (() => {
         const layerImgs = layers.flatMap(layer => {
