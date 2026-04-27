@@ -8,7 +8,7 @@
     "new": "bun manager/cli.ts new",
     "list": "bun manager/cli.ts list",
     "doctor": "bun manager/cli.ts doctor",
-    "test": "bun test framework",
+    "test": "bun test framework manager",
     "typecheck": "tsc",
     "check": "bun run test && bun run typecheck",
     "build:demo": "bun manager/cli.ts build smoke-fixture",

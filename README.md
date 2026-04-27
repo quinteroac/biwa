@@ -27,6 +27,7 @@ bun run check                  # tests + typecheck
 bun run e2e                    # browser smoke against the built smoke fixture
 bun manager/cli.ts doctor mi-novela
 bun manager/cli.ts doctor mi-novela --json
+bun manager/cli.ts assets character-atlas mi-novela kai
 bun manager/cli.ts build mi-novela
 bun run verify                 # CI-style check against smoke-fixture
 ```
@@ -48,6 +49,7 @@ See [framework/docs/distribution.md](framework/docs/distribution.md).
 - [First game guide](framework/docs/first-game.md)
 - [GameEngine API](framework/docs/game-engine-api.md)
 - [Diagnostics](framework/docs/diagnostics.md)
+- [Aseprite atlas JSON](framework/docs/aseprite-atlas.md)
 - [Ink tag guide](framework/docs/ink-tags.md)
 - [Project structure](framework/docs/project-structure.md)
 - [Customizing components](framework/docs/customizing-components.md)

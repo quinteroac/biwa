@@ -1,16 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-
-interface AsepriteFrame {
-  frame: { x: number; y: number; w: number; h: number }
-  duration: number
-}
-
-interface AsepriteAtlas {
-  frames: Record<string, AsepriteFrame>
-  meta: {
-    frameTags: Array<{ name: string; from: number; to: number }>
-  }
-}
+import { getAsepriteFrameItems, getAsepriteFrameTags } from '../engine/AsepriteAtlas.ts'
+import type { AsepriteAtlas } from '../engine/AsepriteAtlas.ts'
 
 interface CharacterLayer {
   id: string
@@ -79,21 +69,20 @@ function SpritesheetRenderer({ file, atlas, expression, expressions }: {
 
     const animName = expressions[expression] ?? expressions['neutral'] ?? Object.values(expressions)[0]
     if (!animName) return
-    const tag = atlasData.meta.frameTags.find(t => t.name === animName)
+    const tags = getAsepriteFrameTags(atlasData)
+    const tag = tags.find(t => t.name === animName)
     if (!tag) return
 
-    const frameKeys  = Object.keys(atlasData.frames)
+    const frames = getAsepriteFrameItems(atlasData)
     const frameCount = tag.to - tag.from + 1
     let currentFrame = 0
 
     const drawFrame = (img: HTMLImageElement, frameIdx: number) => {
       const canvas = canvasRef.current
       if (!canvas) return
-      const frameKey = frameKeys[tag.from + frameIdx]
-      if (!frameKey) return
-      const frameData = atlasData.frames[frameKey]
-      if (!frameData) return
-      const { x, y, w, h } = frameData.frame
+      const frameItem = frames[tag.from + frameIdx]
+      if (!frameItem) return
+      const { x, y, w, h } = frameItem
       canvas.width  = w
       canvas.height = h
       const ctx = canvas.getContext('2d')!
@@ -104,8 +93,7 @@ function SpritesheetRenderer({ file, atlas, expression, expressions }: {
     const startAnimation = (img: HTMLImageElement) => {
       drawFrame(img, 0)
       if (frameCount > 1) {
-        const firstFrameKey = frameKeys[tag.from]
-        const duration = firstFrameKey ? atlasData.frames[firstFrameKey]?.duration ?? 100 : 100
+        const duration = frames[tag.from]?.frame.duration ?? 100
         timerRef.current = setInterval(() => {
           currentFrame = (currentFrame + 1) % frameCount
           drawFrame(img, currentFrame)

@@ -25,6 +25,7 @@ Alcance:
 - Crear harness de tests para comandos CLI.
 - Ejecutar comandos sobre proyectos temporales o fixtures aislados.
 - Cubrir `new`, `doctor`, `build` y `list`.
+- Cubrir los subcomandos de assets/atlas JSON.
 - Verificar exit codes y mensajes clave.
 - Validar que `new` genera un proyecto que pasa `doctor` y `build`.
 - Validar errores comunes:

@@ -49,6 +49,15 @@ The default output is human-readable. `--json` emits a stable report for editor 
 | `config_default_locale_missing` | `story.defaultLocale` is missing. | Set it to one of `story.locales` keys. |
 | `story_locale_path_missing` | A configured story locale path does not exist. | Create the `.ink` file or update the path. |
 | `story_default_locale_unmapped` | The default locale has no matching story path. | Make `defaultLocale` match a key in `story.locales`. |
+| `atlas_json_invalid` | A character spritesheet atlas is not valid JSON. | Regenerate it with `bun manager/cli.ts assets character-atlas` or fix the syntax. |
+| `atlas_version_unsupported` | A ComfyUI Game Assets Maker atlas uses an unsupported version. | Regenerate the atlas with the current CLI/custom node contract. |
+| `atlas_image_missing` | Atlas `meta.image` is missing. | Add the future spritesheet filename to `meta.image`. |
+| `atlas_size_missing` | Atlas `meta.size` is missing or invalid. | Regenerate the atlas or add numeric `w`/`h`. |
+| `atlas_frames_empty` | Atlas contains no frames. | Regenerate the atlas with at least one frame. |
+| `atlas_frame_out_of_bounds` | A frame rectangle exceeds `meta.size`. | Fix the rectangle or regenerate the atlas. |
+| `atlas_frame_tags_missing` | An animation atlas has no frame tags. | Add `meta.frameTags`. |
+| `atlas_frame_tag_invalid` | A frame tag points outside the atlas frame range. | Fix `from`/`to`. |
+| `atlas_frame_tag_direction_invalid` | A frame tag direction is not supported. | Use `forward`, `reverse` or `pingpong`. |
 
 ## Suppressions
 

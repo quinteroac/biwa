@@ -3,6 +3,7 @@ import { join, relative } from 'path'
 import { pathToFileURL } from 'url'
 import yaml from 'js-yaml'
 import { TagParser } from '../../framework/TagParser.ts'
+import { validateAsepriteAtlas } from '../../framework/engine/AsepriteAtlas.ts'
 import type { GameConfig } from '../../framework/types/game-config.d.ts'
 import type { TagCommand } from '../../framework/TagParser.ts'
 
@@ -143,6 +144,33 @@ function checkAsset(gameDir: string, filePath: string, ref: unknown, issues: Iss
   }
 }
 
+function validateAtlasAsset(gameDir: string, filePath: string, ref: unknown, issues: Issue[], requireAnimationTags = false): void {
+  if (typeof ref !== 'string' || ref.length === 0 || /^https?:\/\//.test(ref)) return
+  const resolved = resolveAsset(gameDir, ref)
+  if (!existsSync(resolved)) return
+  try {
+    const atlas = JSON.parse(readFileSync(resolved, 'utf8')) as unknown
+    for (const issue of validateAsepriteAtlas(atlas, { requireAnimationTags })) {
+      issues.push({
+        severity: issue.code === 'atlas_version_unsupported' ? 'error' : 'warning',
+        path: filePath,
+        code: issue.code,
+        message: `${issue.message} (${ref})`,
+        suggestion: 'Regenerate the atlas with `bun manager/cli.ts assets character-atlas` or align it with aseprite-atlas-v1.',
+      })
+    }
+  } catch (e) {
+    const err = e instanceof Error ? e : new Error(String(e))
+    issues.push({
+      severity: 'error',
+      path: filePath,
+      code: 'atlas_json_invalid',
+      message: `Invalid character atlas JSON: ${ref}: ${err.message}`,
+      suggestion: 'Regenerate the atlas with `bun manager/cli.ts assets character-atlas` or fix the JSON syntax.',
+    })
+  }
+}
+
 function addDataFile(
   map: Map<string, Record<string, unknown>>,
   filePath: string,
@@ -233,6 +261,9 @@ function validateDataFile(
     if (animation) {
       checkAsset(gameDir, filePath, animation['file'], issues, 'Character animation file')
       checkAsset(gameDir, filePath, animation['atlas'], issues, 'Character atlas')
+      if (animation['type'] === 'spritesheet') {
+        validateAtlasAsset(gameDir, filePath, animation['atlas'], issues)
+      }
       const sprites = asRecord(animation['sprites'])
       if (sprites) {
         for (const [name, ref] of Object.entries(sprites)) {

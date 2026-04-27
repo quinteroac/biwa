@@ -18,10 +18,15 @@ Kai stares at the entrance without moving.
 
 The interior smells of cinnamon and something older.
 # character: sara, position: left, expression: neutral
+# character: kirk, position: center, expression: neutral
 
 Sara glances up from behind the counter.
 
 Sara: You've been staring at the door for a while.
+
+At a table by the window, Kirk lowers his coffee cup as if he had been waiting for that exact line.
+
+Kirk: If it helps, everyone doubts it the first time.
 
 * [Respond]
     -> chapter_01_response
@@ -31,17 +36,23 @@ Sara: You've been staring at the door for a while.
 === chapter_01_response ===
 # character: kai, expression: surprised
 # character: sara, expression: happy
+# character: kirk, expression: happy
 
 Kai: I wasn't sure the place was real.
 
 Sara: It still might not be. Sit down anyway.
 
+Kirk gives a small smile, quietly relieved not to be the only witness.
+
 -> chapter_02
 
 === chapter_01_silent ===
 # character: kai, expression: sad
+# character: kirk, expression: sad
 
 Kai says nothing. Sara returns to her work.
+
+Kirk watches the door. For a moment, he looks worried.
 
 -> chapter_02
 

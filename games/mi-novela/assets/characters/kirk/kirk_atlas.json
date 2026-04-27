@@ -1,0 +1,108 @@
+{
+  "frames": {
+    "neutral.png": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 314,
+        "h": 1254
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 314,
+        "h": 1254
+      },
+      "sourceSize": {
+        "w": 314,
+        "h": 1254
+      },
+      "duration": 100
+    },
+    "happy.png": {
+      "frame": {
+        "x": 314,
+        "y": 0,
+        "w": 314,
+        "h": 1254
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 314,
+        "h": 1254
+      },
+      "sourceSize": {
+        "w": 314,
+        "h": 1254
+      },
+      "duration": 100
+    },
+    "sad.png": {
+      "frame": {
+        "x": 628,
+        "y": 0,
+        "w": 314,
+        "h": 1254
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 314,
+        "h": 1254
+      },
+      "sourceSize": {
+        "w": 314,
+        "h": 1254
+      },
+      "duration": 100
+    },
+    "angry.png": {
+      "frame": {
+        "x": 942,
+        "y": 0,
+        "w": 312,
+        "h": 1254
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 312,
+        "h": 1254
+      },
+      "sourceSize": {
+        "w": 312,
+        "h": 1254
+      },
+      "duration": 100
+    }
+  },
+  "meta": {
+    "app": "ComfyUI Game Assets Maker",
+    "version": "aseprite-atlas-v1",
+    "image": "kirk_spritesheet.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 1254,
+      "h": 1254
+    },
+    "scale": "1",
+    "spritesheetType": "Half Body",
+    "layout": {
+      "direction": "Horizontal",
+      "columns": 4,
+      "rows": 1,
+      "spriteCount": 4,
+      "frameWidth": 314,
+      "frameHeight": 1254
+    }
+  }
+}

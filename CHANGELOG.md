@@ -24,6 +24,8 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Save slot thumbnails, namespaced autosave, game id and game version metadata.
 - `smoke-fixture` Playwright browser smoke as part of `bun run verify`.
 - CI workflow that runs the repository quality gate on pushes and pull requests.
+- `assets` CLI subcommands for Aseprite-compatible character and animation atlas JSON.
+- `aseprite-atlas-v1` parser helpers and runtime fallback from frame names to expression tags.
 
 ### Changed
 
@@ -35,3 +37,4 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Autosave preferences are namespaced by game id.
 - `VnStage` delegates concrete audio playback to the engine `AudioManager`.
 - `FEATURE_MAP.md` is now pending-work only; completed roadmap history is tracked here.
+- `doctor` validates character spritesheet atlas JSON when present.
