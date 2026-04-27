@@ -7,6 +7,8 @@ export interface DialogOptions {
   nameColor?: string | null
   canContinue: boolean
   advanceMode: 'none' | 'next' | 'choices'
+  backlogIndex?: number
+  seenBefore?: boolean
 }
 
 export interface VnDialogHandle {

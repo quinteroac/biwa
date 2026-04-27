@@ -23,10 +23,20 @@ export interface SavedAudioState {
   voice?: Record<string, unknown>
 }
 
+export interface BacklogEntry {
+  index: number
+  text: string
+  speaker?: string | null
+  nameColor?: string | null
+  timestamp: number
+  voice?: Record<string, unknown>
+}
+
 export interface SavedVisualState {
   scene?: SavedSceneState
   characters: SavedCharacterState[]
   audio: SavedAudioState
+  backlog?: BacklogEntry[]
   locale: string
 }
 

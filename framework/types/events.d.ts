@@ -1,12 +1,15 @@
 import type { TagCommand } from '../TagParser.ts'
 import type { EngineState } from '../engine/GameEngine.ts'
+import type { BacklogEntry } from './save.d.ts'
 
 export interface EngineDialogEvent {
   text: string
   speaker?: string
   nameColor: string | null
   canContinue: boolean
-  advanceMode: 'none' | 'choices'
+  advanceMode: 'none' | 'next' | 'choices'
+  backlogIndex?: number
+  seenBefore?: boolean
 }
 
 export interface EngineChoice {
@@ -55,6 +58,7 @@ export interface EndScreenEvent {
 export interface EngineEventMap {
   'engine:state': EngineState
   'engine:dialog': EngineDialogEvent
+  'engine:backlog': { entries: BacklogEntry[] }
   'engine:choices': EngineChoicesEvent
   'engine:scene': EngineSceneEvent
   'engine:character': EngineCharacterEvent

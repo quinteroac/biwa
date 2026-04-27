@@ -2,6 +2,7 @@ import { createElement, useEffect, useRef, useState } from 'react'
 import type { EventBus } from '../engine/EventBus.ts'
 import type { SaveManager } from '../SaveManager.ts'
 import type { GameSaveState } from '../types/save.d.ts'
+import type { ReactNode } from 'react'
 import { quickSave } from './VnQuickSave.tsx'
 
 /**
@@ -46,6 +47,12 @@ export interface SaveControlsBarProps {
   showAutoSave?: boolean
 
   /**
+   * Optional controls rendered at the start of the same bottom bar. Used by
+   * the default stage for player reading controls such as backlog, auto and skip.
+   */
+  leadingControls?: ReactNode
+
+  /**
    * The game's `EventBus` instance. Required for auto-save to subscribe to
    * `engine:dialog` events. When omitted, auto-save subscription is skipped.
    */
@@ -56,11 +63,16 @@ const TOGGLE_LABEL_STYLE: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: 6,
-  color: 'rgba(229,226,225,0.55)',
+  height: 28,
+  padding: '0 10px',
+  background: 'rgba(0,0,0,0.6)',
+  border: '1px solid rgba(255,255,255,0.24)',
+  borderRadius: 0,
+  color: 'rgba(229,226,225,0.78)',
   fontFamily: 'var(--vn-font, "Manrope", sans-serif)',
-  fontSize: 11,
+  fontSize: 10,
   fontWeight: 500,
-  letterSpacing: '0.2em',
+  letterSpacing: '0.08em',
   textTransform: 'uppercase',
   cursor: 'pointer',
   userSelect: 'none',
@@ -94,6 +106,8 @@ const BAR_STYLE: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'row',
   justifyContent: 'center',
+  alignItems: 'center',
+  flexWrap: 'wrap',
   gap: 12,
   padding: '8px 64px 12px',
   background: 'rgba(0,0,0,0.55)',
@@ -101,19 +115,18 @@ const BAR_STYLE: React.CSSProperties = {
 }
 
 const BTN_STYLE: React.CSSProperties = {
-  padding: '0 12px',
   height: 28,
-  background: 'transparent',
-  border: '1px solid rgba(255,255,255,0.2)',
+  padding: '0 10px',
+  background: 'rgba(0,0,0,0.6)',
+  border: '1px solid rgba(255,255,255,0.24)',
   borderRadius: 0,
-  color: 'rgba(229,226,225,0.55)',
+  color: 'rgba(229,226,225,0.78)',
   fontFamily: 'var(--vn-font, "Manrope", sans-serif)',
-  fontSize: 11,
+  fontSize: 10,
   fontWeight: 500,
-  letterSpacing: '0.2em',
+  letterSpacing: '0.08em',
   textTransform: 'uppercase',
   cursor: 'pointer',
-  transition: 'color 0.1s linear, border-color 0.1s linear',
   pointerEvents: 'auto',
 }
 
@@ -157,7 +170,7 @@ const TOAST_STYLE: React.CSSProperties = {
  * @param props - {@link SaveControlsBarProps}
  * @returns A React element with the Quick Save, Auto Save toggle, and (optionally) Save / Load buttons.
  */
-export function SaveControlsBar({ saveManager, getState, onOpenMenu, showQuickSave = true, showSlotMenu = true, showAutoSave = true, eventBus }: SaveControlsBarProps): React.ReactElement {
+export function SaveControlsBar({ saveManager, getState, onOpenMenu, showQuickSave = true, showSlotMenu = true, showAutoSave = true, leadingControls, eventBus }: SaveControlsBarProps): React.ReactElement {
   const [toastMessage, setToastMessage] = useState<string | null>(null)
   const autoSaveKey = saveManager.autoSavePreferenceKey
 
@@ -215,6 +228,7 @@ export function SaveControlsBar({ saveManager, getState, onOpenMenu, showQuickSa
   return createElement(
     'div',
     { style: BAR_STYLE },
+    leadingControls ?? null,
     showQuickSave
       ? createElement(
           'button',

@@ -35,6 +35,9 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - `build --mode <standalone|static|portal|embedded>` with effective mode recorded in `manifest.json`.
 - Portal and embedded distribution wrapper artifacts.
 - `bun run coverage` for framework and manager coverage reporting.
+- Player backlog/history API and default `VnBacklog` overlay.
+- Auto mode and skip mode baseline controls in `VnStage`.
+- Seen-dialog tracking for read-only skip behavior.
 
 ### Changed
 
@@ -51,3 +54,4 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Audio docs now distinguish implemented single-file playback from reserved adaptive/intro-loop metadata.
 - Engine docs now define singleton versus isolated instance policy.
 - Distribution docs now describe mode-specific wrapper contracts.
+- Save snapshots now include dialog backlog state.

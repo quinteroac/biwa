@@ -8,7 +8,7 @@ import { BgmController } from './BgmController.ts'
 import { SfxController } from './SfxController.ts'
 import { AmbienceController } from './AmbienceController.ts'
 import { VoiceController } from './VoiceController.ts'
-import type { GameSaveState, SavedAudioState, SavedCharacterState, SavedVisualState } from '../types/save.d.ts'
+import type { BacklogEntry, GameSaveState, SavedAudioState, SavedCharacterState, SavedVisualState } from '../types/save.d.ts'
 import type { GameConfig } from '../types/game-config.d.ts'
 import type { TagCommand } from './ScriptRunner.ts'
 import type { EngineEventMap } from '../types/events.d.ts'
@@ -52,6 +52,9 @@ export class GameEngine {
   #currentSceneVariant: string | null = null
   #currentCharacters = new Map<string, SavedCharacterState>()
   #currentAudio: SavedAudioState = {}
+  #backlog: BacklogEntry[] = []
+  #seenDialogKeys = new Set<string>()
+  #backlogIndex = 0
   #locale: string
   #startedAt = Date.now()
   #restoredPlaytime = 0
@@ -96,6 +99,9 @@ export class GameEngine {
   /** The game title from the loaded config. */
   get title(): string { return this.#config.title }
 
+  /** Stable game id used for player preference namespaces. */
+  get id(): string { return this.#config.id }
+
   /** Expose the internal SaveManager instance for UI components. */
   get saveManager(): SaveManager { return this.#saveManager }
 
@@ -124,9 +130,19 @@ export class GameEngine {
       ...(scene ? { scene } : {}),
       characters: Array.from(this.#currentCharacters.values()),
       audio: { ...this.#currentAudio },
+      backlog: this.getBacklog(),
       locale: this.#locale,
     }
     return { meta, state, visual }
+  }
+
+  getBacklog(): BacklogEntry[] {
+    return this.#backlog.map(entry => ({ ...entry }))
+  }
+
+  clearBacklog(): void {
+    this.#backlog = []
+    this.#bus.emit('engine:backlog', { entries: this.getBacklog() })
   }
 
   /** Restore a previously saved `GameSaveState`. */
@@ -173,6 +189,7 @@ export class GameEngine {
       autoSave:    this.#config.saves?.autoSave ?? true,
     })
     this.#assetLoader = new AssetLoader()
+    this.#loadSeenDialogKeys()
 
     const minigames = this.#config.minigames ?? {}
     for (const [id, loader] of Object.entries(minigames)) {
@@ -277,6 +294,7 @@ export class GameEngine {
         nameColor,
         canContinue: step.canContinue,
         advanceMode,
+        ...this.#recordBacklog(step.text, displayName, nameColor),
       })
     } else if (step.type === 'tags-only') {
       await this.#advance()
@@ -349,6 +367,27 @@ export class GameEngine {
     return data ? { ...data, ...tag } : tag
   }
 
+  #dialogSeenKey(text: string, speaker?: string | null): string {
+    return `${speaker ?? ''}\n${text}`
+  }
+
+  #recordBacklog(text: string, speaker?: string | null, nameColor?: string | null): { backlogIndex: number; seenBefore: boolean } {
+    const key = this.#dialogSeenKey(text, speaker)
+    const seenBefore = this.#seenDialogKeys.has(key)
+    this.#seenDialogKeys.add(key)
+    const entry: BacklogEntry = {
+      index: ++this.#backlogIndex,
+      text,
+      ...(speaker ? { speaker } : {}),
+      ...(nameColor ? { nameColor } : {}),
+      timestamp: Date.now(),
+    }
+    this.#backlog.push(entry)
+    this.#bus.emit('engine:backlog', { entries: this.getBacklog() })
+    this.#persistSeenDialogKeys()
+    return { backlogIndex: entry.index, seenBefore }
+  }
+
   #emitAudioTag(channel: keyof SavedAudioState, tag: TagCommand): void {
     const payload = this.#withAudioData(tag)
     if (payload.id === 'stop') {
@@ -388,6 +427,10 @@ export class GameEngine {
     this.#locale = visual.locale
     this.#currentCharacters.clear()
     this.#currentAudio = {}
+    this.#backlog = visual.backlog?.map(entry => ({ ...entry })) ?? []
+    this.#backlogIndex = this.#backlog.reduce((max, entry) => Math.max(max, entry.index), 0)
+    for (const entry of this.#backlog) this.#seenDialogKeys.add(this.#dialogSeenKey(entry.text, entry.speaker))
+    this.#bus.emit('engine:backlog', { entries: this.getBacklog() })
 
     if (visual.scene) {
       this.#currentSceneId = visual.scene.id
@@ -417,6 +460,25 @@ export class GameEngine {
       this.#currentAudio.voice = visual.audio.voice
       this.#bus.emit('engine:voice', { ...visual.audio.voice, restored: true })
     }
+  }
+
+  #seenStorageKey(): string {
+    return `vn:${this.#config.id}:seen-dialog`
+  }
+
+  #loadSeenDialogKeys(): void {
+    try {
+      const raw = localStorage.getItem(this.#seenStorageKey())
+      if (!raw) return
+      const values = JSON.parse(raw) as unknown
+      if (Array.isArray(values)) this.#seenDialogKeys = new Set(values.map(String))
+    } catch { /* non-fatal */ }
+  }
+
+  #persistSeenDialogKeys(): void {
+    try {
+      localStorage.setItem(this.#seenStorageKey(), JSON.stringify(Array.from(this.#seenDialogKeys)))
+    } catch { /* non-fatal */ }
   }
 
   async #runMinigame(id: string, tag: Record<string, unknown>): Promise<void> {

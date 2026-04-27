@@ -70,6 +70,27 @@ describe('SaveControlsBar', () => {
     expect(html).toContain('display:flex')
   })
 
+  it('renders leading controls in the same bar as save controls', () => {
+    const html = render({
+      leadingControls: createElement(
+        'button',
+        {
+          type: 'button',
+          'aria-label': 'Toggle auto mode',
+          'aria-pressed': true,
+          style: { background: 'rgba(229,226,225,0.88)' },
+        },
+        'Auto',
+      ),
+    })
+
+    expect(html).toContain('aria-label="Toggle auto mode"')
+    expect(html).toContain('aria-pressed="true"')
+    expect(html).toContain('Quick Save')
+    expect(html).toContain('Save / Load')
+    expect(html).toContain('Auto Save')
+  })
+
   // US-001-AC02: bar renders output when mounted (dialog visibility controls mounting in VnStage)
   it('AC02: renders non-empty output when mounted', () => {
     const html = render()

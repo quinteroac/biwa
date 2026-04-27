@@ -53,6 +53,7 @@ See [framework/docs/distribution.md](framework/docs/distribution.md).
 - [First game guide](framework/docs/first-game.md)
 - [GameEngine API](framework/docs/game-engine-api.md)
 - [Diagnostics](framework/docs/diagnostics.md)
+- [Player features](framework/docs/player-features.md)
 - [Aseprite atlas JSON](framework/docs/aseprite-atlas.md)
 - [Ink tag guide](framework/docs/ink-tags.md)
 - [Project structure](framework/docs/project-structure.md)
@@ -67,6 +68,7 @@ See [framework/docs/distribution.md](framework/docs/distribution.md).
 | Unified tag parser | Implemented |
 | Data pipeline | Recursive indexes, doctor validation, build conversion |
 | Save/load | Story, variables, visual scene, characters, audio and locale |
+| Player reading features | Backlog, auto mode and skip mode baseline |
 | Audio | Extracted runtime manager, persisted master/bgm/ambience/sfx/voice volumes |
 | UI customization | Typed app and stage component overrides |
 | Distribution | Static ESM build with import map and smoke checks |

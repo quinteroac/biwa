@@ -6,12 +6,14 @@ import { VnChoices } from './VnChoices.tsx'
 import { VnTransition } from './VnTransition.tsx'
 import { VnSaveMenu } from './VnSaveMenu.tsx'
 import { VnVolumeControl } from './VnVolumeControl.tsx'
+import { VnBacklog } from './VnBacklog.tsx'
 import { SaveControlsBar } from './SaveControlsBar.tsx'
 import { getStageAdvanceAction, isAcceptedAdvanceKey } from './VnStageAdvance.ts'
+import { getAutoDelayMs, getAutoModeAction, getSkipModeAction } from './VnPlayerModes.ts'
 import { AudioManager } from '../engine/AudioManager.ts'
 import type { AudioPlaybackData } from '../engine/AudioManager.ts'
 import type { GameEngine } from '../engine/GameEngine.ts'
-import type { GameSaveState } from '../types/save.d.ts'
+import type { BacklogEntry, GameSaveState } from '../types/save.d.ts'
 import type { DialogOptions, VnDialogHandle } from './VnDialog.tsx'
 import type { StepChoice } from '../engine/ScriptRunner.ts'
 
@@ -42,6 +44,44 @@ const GLOBAL_CSS = `
     50% { transform: translateY(-6px); }
   }
 `
+
+function readStoredBoolean(key: string, fallback: boolean): boolean {
+  try {
+    const raw = localStorage.getItem(key)
+    if (raw === null) return fallback
+    return raw === 'true'
+  } catch {
+    return fallback
+  }
+}
+
+function writeStoredBoolean(key: string, value: boolean): void {
+  try {
+    localStorage.setItem(key, String(value))
+  } catch { /* non-fatal */ }
+}
+
+interface PlayerFeatureEngine {
+  id?: string
+  getBacklog?: () => BacklogEntry[]
+  clearBacklog?: () => void
+}
+
+function getPlayerFeatureEngine(engine: GameEngine): PlayerFeatureEngine {
+  return engine as PlayerFeatureEngine
+}
+
+function getEngineStorageId(engine: GameEngine): string {
+  return getPlayerFeatureEngine(engine).id ?? 'default'
+}
+
+function getEngineBacklog(engine: GameEngine): BacklogEntry[] {
+  return getPlayerFeatureEngine(engine).getBacklog?.() ?? []
+}
+
+function clearEngineBacklog(engine: GameEngine): void {
+  getPlayerFeatureEngine(engine).clearBacklog?.()
+}
 
 /**
  * Props accepted by {@link VnStage}.
@@ -90,6 +130,7 @@ export interface VnStageComponents {
   SaveMenu?: typeof VnSaveMenu
   SaveControls?: typeof SaveControlsBar
   VolumeControl?: typeof VnVolumeControl
+  Backlog?: typeof VnBacklog
 }
 
 export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, showAutoSave = true, resumeFrom, components = {} }: VnStageProps) {
@@ -101,11 +142,18 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
   const SaveMenuComponent = components.SaveMenu ?? VnSaveMenu
   const SaveControlsComponent = components.SaveControls ?? SaveControlsBar
   const VolumeControlComponent = components.VolumeControl ?? VnVolumeControl
+  const BacklogComponent = components.Backlog ?? VnBacklog
+  const engineStorageId = getEngineStorageId(engine)
   const [menuOpen, setMenuOpen] = useState(false)
   const [audioOpen, setAudioOpen] = useState(false)
+  const [backlogOpen, setBacklogOpen] = useState(false)
+  const [autoMode, setAutoMode] = useState(() => readStoredBoolean(`vn:${engineStorageId}:player:auto`, false))
+  const [skipMode, setSkipMode] = useState(() => readStoredBoolean(`vn:${engineStorageId}:player:skip`, false))
+  const [skipReadOnly, setSkipReadOnly] = useState(() => readStoredBoolean(`vn:${engineStorageId}:player:skip-read-only`, true))
   const [scene, setScene]           = useState<SceneState | null>(null)
   const [characters, setCharacters] = useState<Map<string, CharacterState>>(new Map())
   const [dialog, setDialog]         = useState<DialogOptions | null>(null)
+  const [backlog, setBacklog]       = useState<BacklogEntry[]>(() => getEngineBacklog(engine))
   const [choices, setChoices]       = useState<StepChoice[] | null>(null)
   const [transition, setTransition] = useState<TransitionState | null>(null)
   const dialogRef = useRef<VnDialogHandle>(null)
@@ -150,6 +198,10 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
         setDialog(opts)
       }),
 
+      bus.on<{ entries: BacklogEntry[] }>('engine:backlog', ({ entries }) => {
+        setBacklog(entries)
+      }),
+
       bus.on<{ choices: StepChoice[] }>('engine:choices', ({ choices }) => {
         setChoices(choices)
       }),
@@ -177,6 +229,18 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
   }, [engine, resumeFrom])
 
   useEffect(() => {
+    writeStoredBoolean(`vn:${engineStorageId}:player:auto`, autoMode)
+  }, [engineStorageId, autoMode])
+
+  useEffect(() => {
+    writeStoredBoolean(`vn:${engineStorageId}:player:skip`, skipMode)
+  }, [engineStorageId, skipMode])
+
+  useEffect(() => {
+    writeStoredBoolean(`vn:${engineStorageId}:player:skip-read-only`, skipReadOnly)
+  }, [engineStorageId, skipReadOnly])
+
+  useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (!isAcceptedAdvanceKey(e.key)) return
       const action = getStageAdvanceAction(choices !== null, dialogRef.current?.isTyping ?? false)
@@ -191,6 +255,25 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [engine, choices])
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'b' || e.key === 'B') {
+        e.preventDefault()
+        setBacklogOpen(open => !open)
+      } else if (e.key === 'a' || e.key === 'A') {
+        e.preventDefault()
+        setAutoMode(value => !value)
+        setSkipMode(false)
+      } else if (e.key === 's' || e.key === 'S') {
+        e.preventDefault()
+        setSkipMode(value => !value)
+        setAutoMode(false)
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
 
   // Open save menu with Escape when it's closed (avoid interfering when menu is open).
   useEffect(() => {
@@ -215,6 +298,50 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
     }
   }, [engine, choices])
 
+  useEffect(() => {
+    if (!autoMode || !dialog) return
+    let scheduled: ReturnType<typeof setTimeout> | null = null
+    const interval = setInterval(() => {
+      if (scheduled) return
+      const action = getAutoModeAction({
+        hasDialog: Boolean(dialog),
+        hasChoices: choices !== null,
+        hasBlockingOverlay: menuOpen || audioOpen || backlogOpen || transition !== null,
+        isTyping: dialogRef.current?.isTyping ?? false,
+      })
+      if (action !== 'advance') return
+      scheduled = setTimeout(() => {
+        scheduled = null
+        engine.advance()
+      }, getAutoDelayMs(dialog.text))
+    }, 120)
+    return () => {
+      clearInterval(interval)
+      if (scheduled) clearTimeout(scheduled)
+    }
+  }, [autoMode, dialog, choices, menuOpen, audioOpen, backlogOpen, transition, engine])
+
+  useEffect(() => {
+    if (!skipMode || !dialog) return
+    const interval = setInterval(() => {
+      const action = getSkipModeAction({
+        hasDialog: Boolean(dialog),
+        hasChoices: choices !== null,
+        hasBlockingOverlay: menuOpen || audioOpen || backlogOpen || transition !== null,
+        isTyping: dialogRef.current?.isTyping ?? false,
+        dialogSeenBefore: dialog.seenBefore,
+      }, skipReadOnly)
+      if (action === 'stop-skip') {
+        setSkipMode(false)
+      } else if (action === 'reveal') {
+        dialogRef.current?.skip()
+      } else if (action === 'advance') {
+        engine.advance()
+      }
+    }, 80)
+    return () => clearInterval(interval)
+  }, [skipMode, skipReadOnly, dialog, choices, menuOpen, audioOpen, backlogOpen, transition, engine])
+
   const handleDialogComplete = useCallback((advanceMode: DialogOptions['advanceMode']) => {
     if (advanceMode === 'next') {
       engine.advance()
@@ -233,6 +360,56 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
       return next
     })
   }, [])
+
+  const playerControls = (
+    <div style={playerControlsStyle} onClick={(e) => e.stopPropagation()}>
+      <button
+        type="button"
+        aria-label="Open dialog backlog"
+        aria-pressed={backlogOpen}
+        onClick={() => setBacklogOpen(true)}
+        style={getPlayerButtonStyle(backlogOpen)}
+      >
+        Log
+      </button>
+      <button
+        type="button"
+        aria-label="Toggle auto mode"
+        aria-pressed={autoMode}
+        onClick={() => {
+          setAutoMode(value => !value)
+          setSkipMode(false)
+        }}
+        style={getPlayerButtonStyle(autoMode)}
+        title={autoMode ? 'Auto mode on' : 'Auto mode off'}
+      >
+        Auto
+      </button>
+      <button
+        type="button"
+        aria-label="Toggle skip mode"
+        aria-pressed={skipMode}
+        onClick={() => {
+          setSkipMode(value => !value)
+          setAutoMode(false)
+        }}
+        style={getPlayerButtonStyle(skipMode)}
+        title={skipMode ? 'Skip mode on' : 'Skip mode off'}
+      >
+        Skip
+      </button>
+      <button
+        type="button"
+        aria-label="Toggle read-only skip"
+        aria-pressed={skipReadOnly}
+        onClick={() => setSkipReadOnly(value => !value)}
+        style={getPlayerButtonStyle(skipReadOnly)}
+        title={skipReadOnly ? 'Read-only skip on' : 'Read-only skip off'}
+      >
+        Read
+      </button>
+    </div>
+  )
 
   return (
     <>
@@ -327,6 +504,13 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
           )}
         </div>
 
+        <BacklogComponent
+          isOpen={backlogOpen}
+          entries={backlog}
+          onClose={() => setBacklogOpen(false)}
+          onClear={() => clearEngineBacklog(engine)}
+        />
+
         {/* Bottom panel: dialog box stacked above the controls bar */}
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
@@ -342,6 +526,7 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
               showSlotMenu={showSlotMenu}
               showQuickSave={showQuickSave}
               showAutoSave={showAutoSave}
+              leadingControls={playerControls}
               eventBus={engine.bus}
             />
           )}
@@ -364,4 +549,37 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
       </div>
     </>
   )
+}
+
+const playerButtonStyle = {
+  height: 28,
+  padding: '0 10px',
+  background: 'rgba(0,0,0,0.6)',
+  border: '1px solid rgba(255,255,255,0.24)',
+  borderRadius: 0,
+  color: 'rgba(229,226,225,0.78)',
+  fontFamily: 'inherit',
+  fontSize: 10,
+  fontWeight: 500,
+  letterSpacing: '0.08em',
+  textTransform: 'uppercase' as const,
+  cursor: 'pointer',
+}
+
+const playerControlsStyle = {
+  display: 'flex',
+  justifyContent: 'center',
+  gap: 8,
+  pointerEvents: 'auto' as const,
+  fontFamily: 'var(--vn-font, "Manrope", sans-serif)',
+}
+
+function getPlayerButtonStyle(active: boolean) {
+  if (!active) return playerButtonStyle
+  return {
+    ...playerButtonStyle,
+    background: 'rgba(229,226,225,0.88)',
+    border: '1px solid rgba(229,226,225,0.95)',
+    color: 'rgba(0,0,0,0.86)',
+  }
 }
