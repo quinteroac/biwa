@@ -405,5 +405,7 @@ The engine runs these checks at startup via `SchemaValidator`.
 - `data.minigames` is required if `minigames` is present
 - Each key in `minigames` must have a corresponding `.md` file in `data.minigames`
 - `saves.slots` must be a positive integer if present
-- `distribution.basePath` is required when `distribution.mode` is `"portal"`
-- `distribution.basePath` must start with `"/"` if present
+- `game.config.ts` is validated against `framework/schemas/game.config.schema.json` by `doctor` and `build`.
+- `distribution.basePath` is recommended when `distribution.mode` is `"portal"`.
+- `distribution.basePath` must start with `"/"` if present.
+- `build --mode <standalone|static|portal|embedded>` overrides the configured distribution mode for that build and writes the effective mode to `dist/<game>/manifest.json`.

@@ -4,10 +4,12 @@ import { pathToFileURL } from 'url'
 import yaml from 'js-yaml'
 import { TagParser } from '../../framework/TagParser.ts'
 import { validateAsepriteAtlas } from '../../framework/engine/AsepriteAtlas.ts'
+import { validateJsonSchema } from '../schemaValidator.ts'
 import type { GameConfig } from '../../framework/types/game-config.d.ts'
 import type { TagCommand } from '../../framework/TagParser.ts'
 
 const ROOT = new URL('../../', import.meta.url).pathname.replace(/\/$/, '')
+const GAME_CONFIG_SCHEMA_PATH = join(ROOT, 'framework', 'schemas', 'game.config.schema.json')
 
 export type Severity = 'error' | 'warning' | 'info'
 
@@ -409,6 +411,7 @@ async function loadConfig(gameDir: string): Promise<GameConfig> {
 }
 
 function validateConfig(gameDir: string, config: GameConfig, issues: Issue[]): void {
+  validateGameConfigSchema(config, issues)
   if (!config.id) issues.push({ severity: 'error', path: 'game.config.ts', message: 'Missing config.id.', suggestion: 'Set id to a lowercase slug, for example my-novel.' })
   if (!config.title) issues.push({ severity: 'error', path: 'game.config.ts', message: 'Missing config.title.', suggestion: 'Set title to the player-facing name of the novel.' })
   const mode = config.distribution?.mode
@@ -441,6 +444,19 @@ function validateConfig(gameDir: string, config: GameConfig, issues: Issue[]): v
       path: 'game.config.ts',
       message: `No story path for default locale "${config.story?.defaultLocale}".`,
       suggestion: 'Make story.defaultLocale match one key in story.locales.',
+    })
+  }
+}
+
+function validateGameConfigSchema(config: GameConfig, issues: Issue[]): void {
+  const schema = JSON.parse(readFileSync(GAME_CONFIG_SCHEMA_PATH, 'utf8')) as unknown
+  for (const issue of validateJsonSchema(config, schema as Parameters<typeof validateJsonSchema>[1])) {
+    issues.push({
+      severity: 'error',
+      path: issue.path ? `game.config.ts:${issue.path}` : 'game.config.ts',
+      code: 'config_schema_invalid',
+      message: `Config schema violation: ${issue.message}`,
+      suggestion: 'Align game.config.ts with framework/schemas/game.config.schema.json.',
     })
   }
 }
@@ -485,6 +501,7 @@ function inferIssueCode(issue: Issue): string {
   if (issue.message.startsWith('Unknown minigame id')) return 'story_minigame_unknown'
   if (issue.message.startsWith('Unknown ') && issue.message.includes(' id "')) return 'story_reference_unknown'
   if (issue.message === 'Missing config.id.') return 'config_id_missing'
+  if (issue.message.startsWith('Config schema violation:')) return 'config_schema_invalid'
   if (issue.message === 'Missing config.title.') return 'config_title_missing'
   if (issue.message === 'Missing story.defaultLocale.') return 'config_default_locale_missing'
   if (issue.message.startsWith('Story path for locale')) return 'story_locale_path_missing'

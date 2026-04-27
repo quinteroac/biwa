@@ -6,6 +6,34 @@ import { CompilerOptions } from 'inkjs/compiler/CompilerOptions.js'
 import { printIssues, summarizeIssues, validateGame } from './doctor.ts'
 
 const ROOT = new URL('../../', import.meta.url).pathname.replace(/\/$/, '')
+const DISTRIBUTION_MODES = ['standalone', 'static', 'portal', 'embedded'] as const
+type DistributionMode = typeof DISTRIBUTION_MODES[number]
+
+interface BuildOptions {
+  mode?: DistributionMode
+}
+
+function parseBuildArgs(gameId: string | undefined, args: string[]): { gameId: string | undefined; options: BuildOptions } {
+  const options: BuildOptions = {}
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i]!
+    if (arg === '--mode') {
+      const mode = args[++i]
+      if (!mode || !DISTRIBUTION_MODES.includes(mode as DistributionMode)) {
+        throw new Error(`Unsupported build mode "${mode ?? ''}". Use one of: ${DISTRIBUTION_MODES.join(', ')}.`)
+      }
+      options.mode = mode as DistributionMode
+      continue
+    }
+    if (arg.startsWith('--')) throw new Error(`Unknown build option: ${arg}`)
+    if (!gameId) {
+      gameId = arg
+      continue
+    }
+    throw new Error(`Unexpected build argument: ${arg}`)
+  }
+  return { gameId, options }
+}
 
 function parseFrontmatter(text: string): Record<string, unknown> | null {
   const match = text.match(/^---\n([\s\S]*?)\n---/)
@@ -300,6 +328,7 @@ function writeBuildManifest(
   gameDir: string,
   config: Awaited<ReturnType<typeof validateGame>>['config'],
   issues: Awaited<ReturnType<typeof validateGame>>['issues'],
+  mode: DistributionMode,
 ): void {
   const frameworkSize = dirSize(join(distDir, 'framework'))
   const assetsSize = dirSize(join(distDir, 'assets'))
@@ -311,10 +340,11 @@ function writeBuildManifest(
     title: config.title,
     version: config.version,
     distribution: {
-      mode: config.distribution?.mode ?? 'standalone',
+      mode,
       basePath: config.distribution?.basePath ?? null,
       strategy: 'esm-vendor-importmap',
       entry: 'index.html',
+      wrappers: distributionWrapperFiles(mode),
     },
     warnings: issues.filter(issue => issue.severity === 'warning').length,
     diagnostics: serializeDiagnostics(gameDir, issues),
@@ -329,7 +359,46 @@ function writeBuildManifest(
   writeFileSync(join(distDir, 'manifest.json'), JSON.stringify(manifest, null, 2))
 }
 
-export async function build(gameId?: string): Promise<void> {
+function distributionWrapperFiles(mode: DistributionMode): string[] {
+  if (mode === 'portal') return ['portal.json']
+  if (mode === 'embedded') return ['embed.html']
+  return []
+}
+
+function writeDistributionWrapper(distDir: string, config: Awaited<ReturnType<typeof validateGame>>['config'], mode: DistributionMode): void {
+  if (mode === 'portal') {
+    writeFileSync(join(distDir, 'portal.json'), JSON.stringify({
+      contract: 'vn-portal-v1',
+      id: config.id,
+      title: config.title,
+      version: config.version,
+      basePath: config.distribution?.basePath ?? null,
+      entry: 'index.html',
+      manifest: 'manifest.json',
+      assetsRoot: 'assets/',
+    }, null, 2))
+    return
+  }
+
+  if (mode === 'embedded') {
+    writeFileSync(join(distDir, 'embed.html'), `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${config.title} Embedded</title>
+</head>
+<body>
+  <iframe src="./index.html" title="${config.title}" style="width:100%;height:100vh;border:0;display:block"></iframe>
+</body>
+</html>
+`)
+  }
+}
+
+export async function build(gameId?: string, ...args: string[]): Promise<void> {
+  const parsed = parseBuildArgs(gameId, args)
+  gameId = parsed.gameId
   if (!gameId) {
     console.error('Please specify a gameId: bun build <gameId>')
     process.exit(1)
@@ -343,6 +412,16 @@ export async function build(gameId?: string): Promise<void> {
 
   console.log('  Validating content...')
   const { config, issues } = await validateGame(gameId)
+  const mode = (parsed.options.mode ?? config.distribution?.mode ?? 'standalone') as DistributionMode
+  if (mode !== 'standalone' && mode !== 'static') {
+    issues.push({
+      severity: 'info',
+      path: 'game.config.ts',
+      code: `distribution_${mode}_wrapper`,
+      message: `Distribution mode "${mode}" uses the current static output plus a ${mode} wrapper contract.`,
+      suggestion: 'Review manifest.json and wrapper files before integrating with the host.',
+    })
+  }
   const errors = issues.filter(issue => issue.severity === 'error')
   if (errors.length > 0) {
     printIssues(gameDir, issues)
@@ -486,7 +565,8 @@ export async function build(gameId?: string): Promise<void> {
 
   console.log('  Running post-build smoke...')
   validateStaticOutput(distDir, config)
-  writeBuildManifest(distDir, gameDir, config, issues)
+  writeDistributionWrapper(distDir, config, mode)
+  writeBuildManifest(distDir, gameDir, config, issues, mode)
   console.log('    ✓ static output verified')
 
   const totalSize = dirSize(distDir)

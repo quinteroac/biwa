@@ -6,6 +6,9 @@ The production build is a static ESM package. It does not require the dev server
 
 ```bash
 bun manager/cli.ts build mi-novela
+bun manager/cli.ts build mi-novela --mode static
+bun manager/cli.ts build mi-novela --mode portal
+bun manager/cli.ts build mi-novela --mode embedded
 ```
 
 The command writes:
@@ -47,6 +50,19 @@ The framework uses `esm-vendor-importmap` for production:
 - `index.html` contains an import map for vendor modules.
 - Story and data are precompiled to JSON.
 - Asset, story and data paths are relative, so the folder can run under a subpath.
+
+## Distribution Modes
+
+All modes currently share the same static ESM output. The mode changes the manifest and, for host-oriented modes, adds a wrapper contract:
+
+| Mode | Output | Use |
+|---|---|---|
+| `standalone` | `index.html` + static files | Default full-page game site. |
+| `static` | Same static files, manifest mode `static` | Explicit static-hosting profile. |
+| `portal` | Adds `portal.json` | Shared launcher or catalog host that reads metadata before mounting. |
+| `embedded` | Adds `embed.html` | Iframe-friendly wrapper for external pages. |
+
+`manifest.json` always records the effective `distribution.mode`, `basePath`, runtime strategy, entry file and wrapper files.
 
 ## Smoke Checks
 

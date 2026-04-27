@@ -31,6 +31,10 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - `preview` CLI command for serving `dist/<gameId>/`, including `--build` and `--port`.
 - Dev server file watcher for story, data, assets, game config and framework source changes.
 - `GameEngine.create(config)` and public idempotent `engine.boot()` for isolated runtime instances.
+- `game.config.ts` JSON Schema diagnostics in `doctor` and build validation.
+- `build --mode <standalone|static|portal|embedded>` with effective mode recorded in `manifest.json`.
+- Portal and embedded distribution wrapper artifacts.
+- `bun run coverage` for framework and manager coverage reporting.
 
 ### Changed
 
@@ -46,3 +50,4 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Save-state audio restore marks persistent audio as restored so runtime playback skips unnecessary fades.
 - Audio docs now distinguish implemented single-file playback from reserved adaptive/intro-loop metadata.
 - Engine docs now define singleton versus isolated instance policy.
+- Distribution docs now describe mode-specific wrapper contracts.

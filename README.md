@@ -24,11 +24,13 @@ Open the dev server URL printed by the CLI.
 
 ```bash
 bun run check                  # tests + typecheck
+bun run coverage               # coverage report for framework + manager
 bun run e2e                    # browser smoke against the built smoke fixture
 bun manager/cli.ts doctor mi-novela
 bun manager/cli.ts doctor mi-novela --json
 bun manager/cli.ts assets character-atlas mi-novela kai
 bun manager/cli.ts build mi-novela
+bun manager/cli.ts build mi-novela --mode static
 bun manager/cli.ts preview mi-novela --build
 bun run verify                 # CI-style check against smoke-fixture
 ```

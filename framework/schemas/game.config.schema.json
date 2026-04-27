@@ -43,7 +43,7 @@
     },
     "minigames": {
       "type": "object",
-      "additionalProperties": { "description": "Entry for lazy-loading a minigame (path or function)", "anyOf": [{ "type": "string" }, { "type": "object" }, { "type": "null" }] }
+      "additionalProperties": { "description": "Entry for lazy-loading a minigame (path or function)", "anyOf": [{ "type": "string" }, { "type": "function" }, { "type": "object" }, { "type": "null" }] }
     },
     "theme": {
       "type": "object",
@@ -80,6 +80,14 @@
             "additionalProperties": false
           }
         }
+      },
+      "additionalProperties": false
+    },
+    "endScreen": {
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "message": { "type": "string" }
       },
       "additionalProperties": false
     },

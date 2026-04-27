@@ -34,6 +34,7 @@ The default output is human-readable. `--json` emits a stable report for editor 
 | `character_no_renderer` | A character has no `animation` and no `layers`. | Add a renderer definition or suppress if intentional. |
 | `minigame_entry_missing` | A minigame entry file does not exist. | Create the entry file or update `entry`. |
 | `invalid_distribution_mode` | `distribution.mode` is not supported. | Use `standalone`, `portal`, `static` or `embedded`. |
+| `config_schema_invalid` | `game.config.ts` does not match the JSON schema. | Align the config with `framework/schemas/game.config.schema.json`. |
 | `frontmatter_missing` | A data file has no YAML frontmatter block. | Add a `---` delimited block at the top. |
 | `frontmatter_invalid` | YAML frontmatter is not an object. | Use key/value YAML. |
 | `frontmatter_invalid_yaml` | YAML parsing failed. | Fix indentation, quotes or list syntax. |
