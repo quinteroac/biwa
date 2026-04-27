@@ -283,6 +283,23 @@ Objetivo: guardar y restaurar una partida completa, no solo el estado de Ink.
 - Las migraciones tienen tests.
 - Save/load funciona despues de cambiar de escena y con personajes activos.
 
+### Estado fase 5
+
+- `GameSaveState` ahora incluye `visual` con escena, personajes visibles, audio persistente y locale.
+- `SaveMeta` soporta `thumbnail` opcional y `playtime` ya se calcula desde tiempo real/restaurado.
+- `SaveManager` persiste y carga snapshots visuales sin romper saves antiguos.
+- `GameEngine.getState()` captura story state, variables, escena actual, personajes visibles, audio persistente y locale.
+- `GameEngine.restoreState()` reemite escena/personajes/audio desde el snapshot visual antes de avanzar el script.
+- `GameEngine` mantiene internamente estado visual al procesar tags `scene`, `character`, `bgm`, `ambience` y `voice`.
+- Agregados tests de persistencia visual en `SaveManager` y de snapshot/restore visual en `GameEngine`.
+- Verificacion final: `bun run check` pasa con 291 tests.
+
+### Pendientes fase 5
+
+- La UI de slots todavia no muestra thumbnails aunque el dato ya se guarda.
+- Las migraciones existen en `SaveManager`, pero falta una migracion real documentada para un cambio futuro de schema.
+- Auto-save sigue teniendo toggle UI global (`vn:autoSave`) aunque el storage de slots ya usa `gameId`.
+
 ## Fase 6: Tooling para creadores
 
 Objetivo: que crear una novela sea directo y con errores comprensibles.

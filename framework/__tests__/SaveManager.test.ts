@@ -71,6 +71,22 @@ describe('SaveManager.save', () => {
     expect(parsed.state).toEqual({ health: 100, flag_met_hero: true })
   })
 
+  it('persists and loads visual snapshots without dropping them', () => {
+    const state = makeState({
+      visual: {
+        scene: { id: 'cafe', variant: 'night' },
+        characters: [{ id: 'kai', position: 'left', expression: 'happy' }],
+        audio: { bgm: { type: 'bgm', id: 'theme', file: 'audio/theme.mp3' } },
+        locale: 'en',
+      },
+    })
+
+    sm.save(1, state)
+    const loaded = sm.load(1)
+
+    expect(loaded?.state.visual).toEqual(state.visual)
+  })
+
   // AC02 — timestamp is recent
   it('AC02: timestamp is approximately now', () => {
     const before = Date.now()

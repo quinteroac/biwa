@@ -8,7 +8,7 @@ import { BgmController } from './BgmController.ts'
 import { SfxController } from './SfxController.ts'
 import { AmbienceController } from './AmbienceController.ts'
 import { VoiceController } from './VoiceController.ts'
-import type { GameSaveState } from '../types/save.d.ts'
+import type { GameSaveState, SavedAudioState, SavedCharacterState, SavedVisualState } from '../types/save.d.ts'
 import type { GameConfig } from '../types/game-config.d.ts'
 import type { TagCommand } from './ScriptRunner.ts'
 
@@ -48,6 +48,12 @@ export class GameEngine {
   #ambience: AmbienceController
   #voice: VoiceController
   #currentSceneId: string | null = null
+  #currentSceneVariant: string | null = null
+  #currentCharacters = new Map<string, SavedCharacterState>()
+  #currentAudio: SavedAudioState = {}
+  #locale: string
+  #startedAt = Date.now()
+  #restoredPlaytime = 0
   #pendingChoices: ReturnType<ScriptRunner['choices']['slice']> | null = null
   #advanceInProgress = false
   #data: GameData = { characters: {}, scenes: {}, audio: {}, minigames: {} }
@@ -55,6 +61,7 @@ export class GameEngine {
   constructor(config: GameConfig) {
     this.#config = config
     this.#runner = new ScriptRunner(this.#bus)
+    this.#locale = config.story.defaultLocale
     this.#bgm = new BgmController(this.#bus)
     this.#sfx = new SfxController(this.#bus)
     this.#ambience = new AmbienceController(this.#bus)
@@ -86,16 +93,32 @@ export class GameEngine {
 
   /** Return a serialisable snapshot compatible with `SaveManager.save()` */
   getState(): GameSaveState {
+    const scene = this.#currentSceneId
+      ? {
+          id: this.#currentSceneId,
+          ...(this.#currentSceneVariant ? { variant: this.#currentSceneVariant } : {}),
+        }
+      : undefined
+    const sceneData = this.#currentSceneId ? this.#data.scenes[this.#currentSceneId] : undefined
+    const thumbnail = typeof sceneData?.['thumbnail'] === 'string' ? sceneData['thumbnail'] : undefined
+    const playtime = this.#restoredPlaytime + Math.floor((Date.now() - this.#startedAt) / 1000)
     const meta = {
       displayName: 'Manual save',
       sceneName: this.#currentSceneId ?? 'unknown',
-      playtime: 0,
+      playtime,
+      ...(thumbnail ? { thumbnail } : {}),
     }
     const state: Record<string, unknown> = {
       story: this.#runner.saveState(),
       vars: this.#vars.snapshot(),
     }
-    return { meta, state }
+    const visual: SavedVisualState = {
+      ...(scene ? { scene } : {}),
+      characters: Array.from(this.#currentCharacters.values()),
+      audio: { ...this.#currentAudio },
+      locale: this.#locale,
+    }
+    return { meta, state, visual }
   }
 
   /** Restore a previously saved `GameSaveState`. */
@@ -107,6 +130,9 @@ export class GameEngine {
     if (s['vars'] && typeof s['vars'] === 'object') {
       this.#vars.restore(s['vars'] as Record<string, unknown>)
     }
+    this.#restoredPlaytime = saved.meta.playtime
+    this.#startedAt = Date.now()
+    this.#restoreVisualState(saved.visual)
     this.#setState(STATE.DIALOG)
     this.#requestAdvance()
   }
@@ -143,9 +169,9 @@ export class GameEngine {
 
     await this.#loadData()
 
-    const locale = this.#config.story.defaultLocale
-    const storyPath = this.#config.story.locales[locale]
-    if (!storyPath) throw new Error(`[GameEngine] No story path for locale "${locale}"`)
+    this.#locale = this.#config.story.defaultLocale
+    const storyPath = this.#config.story.locales[this.#locale]
+    if (!storyPath) throw new Error(`[GameEngine] No story path for locale "${this.#locale}"`)
     await this.#runner.load(storyPath)
   }
 
@@ -258,21 +284,23 @@ export class GameEngine {
       switch (tag.type) {
         case 'scene':
           this.#currentSceneId = tag.id ?? null
+          this.#currentSceneVariant = typeof tag['variant'] === 'string' ? tag['variant'] : null
           this.#bus.emit('engine:scene', { ...tag, data: this.#data.scenes[tag.id ?? ''] })
           break
         case 'bgm':
-          this.#bus.emit('engine:bgm', this.#withAudioData(tag))
+          this.#emitAudioTag('bgm', tag)
           break
         case 'sfx':
           this.#bus.emit('engine:sfx', this.#withAudioData(tag))
           break
         case 'ambience':
-          this.#bus.emit('engine:ambience', this.#withAudioData(tag))
+          this.#emitAudioTag('ambience', tag)
           break
         case 'voice':
-          this.#bus.emit('engine:voice', this.#withAudioData(tag))
+          this.#emitAudioTag('voice', tag)
           break
         case 'character':
+          this.#trackCharacter(tag)
           this.#bus.emit('engine:character', tag)
           break
         case 'transition':
@@ -307,6 +335,76 @@ export class GameEngine {
   #withAudioData(tag: TagCommand): TagCommand {
     const data = tag.id ? this.#data.audio[tag.id] : undefined
     return data ? { ...data, ...tag } : tag
+  }
+
+  #emitAudioTag(channel: keyof SavedAudioState, tag: TagCommand): void {
+    const payload = this.#withAudioData(tag)
+    if (payload.id === 'stop') {
+      delete this.#currentAudio[channel]
+    } else {
+      this.#currentAudio[channel] = payload
+    }
+    this.#bus.emit(`engine:${channel}`, payload)
+  }
+
+  #trackCharacter(tag: TagCommand): void {
+    const id = tag.id
+    if (!id) {
+      if (tag.exit) this.#currentCharacters.clear()
+      return
+    }
+    if (tag.exit) {
+      this.#currentCharacters.delete(id)
+      return
+    }
+
+    const previous = this.#currentCharacters.get(id)
+    const data = this.#data.characters[id] ?? {}
+    const position = typeof tag['position'] === 'string'
+      ? tag['position']
+      : previous?.position ?? (typeof data['defaultPosition'] === 'string' ? data['defaultPosition'] : 'center')
+    const expression = typeof tag['expression'] === 'string'
+      ? tag['expression']
+      : previous?.expression ?? (typeof data['defaultExpression'] === 'string' ? data['defaultExpression'] : 'neutral')
+
+    this.#currentCharacters.set(id, { id, position, expression })
+  }
+
+  #restoreVisualState(visual: SavedVisualState | undefined): void {
+    if (!visual) return
+
+    this.#locale = visual.locale
+    this.#currentCharacters.clear()
+    this.#currentAudio = {}
+
+    if (visual.scene) {
+      this.#currentSceneId = visual.scene.id
+      this.#currentSceneVariant = visual.scene.variant ?? null
+      this.#bus.emit('engine:scene', {
+        type: 'scene',
+        id: visual.scene.id,
+        ...(visual.scene.variant ? { variant: visual.scene.variant } : {}),
+        data: this.#data.scenes[visual.scene.id],
+      })
+    }
+
+    for (const character of visual.characters) {
+      this.#currentCharacters.set(character.id, character)
+      this.#bus.emit('engine:character', character)
+    }
+
+    if (visual.audio.bgm) {
+      this.#currentAudio.bgm = visual.audio.bgm
+      this.#bus.emit('engine:bgm', visual.audio.bgm)
+    }
+    if (visual.audio.ambience) {
+      this.#currentAudio.ambience = visual.audio.ambience
+      this.#bus.emit('engine:ambience', visual.audio.ambience)
+    }
+    if (visual.audio.voice) {
+      this.#currentAudio.voice = visual.audio.voice
+      this.#bus.emit('engine:voice', visual.audio.voice)
+    }
   }
 
   async #runMinigame(id: string, tag: Record<string, unknown>): Promise<void> {

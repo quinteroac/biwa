@@ -49,6 +49,7 @@ export class SaveManager {
       timestamp: Date.now(),
       meta: state.meta,
       state: state.state,
+      ...(state.visual ? { visual: state.visual } : {}),
     }
     try {
       localStorage.setItem(this.#key(slot), JSON.stringify(data))
@@ -77,7 +78,11 @@ export class SaveManager {
         return {
           version: storedVersion,
           timestamp,
-          state: { meta: parsed.meta, state: parsed.state },
+          state: {
+            meta: parsed.meta,
+            state: parsed.state,
+            ...(parsed.visual ? { visual: parsed.visual } : {}),
+          },
         }
       }
 
