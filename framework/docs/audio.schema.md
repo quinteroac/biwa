@@ -481,7 +481,7 @@ distance, not hostility.
 
 ## Volume channels
 
-The engine exposes four independent volume channels to the player via the settings screen. Each channel multiplies the track's own `volume` field.
+The engine exposes five volume controls to the player via the settings screen: one master mixer and one channel per audio category. Each channel multiplies the track's own `volume` field.
 
 | Channel | Setting key | Controls |
 |---------|-------------|---------|

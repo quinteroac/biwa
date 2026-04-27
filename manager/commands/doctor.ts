@@ -20,6 +20,26 @@ export interface Issue {
   suppressionReason?: string
 }
 
+export interface DoctorOptions {
+  json?: boolean
+}
+
+export interface DoctorJsonIssue {
+  severity: Severity
+  path: string
+  message: string
+  code: string
+  suggestion?: string
+  suppressed?: boolean
+  suppressionReason?: string
+}
+
+export interface DoctorJsonReport {
+  gameId: string
+  summary: ReturnType<typeof summarizeIssues>
+  issues: DoctorJsonIssue[]
+}
+
 interface DataMaps {
   characters: Map<string, Record<string, unknown>>
   scenes: Map<string, Record<string, unknown>>
@@ -420,6 +440,33 @@ function applyDiagnosticSuppressions(gameDir: string, config: GameConfig, issues
   }
 }
 
+function inferIssueCode(issue: Issue): string {
+  if (issue.code) return issue.code
+  if (issue.message === 'Missing YAML frontmatter block.') return 'frontmatter_missing'
+  if (issue.message === 'Frontmatter must be an object.') return 'frontmatter_invalid'
+  if (issue.message.startsWith('Invalid YAML frontmatter:')) return 'frontmatter_invalid_yaml'
+  if (issue.message === 'Missing required string field: id.') return 'data_id_missing'
+  if (issue.message.startsWith('Duplicate id:')) return 'data_id_duplicate'
+  if (issue.message.endsWith('directory does not exist.')) return 'data_directory_missing'
+  if (issue.message === 'Scene missing required background object.') return 'scene_background_missing'
+  if (issue.message === 'Minigame missing required string field: entry.') return 'minigame_entry_missing'
+  if (issue.message === 'Minigame missing required results object.') return 'minigame_results_missing'
+  if (issue.message.startsWith('Unknown minigame id')) return 'story_minigame_unknown'
+  if (issue.message.startsWith('Unknown ') && issue.message.includes(' id "')) return 'story_reference_unknown'
+  if (issue.message === 'Missing config.id.') return 'config_id_missing'
+  if (issue.message === 'Missing config.title.') return 'config_title_missing'
+  if (issue.message === 'Missing story.defaultLocale.') return 'config_default_locale_missing'
+  if (issue.message.startsWith('Story path for locale')) return 'story_locale_path_missing'
+  if (issue.message.startsWith('No story path for default locale')) return 'story_default_locale_unmapped'
+  return 'diagnostic'
+}
+
+function assignIssueCodes(issues: Issue[]): void {
+  for (const issue of issues) {
+    issue.code = inferIssueCode(issue)
+  }
+}
+
 export function summarizeIssues(issues: Issue[]): Record<Severity, number> & { suppressed: number } {
   return {
     error: issues.filter(i => i.severity === 'error').length,
@@ -442,6 +489,26 @@ export function printIssues(gameDir: string, issues: Issue[]): void {
   console.log(`\nDoctor summary: ${summary.error} error(s), ${summary.warning} warning(s), ${summary.info} info(s), ${summary.suppressed} suppressed.`)
 }
 
+function issuePathForReport(gameDir: string, issue: Issue): string {
+  return issue.path.startsWith(ROOT) ? relative(gameDir, issue.path) : issue.path
+}
+
+export function createDoctorJsonReport(gameId: string, gameDir: string, issues: Issue[]): DoctorJsonReport {
+  return {
+    gameId,
+    summary: summarizeIssues(issues),
+    issues: issues.map(issue => ({
+      severity: issue.severity,
+      path: issuePathForReport(gameDir, issue),
+      message: issue.message,
+      code: issue.code ?? inferIssueCode(issue),
+      ...(issue.suggestion ? { suggestion: issue.suggestion } : {}),
+      ...(issue.suppressed ? { suppressed: true } : {}),
+      ...(issue.suppressionReason ? { suppressionReason: issue.suppressionReason } : {}),
+    })),
+  }
+}
+
 export async function validateGame(gameId: string): Promise<{ gameDir: string; config: GameConfig; issues: Issue[] }> {
   const gameDir = join(ROOT, 'games', gameId)
   const issues: Issue[] = []
@@ -453,11 +520,34 @@ export async function validateGame(gameId: string): Promise<{ gameDir: string; c
   validateConfig(gameDir, config, issues)
   const maps = loadDataMaps(gameDir, config, issues)
   validateStoryReferences(gameDir, maps, issues)
+  assignIssueCodes(issues)
   applyDiagnosticSuppressions(gameDir, config, issues)
   return { gameDir, config, issues }
 }
 
-export async function doctor(gameId?: string): Promise<void> {
+function parseDoctorArgs(args: string[]): { gameId: string | undefined; options: DoctorOptions } {
+  let gameId: string | undefined
+  const options: DoctorOptions = {}
+  for (const arg of args) {
+    if (arg === '--json') {
+      options.json = true
+      continue
+    }
+    if (arg.startsWith('--')) {
+      throw new Error(`Unknown doctor option: ${arg}`)
+    }
+    if (!gameId) {
+      gameId = arg
+      continue
+    }
+    throw new Error(`Unexpected doctor argument: ${arg}`)
+  }
+  return { gameId, options }
+}
+
+export async function doctor(...args: string[]): Promise<void> {
+  const parsed = parseDoctorArgs(args)
+  let gameId = parsed.gameId
   if (!gameId) {
     gameId = detectGameId() ?? undefined
     if (!gameId) {
@@ -466,9 +556,13 @@ export async function doctor(gameId?: string): Promise<void> {
     }
   }
 
-  console.log(`\nVisual Novel Doctor: ${gameId}\n`)
   const { gameDir, issues } = await validateGame(gameId)
-  printIssues(gameDir, issues)
+  if (parsed.options.json) {
+    console.log(JSON.stringify(createDoctorJsonReport(gameId, gameDir, issues), null, 2))
+  } else {
+    console.log(`\nVisual Novel Doctor: ${gameId}\n`)
+    printIssues(gameDir, issues)
+  }
 
   if (issues.some(issue => issue.severity === 'error')) {
     process.exit(1)

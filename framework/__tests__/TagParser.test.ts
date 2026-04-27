@@ -62,6 +62,14 @@ describe('TagParser – US-004-AC05: volume tag', () => {
     expect(result[0]!['value']).toBe(1)
   })
 
+  it('AC05: "# volume ambience 0.25" produces value of 0.25', () => {
+    const result = TagParser.parse(['# volume ambience 0.25'])
+    expect(result).toHaveLength(1)
+    expect(result[0]!.type).toBe('volume')
+    expect(result[0]!['channel']).toBe('ambience')
+    expect(result[0]!['value']).toBe(0.25)
+  })
+
   it('AC05: "# volume voice 0.75" produces value of 0.75', () => {
     const result = TagParser.parse(['# volume voice 0.75'])
     expect(result).toHaveLength(1)

@@ -32,12 +32,12 @@ describe('VnVolumeControl', () => {
     ).not.toThrow()
   })
 
-  // US-003-AC02: renders a slider for each channel: master, BGM, SFX, voice
-  it('AC02: renders four range inputs (one per channel)', () => {
+  // US-003-AC02: renders a slider for each channel: master, BGM, ambience, SFX, voice
+  it('AC02: renders five range inputs (one per channel)', () => {
     const html = render()
     const rangeInputs = html.match(/type="range"/g)
     expect(rangeInputs).not.toBeNull()
-    expect(rangeInputs!.length).toBe(4)
+    expect(rangeInputs!.length).toBe(5)
   })
 
   it('AC02: renders a slider for master channel', () => {
@@ -50,6 +50,12 @@ describe('VnVolumeControl', () => {
     const html = render()
     expect(html).toContain('BGM')
     expect(html).toContain('aria-label="BGM volume"')
+  })
+
+  it('AC02: renders a slider for Ambience channel', () => {
+    const html = render()
+    expect(html).toContain('Ambience')
+    expect(html).toContain('aria-label="Ambience volume"')
   })
 
   it('AC02: renders a slider for SFX channel', () => {
@@ -69,6 +75,7 @@ describe('VnVolumeControl', () => {
     const html = render()
     expect(html).toContain('Master')
     expect(html).toContain('BGM')
+    expect(html).toContain('Ambience')
     expect(html).toContain('SFX')
     expect(html).toContain('Voice')
   })
@@ -76,22 +83,24 @@ describe('VnVolumeControl', () => {
   it('AC03: each slider shows current volume percentage (defaults to 100%)', () => {
     const html = render()
     // All channels default to 1.0 → 100%. Check for explicit "100%" in display spans.
-    // We verify the aria-valuenow is 100 for each slider (4 sliders × aria-valuenow=100).
+    // We verify the aria-valuenow is 100 for each slider (5 sliders × aria-valuenow=100).
     const valuenowMatches = html.match(/aria-valuenow="100"/g)
     expect(valuenowMatches).not.toBeNull()
-    expect(valuenowMatches!.length).toBe(4)
+    expect(valuenowMatches!.length).toBe(5)
   })
 
   it('AC03: shows correct percentage for custom volumes', () => {
     const volumes: Record<AudioChannel, number> = {
       master: 0.8,
       bgm: 0.5,
+      ambience: 0.25,
       sfx: 1.0,
       voice: 0.0,
     }
     const html = render({ volumes, onVolumeChange: () => {} })
     expect(html).toContain('80%')
     expect(html).toContain('50%')
+    expect(html).toContain('25%')
     expect(html).toContain('100%')
     expect(html).toContain('0%')
   })

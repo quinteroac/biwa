@@ -19,6 +19,11 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Typed engine event map and public `GameEngine` API docs.
 - Structured diagnostics with suppressions and build-manifest output.
 - Browser E2E smoke test for the static `smoke-fixture` build.
+- `AudioManager` runtime facade with independent `ambience` volume channel.
+- `doctor --json` output and diagnostics reference docs.
+- Save slot thumbnails, namespaced autosave, game id and game version metadata.
+- `smoke-fixture` Playwright browser smoke as part of `bun run verify`.
+- CI workflow that runs the repository quality gate on pushes and pull requests.
 
 ### Changed
 
@@ -28,9 +33,5 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Build rewrites production story entrypoints to compiled `.json` files.
 - Save data now records `gameId` and `gameVersion` when available.
 - Autosave preferences are namespaced by game id.
-
-### Known Gaps
-
-- Demo assets still report known doctor warnings for missing optional files.
-- Portal/embedded builds share the static output strategy but do not yet emit specialized wrappers.
-- Browser-level E2E smoke tests are not yet configured.
+- `VnStage` delegates concrete audio playback to the engine `AudioManager`.
+- `FEATURE_MAP.md` is now pending-work only; completed roadmap history is tracked here.

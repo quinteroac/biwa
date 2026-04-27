@@ -5,6 +5,7 @@ import type { AudioChannel } from '../engine/VolumeController.ts'
 const CHANNEL_LABELS: Record<AudioChannel, string> = Object.freeze({
   master: 'Master',
   bgm: 'BGM',
+  ambience: 'Ambience',
   sfx: 'SFX',
   voice: 'Voice',
 })
@@ -97,7 +98,7 @@ function injectSliderThumbStyles(): () => void {
 /**
  * A compact volume-control panel with one slider per audio channel.
  *
- * Each slider shows the channel label (e.g. "Master", "BGM", "SFX", "Voice")
+ * Each slider shows the channel label (e.g. "Master", "BGM", "Ambience", "SFX", "Voice")
  * and the current volume as a percentage. All colours and fonts are driven
  * by CSS custom properties so games can theme the panel without touching
  * component code.
@@ -105,7 +106,7 @@ function injectSliderThumbStyles(): () => void {
  * @example
  * ```tsx
  * <VnVolumeControl
- *   volumes={{ master: 1.0, bgm: 0.8, sfx: 1.0, voice: 0.5 }}
+ *   volumes={{ master: 1.0, bgm: 0.8, ambience: 0.6, sfx: 1.0, voice: 0.5 }}
  *   onVolumeChange={(ch, vol) => volumeController.setVolume(ch, vol)}
  * />
  * ```
@@ -122,12 +123,13 @@ export function VnVolumeControl({
     () => ({
       master: initialVolumes.master ?? 1.0,
       bgm: initialVolumes.bgm ?? 1.0,
+      ambience: initialVolumes.ambience ?? 1.0,
       sfx: initialVolumes.sfx ?? 1.0,
       voice: initialVolumes.voice ?? 1.0,
     }),
   )
 
-  const channels: AudioChannel[] = ['master', 'bgm', 'sfx', 'voice']
+  const channels: AudioChannel[] = ['master', 'bgm', 'ambience', 'sfx', 'voice']
 
   function handleSliderChange(channel: AudioChannel, rawValue: string): void {
     const normalized = Number(rawValue) / 100

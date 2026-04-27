@@ -24,7 +24,9 @@ Open the dev server URL printed by the CLI.
 
 ```bash
 bun run check                  # tests + typecheck
+bun run e2e                    # browser smoke against the built smoke fixture
 bun manager/cli.ts doctor mi-novela
+bun manager/cli.ts doctor mi-novela --json
 bun manager/cli.ts build mi-novela
 bun run verify                 # CI-style check against smoke-fixture
 ```
@@ -45,6 +47,7 @@ See [framework/docs/distribution.md](framework/docs/distribution.md).
 
 - [First game guide](framework/docs/first-game.md)
 - [GameEngine API](framework/docs/game-engine-api.md)
+- [Diagnostics](framework/docs/diagnostics.md)
 - [Ink tag guide](framework/docs/ink-tags.md)
 - [Project structure](framework/docs/project-structure.md)
 - [Customizing components](framework/docs/customizing-components.md)
@@ -58,11 +61,11 @@ See [framework/docs/distribution.md](framework/docs/distribution.md).
 | Unified tag parser | Implemented |
 | Data pipeline | Recursive indexes, doctor validation, build conversion |
 | Save/load | Story, variables, visual scene, characters, audio and locale |
-| Audio | Central volume controller, persisted channel volumes |
+| Audio | Extracted runtime manager, persisted master/bgm/ambience/sfx/voice volumes |
 | UI customization | Typed app and stage component overrides |
 | Distribution | Static ESM build with import map and smoke checks |
 | Portal/embedded packaging | Planned |
-| Browser E2E smoke | Planned |
+| Browser E2E smoke | Implemented |
 
 ## Quality Gate
 
@@ -72,4 +75,4 @@ Before opening a PR, run:
 bun run verify
 ```
 
-This executes tests, typecheck, doctor and a production build of the lightweight fixture.
+This executes tests, typecheck, doctor, a production build of the lightweight fixture and Playwright browser smoke.

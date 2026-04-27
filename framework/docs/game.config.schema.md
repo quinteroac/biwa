@@ -80,7 +80,7 @@ Paths to the folders containing the game's `.md` data files. The `DataLoader` sc
 |-------|------|----------|-------------|
 | `data.characters` | `string` | ✅ | Path to the folder containing `characters/*.md` files. |
 | `data.scenes` | `string` | ✅ | Path to the folder containing `scenes/*.md` files. |
-| `data.audio` | `string` | ✅ | Root path for audio data. The loader expects `bgm/` and `sfx/` subfolders inside. |
+| `data.audio` | `string` | ✅ | Root path for audio data. The loader supports `bgm/`, `ambience/`, `sfx/` and `voice/` subfolders inside. |
 | `data.minigames` | `string` | — | Path to the folder containing `minigames/*.md` files. Omit if the novel has no minigames. |
 
 ```ts

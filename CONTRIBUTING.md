@@ -54,4 +54,4 @@ Update docs when changing public behavior:
 - `README.md` for project-level workflows.
 - `framework/docs/*.md` for creator-facing docs.
 - `CHANGELOG.md` for notable public changes.
-- `FEATURE_MAP.md` for roadmap phase status.
+- `FEATURE_MAP.md` for pending roadmap work only.

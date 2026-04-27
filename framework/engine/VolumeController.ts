@@ -11,7 +11,7 @@ const MUTE_STORAGE_KEY = 'vn:volume:muted'
 const VOLUME_STORAGE_PREFIX = 'vn:volume:'
 
 export class VolumeController {
-  static readonly #CHANNELS: readonly AudioChannel[] = Object.freeze(['master', 'bgm', 'sfx', 'voice'] as const)
+  static readonly #CHANNELS: readonly AudioChannel[] = Object.freeze(['master', 'bgm', 'ambience', 'sfx', 'voice'] as const)
 
   #volumes: Map<AudioChannel, number>
   #sources: Map<AudioChannel, Set<HTMLAudioElement>>
@@ -87,6 +87,7 @@ export class VolumeController {
     return {
       master: this.getVolume('master'),
       bgm: this.getVolume('bgm'),
+      ambience: this.getVolume('ambience'),
       sfx: this.getVolume('sfx'),
       voice: this.getVolume('voice'),
     }

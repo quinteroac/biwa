@@ -64,6 +64,11 @@ describe('VolumeController', () => {
     expect(controller.getVolume('bgm')).toBeCloseTo(0.5)
   })
 
+  it('AC02: setVolume and getVolume work for ambience channel', () => {
+    controller.setVolume('ambience', 0.45)
+    expect(controller.getVolume('ambience')).toBeCloseTo(0.45)
+  })
+
   it('AC02: setVolume and getVolume work for sfx channel', () => {
     controller.setVolume('sfx', 0.3)
     expect(controller.getVolume('sfx')).toBeCloseTo(0.3)
@@ -77,6 +82,7 @@ describe('VolumeController', () => {
   it('AC02: channels default to 1.0', () => {
     expect(controller.getVolume('master')).toBeCloseTo(1.0)
     expect(controller.getVolume('bgm')).toBeCloseTo(1.0)
+    expect(controller.getVolume('ambience')).toBeCloseTo(1.0)
     expect(controller.getVolume('sfx')).toBeCloseTo(1.0)
     expect(controller.getVolume('voice')).toBeCloseTo(1.0)
   })
@@ -142,11 +148,14 @@ describe('VolumeController', () => {
 
   it('AC04: master volume affects all channels', () => {
     const bgmStub = makeAudioStub('bgm.mp3')
+    const ambienceStub = makeAudioStub('rain.mp3')
     const sfxStub = makeAudioStub('sfx.mp3')
     controller.registerSource('bgm', bgmStub as unknown as HTMLAudioElement)
+    controller.registerSource('ambience', ambienceStub as unknown as HTMLAudioElement)
     controller.registerSource('sfx', sfxStub as unknown as HTMLAudioElement)
 
     controller.setVolume('bgm', 0.8)
+    controller.setVolume('ambience', 0.7)
     controller.setVolume('sfx', 0.6)
 
     // Set master to 0.5
@@ -154,6 +163,8 @@ describe('VolumeController', () => {
 
     // bgm: 0.8 * 0.5 = 0.4
     expect(bgmStub.volume).toBeCloseTo(0.4)
+    // ambience: 0.7 * 0.5 = 0.35
+    expect(ambienceStub.volume).toBeCloseTo(0.35)
     // sfx: 0.6 * 0.5 = 0.3
     expect(sfxStub.volume).toBeCloseTo(0.3)
   })
@@ -234,15 +245,15 @@ describe('VolumeController', () => {
   })
 
   // US-004-AC04: getChannelNames() returns available channels
-  it('AC04: getChannelNames() returns all four channels', () => {
+  it('AC04: getChannelNames() returns all five channels', () => {
     const names = VolumeController.getChannelNames()
-    expect(names).toEqual(['master', 'bgm', 'sfx', 'voice'])
+    expect(names).toEqual(['master', 'bgm', 'ambience', 'sfx', 'voice'])
   })
 
   it('AC04: getChannelNames() returns a readonly array', () => {
     const names = VolumeController.getChannelNames()
     expect(Array.isArray(names)).toBe(true)
-    expect(names.length).toBe(4)
+    expect(names.length).toBe(5)
   })
 
   // US-004-AC02: Master volume acts as multiplier

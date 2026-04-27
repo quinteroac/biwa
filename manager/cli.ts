@@ -28,7 +28,7 @@ Commands:
   build [gameId]          Build game for production
   new   <gameId> [title]  Scaffold a new game
   list                    List all games
-  doctor [gameId]         Validate game content pipeline
+  doctor [gameId] [--json] Validate game content pipeline
 `)
   process.exit(command ? 1 : 0)
 }
