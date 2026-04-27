@@ -67,8 +67,8 @@ See [framework/docs/distribution.md](framework/docs/distribution.md).
 | Ink story runtime | Stable baseline |
 | Unified tag parser | Implemented |
 | Data pipeline | Recursive indexes, doctor validation, build conversion |
-| Save/load | Story, variables, visual scene, characters, audio and locale |
-| Player reading features | Backlog, auto mode and skip mode baseline |
+| Save/load | Story, variables, visual scene, characters, audio, locale, thumbnails, playtime and delete |
+| Player reading features | Backlog, auto/skip, settings, preferences and configurable input map |
 | Audio | Extracted runtime manager, persisted master/bgm/ambience/sfx/voice volumes |
 | UI customization | Typed app and stage component overrides |
 | Distribution | Static ESM build with import map and smoke checks |

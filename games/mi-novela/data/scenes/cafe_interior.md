@@ -7,10 +7,6 @@ background:
   type: parallax
   intensity: 0.6
   layers:
-    - image: scenes/cafe_interior/bg.png
-      depth: 0.05
-    - image: scenes/cafe_interior/mid.png
-      depth: 0.25
     - image: scenes/cafe_interior/fg.png
       depth: 0.6
 
@@ -21,11 +17,11 @@ transitions:
     duration: 0.6
 
 ambient:
-  sfx: cafe_ambience
+  sfx: city_morning
   sfxVolume: 0.7
   effect: none
 
-thumbnail: scenes/cafe_interior/thumb.jpg
+thumbnail: scenes/cafe_interior/fg.png
 ---
 
 Interior used for most conversations and character beats.

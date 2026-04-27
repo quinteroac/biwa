@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'bun:test'
 import { renderToString } from 'react-dom/server'
 import { createElement } from 'react'
 import { SaveManager } from '../../SaveManager.ts'
-import { SaveLoadMenu, formatTimestamp } from '../SaveLoadMenu.tsx'
+import { SaveLoadMenu, formatPlaytime, formatTimestamp, resolveSaveThumbnail } from '../SaveLoadMenu.tsx'
 import type { GameSaveState } from '../../types/save.d.ts'
 
 // --- localStorage stub ---------------------------------------------------
@@ -21,12 +21,12 @@ Object.defineProperty(globalThis, 'localStorage', {
 
 // --- helpers -------------------------------------------------------------
 
-function makeState(overrides?: Partial<{ displayName: string; sceneName: string; thumbnail: string }>): GameSaveState {
+function makeState(overrides?: Partial<{ displayName: string; sceneName: string; thumbnail: string; playtime: number }>): GameSaveState {
   return {
     meta: {
       displayName: overrides?.displayName ?? 'Chapter 1',
       sceneName: overrides?.sceneName ?? 'prologue',
-      playtime: 0,
+      playtime: overrides?.playtime ?? 0,
       ...(overrides?.thumbnail ? { thumbnail: overrides.thumbnail } : {}),
     },
     state: {},
@@ -98,6 +98,12 @@ describe('SaveLoadMenu', () => {
     sm.save(1, makeState({ displayName: 'Thumb Save', sceneName: 'gallery', thumbnail: 'scenes/gallery/thumb.jpg' }))
     const html = render({ isOpen: true, onClose: () => {}, saveManager: sm, getState: defaultGetState })
     expect(html).toContain('src="./assets/scenes/gallery/thumb.jpg"')
+  })
+
+  it('AC03: shows elapsed playtime for occupied slots', () => {
+    sm.save(1, makeState({ displayName: 'Timed Save', sceneName: 'clock', playtime: 65_000 }))
+    const html = render({ isOpen: true, onClose: () => {}, saveManager: sm, getState: defaultGetState })
+    expect(html).toContain('1m 5s')
   })
 
   // US-001-AC04 — empty slots show "Empty slot"
@@ -199,6 +205,13 @@ describe('SaveLoadMenu', () => {
     expect(html).toContain('aria-label="Load from Auto Save"')
   })
 
+  it('US-003-AC01: occupied slot rows render a Delete button', () => {
+    sm.save(1, makeState({ displayName: 'Delete Me', sceneName: 'intro' }))
+    const html = render({ isOpen: true, onClose: () => {}, saveManager: sm, getState: defaultGetState })
+    expect(html).toContain('aria-label="Delete Slot 1"')
+    expect(html).toContain('>Delete<')
+  })
+
   it('US-003-AC01: empty slots do not render a Load button', () => {
     // slot 2 and slot 3 are empty → no Load button for them
     sm.save(1, makeState())
@@ -257,5 +270,23 @@ describe('formatTimestamp', () => {
     const ts = new Date('2025-06-15T10:30:00').getTime()
     const result = formatTimestamp(ts)
     expect(result).toContain('2025')
+  })
+})
+
+describe('formatPlaytime', () => {
+  it('formats seconds, minutes and hours', () => {
+    expect(formatPlaytime(8_000)).toBe('8s')
+    expect(formatPlaytime(65_000)).toBe('1m 5s')
+    expect(formatPlaytime(3_660_000)).toBe('1h 1m')
+  })
+})
+
+describe('resolveSaveThumbnail', () => {
+  it('resolves game asset thumbnails and preserves absolute URLs', () => {
+    expect(resolveSaveThumbnail('scenes/cafe/night.png')).toBe('./assets/scenes/cafe/night.png')
+    expect(resolveSaveThumbnail('./assets/scenes/cafe/night.png')).toBe('./assets/scenes/cafe/night.png')
+    expect(resolveSaveThumbnail('/assets/scenes/cafe/night.png')).toBe('/assets/scenes/cafe/night.png')
+    expect(resolveSaveThumbnail('https://example.test/thumb.jpg')).toBe('https://example.test/thumb.jpg')
+    expect(resolveSaveThumbnail(undefined)).toBe(null)
   })
 })

@@ -19,9 +19,20 @@ export interface VnDialogHandle {
 export interface VnDialogProps {
   dialog: DialogOptions | null
   onComplete: (advanceMode: DialogOptions['advanceMode']) => void
+  textSpeedMs?: number
+  textScale?: number
+  highContrast?: boolean
+  reduceMotion?: boolean
 }
 
-export const VnDialog = forwardRef<VnDialogHandle, VnDialogProps>(function VnDialog({ dialog, onComplete }, ref) {
+export const VnDialog = forwardRef<VnDialogHandle, VnDialogProps>(function VnDialog({
+  dialog,
+  onComplete,
+  textSpeedMs = DIALOG_TYPE_MS,
+  textScale = 1,
+  highContrast = false,
+  reduceMotion = false,
+}, ref) {
   const [revealedLen, setRevealedLen] = useState(0)
   const typingRef = useRef(false)
   const timerRef  = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -54,8 +65,9 @@ export const VnDialog = forwardRef<VnDialogHandle, VnDialogProps>(function VnDia
     charsRef.current = chars
     setRevealedLen(plan.initialRevealedLen)
 
-    if (!plan.isTyping) {
+    if (!plan.isTyping || textSpeedMs === 0 || reduceMotion) {
       typingRef.current = false
+      setRevealedLen(chars.length)
       if (plan.completionAdvanceMode) onComplete(plan.completionAdvanceMode)
       return
     }
@@ -70,15 +82,15 @@ export const VnDialog = forwardRef<VnDialogHandle, VnDialogProps>(function VnDia
         if (plan.completionAdvanceMode) onComplete(plan.completionAdvanceMode)
         return
       }
-      timerRef.current = setTimeout(tick, DIALOG_TYPE_MS)
+      timerRef.current = setTimeout(tick, textSpeedMs)
     }
-    timerRef.current = setTimeout(tick, DIALOG_TYPE_MS)
+    timerRef.current = setTimeout(tick, textSpeedMs)
 
     return () => {
       if (timerRef.current !== null) clearTimeout(timerRef.current)
       typingRef.current = false
     }
-  }, [dialog])  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [dialog, textSpeedMs, reduceMotion])  // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!dialog) return null
 
@@ -95,8 +107,8 @@ export const VnDialog = forwardRef<VnDialogHandle, VnDialogProps>(function VnDia
     }}>
       <div style={{
         width: '100%', maxWidth: 900,
-        background: 'rgba(0,0,0,0.65)',
-        borderTop: '0.5px solid rgba(255,255,255,0.15)',
+        background: highContrast ? 'rgba(0,0,0,0.9)' : 'rgba(0,0,0,0.65)',
+        borderTop: highContrast ? '1px solid rgba(255,255,255,0.48)' : '0.5px solid rgba(255,255,255,0.15)',
         padding: '20px 24px 8px',
         fontFamily: 'var(--vn-font, "Manrope", sans-serif)',
       }}>
@@ -105,7 +117,7 @@ export const VnDialog = forwardRef<VnDialogHandle, VnDialogProps>(function VnDia
             fontSize: 11,
             fontWeight: 500,
             marginBottom: 12,
-            color: '#ffffff',
+            color: highContrast ? '#ffffff' : '#ffffff',
             textTransform: 'uppercase',
             letterSpacing: '0.2em',
             lineHeight: 1,
@@ -114,11 +126,11 @@ export const VnDialog = forwardRef<VnDialogHandle, VnDialogProps>(function VnDia
           </div>
         )}
         <div style={{
-          fontSize: 18,
+          fontSize: 18 * textScale,
           fontWeight: 300,
           lineHeight: 1.8,
           letterSpacing: '0.01em',
-          color: '#e5e2e1',
+          color: highContrast ? '#ffffff' : '#e5e2e1',
           minHeight: '3.6em',
         }}>
           <span>{revealed}</span>

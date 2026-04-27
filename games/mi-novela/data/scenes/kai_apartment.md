@@ -16,11 +16,11 @@ transitions:
     duration: 0.5
 
 ambient:
-  sfx: apartment_hum
+  sfx: city_morning
   sfxVolume: 0.4
   effect: none
 
-thumbnail: scenes/kai_apartment/thumb.jpg
+thumbnail: scenes/kai_apartment/default.png
 ---
 
 Personal space for Kai: introspection, phone calls, and private scenes.

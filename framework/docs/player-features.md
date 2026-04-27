@@ -48,3 +48,61 @@ Default controls:
 
 Skip pauses on choices, transitions, minigames and overlays.
 Skip on/off and read-only policy are stored per game id.
+
+## Player Preferences
+
+`VnStage` uses `PlayerPreferences` to persist reading settings per game id under:
+
+```txt
+vn:{gameId}:player:preferences
+```
+
+The stored preferences include:
+
+- text reveal speed.
+- auto-mode base delay and per-character delay.
+- auto/skip mode state.
+- read-only skip policy.
+- text scale.
+- high-contrast dialog.
+- reduced-motion dialog reveal.
+
+The default `Settings` button opens `VnSettings`, where these values can be edited or reset. Hosts can replace the panel through `components.Settings`.
+
+## Input Map
+
+`VnStage` accepts an `inputMap` prop for keyboard overrides. Any omitted action keeps the framework default.
+
+```tsx
+<VnStage
+  engine={engine}
+  inputMap={{
+    auto: ['F8'],
+    skip: ['F9'],
+    settings: ['F10'],
+  }}
+/>
+```
+
+Default keyboard actions:
+
+- advance: `Space`, `Enter`, `ArrowRight`.
+- backlog: `B`.
+- auto: `A`.
+- skip: `S`.
+- save/load: `Escape`.
+- settings: `M`.
+
+Mouse/touch click on the stage still advances or reveals dialog. Buttons remain available for touch-first players.
+
+## Save UX
+
+The default save/load menu shows slot name, scene name, timestamp, playtime and thumbnails when save metadata includes `thumbnail`.
+
+Occupied slots support:
+
+- load.
+- overwrite confirmation.
+- delete confirmation.
+
+Autosave remains visually distinguished as the `Auto Save` slot.

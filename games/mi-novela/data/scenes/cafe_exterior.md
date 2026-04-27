@@ -22,11 +22,11 @@ transitions:
     duration: 0.6
 
 ambient:
-  sfx: city_night
+  sfx: city_morning
   sfxVolume: 0.5
   effect: rain
 
-thumbnail: scenes/cafe_exterior/thumb.jpg
+thumbnail: scenes/cafe_exterior/night.png
 ---
 
 Exterior of the cafe used for arrival and departure scenes. Variants for day/night/rain.

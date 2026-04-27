@@ -15,11 +15,11 @@ transitions:
     duration: 0.5
 
 ambient:
-  sfx: station_platform
+  sfx: city_morning
   sfxVolume: 0.8
   effect: none
 
-thumbnail: scenes/train_station/thumb.jpg
+thumbnail: scenes/train_station/poster.png
 ---
 
 Used for meetings and departures; has ambient motion via video.

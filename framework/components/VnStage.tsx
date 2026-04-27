@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { VnBackground } from './VnBackground.tsx'
 import { VnCharacter } from './VnCharacter.tsx'
 import { VnDialog } from './VnDialog.tsx'
@@ -7,15 +7,20 @@ import { VnTransition } from './VnTransition.tsx'
 import { VnSaveMenu } from './VnSaveMenu.tsx'
 import { VnVolumeControl } from './VnVolumeControl.tsx'
 import { VnBacklog } from './VnBacklog.tsx'
+import { VnSettings } from './VnSettings.tsx'
 import { SaveControlsBar } from './SaveControlsBar.tsx'
-import { getStageAdvanceAction, isAcceptedAdvanceKey } from './VnStageAdvance.ts'
+import { getStageAdvanceAction } from './VnStageAdvance.ts'
 import { getAutoDelayMs, getAutoModeAction, getSkipModeAction } from './VnPlayerModes.ts'
+import { mergePlayerInputMap, resolveKeyboardAction } from './VnInputMap.ts'
+import { PlayerPreferences } from '../player/PlayerPreferences.ts'
 import { AudioManager } from '../engine/AudioManager.ts'
 import type { AudioPlaybackData } from '../engine/AudioManager.ts'
 import type { GameEngine } from '../engine/GameEngine.ts'
 import type { BacklogEntry, GameSaveState } from '../types/save.d.ts'
 import type { DialogOptions, VnDialogHandle } from './VnDialog.tsx'
 import type { StepChoice } from '../engine/ScriptRunner.ts'
+import type { PlayerInputMap } from './VnInputMap.ts'
+import type { PlayerPreferencesPatch, PlayerPreferencesState } from '../player/PlayerPreferences.ts'
 
 export interface CharacterState {
   id: string
@@ -44,22 +49,6 @@ const GLOBAL_CSS = `
     50% { transform: translateY(-6px); }
   }
 `
-
-function readStoredBoolean(key: string, fallback: boolean): boolean {
-  try {
-    const raw = localStorage.getItem(key)
-    if (raw === null) return fallback
-    return raw === 'true'
-  } catch {
-    return fallback
-  }
-}
-
-function writeStoredBoolean(key: string, value: boolean): void {
-  try {
-    localStorage.setItem(key, String(value))
-  } catch { /* non-fatal */ }
-}
 
 interface PlayerFeatureEngine {
   id?: string
@@ -115,6 +104,11 @@ export interface VnStageProps {
   resumeFrom?: GameSaveState
 
   /**
+   * Optional keyboard map for player actions. Omitted actions use defaults.
+   */
+  inputMap?: Partial<PlayerInputMap>
+
+  /**
    * Optional component overrides for games that need a custom shell without
    * forking the stage orchestration. Omitted slots use the framework defaults.
    */
@@ -131,9 +125,10 @@ export interface VnStageComponents {
   SaveControls?: typeof SaveControlsBar
   VolumeControl?: typeof VnVolumeControl
   Backlog?: typeof VnBacklog
+  Settings?: typeof VnSettings
 }
 
-export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, showAutoSave = true, resumeFrom, components = {} }: VnStageProps) {
+export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, showAutoSave = true, resumeFrom, inputMap, components = {} }: VnStageProps) {
   const BackgroundComponent = components.Background ?? VnBackground
   const CharacterComponent = components.Character ?? VnCharacter
   const DialogComponent = components.Dialog ?? VnDialog
@@ -143,13 +138,15 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
   const SaveControlsComponent = components.SaveControls ?? SaveControlsBar
   const VolumeControlComponent = components.VolumeControl ?? VnVolumeControl
   const BacklogComponent = components.Backlog ?? VnBacklog
+  const SettingsComponent = components.Settings ?? VnSettings
   const engineStorageId = getEngineStorageId(engine)
+  const preferencesStore = useMemo(() => new PlayerPreferences(engineStorageId), [engineStorageId])
+  const resolvedInputMap = useMemo(() => mergePlayerInputMap(inputMap), [inputMap])
   const [menuOpen, setMenuOpen] = useState(false)
   const [audioOpen, setAudioOpen] = useState(false)
   const [backlogOpen, setBacklogOpen] = useState(false)
-  const [autoMode, setAutoMode] = useState(() => readStoredBoolean(`vn:${engineStorageId}:player:auto`, false))
-  const [skipMode, setSkipMode] = useState(() => readStoredBoolean(`vn:${engineStorageId}:player:skip`, false))
-  const [skipReadOnly, setSkipReadOnly] = useState(() => readStoredBoolean(`vn:${engineStorageId}:player:skip-read-only`, true))
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [preferences, setPreferences] = useState<PlayerPreferencesState>(() => preferencesStore.load())
   const [scene, setScene]           = useState<SceneState | null>(null)
   const [characters, setCharacters] = useState<Map<string, CharacterState>>(new Map())
   const [dialog, setDialog]         = useState<DialogOptions | null>(null)
@@ -158,6 +155,22 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
   const [transition, setTransition] = useState<TransitionState | null>(null)
   const dialogRef = useRef<VnDialogHandle>(null)
   const audioRef  = useRef(new AudioManager())
+
+  const updatePreferences = useCallback((patch: PlayerPreferencesPatch) => {
+    setPreferences(prev => {
+      const next = { ...prev, ...patch }
+      preferencesStore.save(next)
+      return next
+    })
+  }, [preferencesStore])
+
+  const resetPreferences = useCallback(() => {
+    setPreferences(preferencesStore.reset())
+  }, [preferencesStore])
+
+  useEffect(() => {
+    setPreferences(preferencesStore.load())
+  }, [preferencesStore])
 
   useEffect(() => {
     const bus   = engine.bus
@@ -229,64 +242,38 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
   }, [engine, resumeFrom])
 
   useEffect(() => {
-    writeStoredBoolean(`vn:${engineStorageId}:player:auto`, autoMode)
-  }, [engineStorageId, autoMode])
-
-  useEffect(() => {
-    writeStoredBoolean(`vn:${engineStorageId}:player:skip`, skipMode)
-  }, [engineStorageId, skipMode])
-
-  useEffect(() => {
-    writeStoredBoolean(`vn:${engineStorageId}:player:skip-read-only`, skipReadOnly)
-  }, [engineStorageId, skipReadOnly])
-
-  useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (!isAcceptedAdvanceKey(e.key)) return
-      const action = getStageAdvanceAction(choices !== null, dialogRef.current?.isTyping ?? false)
-      if (action === 'ignore') return
+      const action = resolveKeyboardAction(e.key, resolvedInputMap)
+      if (!action) return
+
+      if (action === 'advance') {
+        const advanceAction = getStageAdvanceAction(choices !== null, dialogRef.current?.isTyping ?? false)
+        if (advanceAction === 'ignore') return
+        e.preventDefault()
+        if (advanceAction === 'reveal') {
+          dialogRef.current?.skip()
+        } else {
+          engine.advance()
+        }
+        return
+      }
+
       e.preventDefault()
-      if (action === 'reveal') {
-        dialogRef.current?.skip()
-      } else {
-        engine.advance()
-      }
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [engine, choices])
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'b' || e.key === 'B') {
-        e.preventDefault()
+      if (action === 'backlog') {
         setBacklogOpen(open => !open)
-      } else if (e.key === 'a' || e.key === 'A') {
-        e.preventDefault()
-        setAutoMode(value => !value)
-        setSkipMode(false)
-      } else if (e.key === 's' || e.key === 'S') {
-        e.preventDefault()
-        setSkipMode(value => !value)
-        setAutoMode(false)
+      } else if (action === 'auto') {
+        updatePreferences({ autoMode: !preferences.autoMode, skipMode: false })
+      } else if (action === 'skip') {
+        updatePreferences({ skipMode: !preferences.skipMode, autoMode: false })
+      } else if (action === 'saveLoad') {
+        if (!menuOpen) setMenuOpen(true)
+      } else if (action === 'settings') {
+        setSettingsOpen(open => !open)
       }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [])
-
-  // Open save menu with Escape when it's closed (avoid interfering when menu is open).
-  useEffect(() => {
-    if (menuOpen) return
-    const esc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        setMenuOpen(true)
-      }
-    }
-    window.addEventListener('keydown', esc)
-    return () => window.removeEventListener('keydown', esc)
-  }, [menuOpen])
+  }, [engine, choices, menuOpen, preferences.autoMode, preferences.skipMode, resolvedInputMap, updatePreferences])
 
   const handleStageClick = useCallback(() => {
     const action = getStageAdvanceAction(choices !== null, dialogRef.current?.isTyping ?? false)
@@ -299,40 +286,40 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
   }, [engine, choices])
 
   useEffect(() => {
-    if (!autoMode || !dialog) return
+    if (!preferences.autoMode || !dialog) return
     let scheduled: ReturnType<typeof setTimeout> | null = null
     const interval = setInterval(() => {
       if (scheduled) return
       const action = getAutoModeAction({
         hasDialog: Boolean(dialog),
         hasChoices: choices !== null,
-        hasBlockingOverlay: menuOpen || audioOpen || backlogOpen || transition !== null,
+        hasBlockingOverlay: menuOpen || audioOpen || backlogOpen || settingsOpen || transition !== null,
         isTyping: dialogRef.current?.isTyping ?? false,
       })
       if (action !== 'advance') return
       scheduled = setTimeout(() => {
         scheduled = null
         engine.advance()
-      }, getAutoDelayMs(dialog.text))
+      }, getAutoDelayMs(dialog.text, preferences.autoBaseDelayMs, preferences.autoPerCharacterDelayMs))
     }, 120)
     return () => {
       clearInterval(interval)
       if (scheduled) clearTimeout(scheduled)
     }
-  }, [autoMode, dialog, choices, menuOpen, audioOpen, backlogOpen, transition, engine])
+  }, [preferences.autoMode, preferences.autoBaseDelayMs, preferences.autoPerCharacterDelayMs, dialog, choices, menuOpen, audioOpen, backlogOpen, settingsOpen, transition, engine])
 
   useEffect(() => {
-    if (!skipMode || !dialog) return
+    if (!preferences.skipMode || !dialog) return
     const interval = setInterval(() => {
       const action = getSkipModeAction({
         hasDialog: Boolean(dialog),
         hasChoices: choices !== null,
-        hasBlockingOverlay: menuOpen || audioOpen || backlogOpen || transition !== null,
+        hasBlockingOverlay: menuOpen || audioOpen || backlogOpen || settingsOpen || transition !== null,
         isTyping: dialogRef.current?.isTyping ?? false,
         dialogSeenBefore: dialog.seenBefore,
-      }, skipReadOnly)
+      }, preferences.skipReadOnly)
       if (action === 'stop-skip') {
-        setSkipMode(false)
+        updatePreferences({ skipMode: false })
       } else if (action === 'reveal') {
         dialogRef.current?.skip()
       } else if (action === 'advance') {
@@ -340,7 +327,7 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
       }
     }, 80)
     return () => clearInterval(interval)
-  }, [skipMode, skipReadOnly, dialog, choices, menuOpen, audioOpen, backlogOpen, transition, engine])
+  }, [preferences.skipMode, preferences.skipReadOnly, dialog, choices, menuOpen, audioOpen, backlogOpen, settingsOpen, transition, engine, updatePreferences])
 
   const handleDialogComplete = useCallback((advanceMode: DialogOptions['advanceMode']) => {
     if (advanceMode === 'next') {
@@ -375,38 +362,45 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
       <button
         type="button"
         aria-label="Toggle auto mode"
-        aria-pressed={autoMode}
+        aria-pressed={preferences.autoMode}
         onClick={() => {
-          setAutoMode(value => !value)
-          setSkipMode(false)
+          updatePreferences({ autoMode: !preferences.autoMode, skipMode: false })
         }}
-        style={getPlayerButtonStyle(autoMode)}
-        title={autoMode ? 'Auto mode on' : 'Auto mode off'}
+        style={getPlayerButtonStyle(preferences.autoMode)}
+        title={preferences.autoMode ? 'Auto mode on' : 'Auto mode off'}
       >
         Auto
       </button>
       <button
         type="button"
         aria-label="Toggle skip mode"
-        aria-pressed={skipMode}
+        aria-pressed={preferences.skipMode}
         onClick={() => {
-          setSkipMode(value => !value)
-          setAutoMode(false)
+          updatePreferences({ skipMode: !preferences.skipMode, autoMode: false })
         }}
-        style={getPlayerButtonStyle(skipMode)}
-        title={skipMode ? 'Skip mode on' : 'Skip mode off'}
+        style={getPlayerButtonStyle(preferences.skipMode)}
+        title={preferences.skipMode ? 'Skip mode on' : 'Skip mode off'}
       >
         Skip
       </button>
       <button
         type="button"
         aria-label="Toggle read-only skip"
-        aria-pressed={skipReadOnly}
-        onClick={() => setSkipReadOnly(value => !value)}
-        style={getPlayerButtonStyle(skipReadOnly)}
-        title={skipReadOnly ? 'Read-only skip on' : 'Read-only skip off'}
+        aria-pressed={preferences.skipReadOnly}
+        onClick={() => updatePreferences({ skipReadOnly: !preferences.skipReadOnly })}
+        style={getPlayerButtonStyle(preferences.skipReadOnly)}
+        title={preferences.skipReadOnly ? 'Read-only skip on' : 'Read-only skip off'}
       >
         Read
+      </button>
+      <button
+        type="button"
+        aria-label="Open player settings"
+        aria-pressed={settingsOpen}
+        onClick={() => setSettingsOpen(true)}
+        style={getPlayerButtonStyle(settingsOpen)}
+      >
+        Settings
       </button>
     </div>
   )
@@ -511,13 +505,29 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
           onClear={() => clearEngineBacklog(engine)}
         />
 
+        <SettingsComponent
+          isOpen={settingsOpen}
+          preferences={preferences}
+          onChange={updatePreferences}
+          onReset={resetPreferences}
+          onClose={() => setSettingsOpen(false)}
+        />
+
         {/* Bottom panel: dialog box stacked above the controls bar */}
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,
           display: 'flex', flexDirection: 'column',
           pointerEvents: 'none',
         }}>
-          <DialogComponent ref={dialogRef} dialog={dialog} onComplete={handleDialogComplete} />
+          <DialogComponent
+            ref={dialogRef}
+            dialog={dialog}
+            onComplete={handleDialogComplete}
+            textSpeedMs={preferences.textSpeedMs}
+            textScale={preferences.textScale}
+            highContrast={preferences.highContrast}
+            reduceMotion={preferences.reduceMotion}
+          />
           {dialog && (
             <SaveControlsComponent
               saveManager={engine.saveManager}

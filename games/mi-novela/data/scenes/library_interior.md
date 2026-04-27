@@ -21,11 +21,11 @@ transitions:
     duration: 0.6
 
 ambient:
-  sfx: library_hum
+  sfx: city_morning
   sfxVolume: 0.35
   effect: none
 
-thumbnail: scenes/library/thumb.jpg
+thumbnail: scenes/library/default.png
 ---
 
 Scene used for study and quiet conversation moments.

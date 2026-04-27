@@ -20,6 +20,22 @@ export function formatTimestamp(ms: number): string {
   }).format(new Date(ms))
 }
 
+export function formatPlaytime(ms: number): string {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000))
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+  if (hours > 0) return `${hours}h ${minutes}m`
+  if (minutes > 0) return `${minutes}m ${seconds}s`
+  return `${seconds}s`
+}
+
+export function resolveSaveThumbnail(thumbnail: string | undefined): string | null {
+  if (!thumbnail) return null
+  if (thumbnail.startsWith('http') || thumbnail.startsWith('/') || thumbnail.startsWith('./')) return thumbnail
+  return `./assets/${thumbnail}`
+}
+
 const OVERLAY_STYLE: React.CSSProperties = {
   position: 'fixed',
   inset: 0,
@@ -141,6 +157,12 @@ const LOAD_BTN_STYLE: React.CSSProperties = {
   transition: 'color 0.1s linear, border-color 0.1s linear',
 }
 
+const DELETE_BTN_STYLE: React.CSSProperties = {
+  ...LOAD_BTN_STYLE,
+  color: 'rgba(255,180,171,0.7)',
+  border: '1px solid rgba(255,180,171,0.28)',
+}
+
 const ERROR_BANNER_STYLE: React.CSSProperties = {
   padding: '10px 14px',
   borderRadius: 0,
@@ -169,14 +191,22 @@ function SlotRow({
   info,
   onSave,
   onLoad,
+  onDelete,
 }: {
   slotKey: number | 'auto'
   info: SlotInfo | undefined
   onSave: () => void
   onLoad?: (() => void) | undefined
+  onDelete?: (() => void) | undefined
 }) {
   const label = slotKey === 'auto' ? 'Auto Save' : `Slot ${slotKey}`
   const isOccupied = info !== undefined
+  const [thumbnailFailed, setThumbnailFailed] = useState(false)
+  const thumbnailSrc = thumbnailFailed ? null : resolveSaveThumbnail(info?.meta.thumbnail)
+
+  useEffect(() => {
+    setThumbnailFailed(false)
+  }, [info?.meta.thumbnail])
 
   return (
     <div
@@ -204,12 +234,13 @@ function SlotRow({
 
       {isOccupied ? (
         <>
-        {info.meta.thumbnail ? (
+        {thumbnailSrc ? (
           <img
-            src={`./assets/${info.meta.thumbnail}`}
+            src={thumbnailSrc}
             alt=""
             aria-hidden="true"
             loading="lazy"
+            onError={() => setThumbnailFailed(true)}
             style={THUMB_STYLE}
           />
         ) : (
@@ -234,7 +265,7 @@ function SlotRow({
             {info.meta.sceneName}
           </span>
           <span style={{ fontSize: 11, fontWeight: 400, color: 'rgba(229,226,225,0.3)', letterSpacing: '0.05em' }}>
-            {formatTimestamp(info.meta.timestamp)}
+            {formatTimestamp(info.meta.timestamp)} · {formatPlaytime(info.meta.playtime)}
           </span>
         </div>
         </>
@@ -268,6 +299,16 @@ function SlotRow({
           Load
         </button>
       )}
+      {isOccupied && onDelete !== undefined && (
+        <button
+          onClick={onDelete}
+          style={DELETE_BTN_STYLE}
+          aria-label={`Delete ${label}`}
+          type="button"
+        >
+          Delete
+        </button>
+      )}
     </div>
   )
 }
@@ -285,6 +326,7 @@ export function SaveLoadMenu({ isOpen, onClose, saveManager, getState, onLoad }:
   const [loadError, setLoadError] = useState<string | null>(null)
   const [saveCount, setSaveCount] = useState(0)
   const [pendingOverwriteSlot, setPendingOverwriteSlot] = useState<number | 'auto' | null>(null)
+  const [pendingDeleteSlot, setPendingDeleteSlot] = useState<number | 'auto' | null>(null)
 
   useEffect(() => {
     if (!isOpen) return
@@ -329,6 +371,17 @@ export function SaveLoadMenu({ isOpen, onClose, saveManager, getState, onLoad }:
 
   function cancelOverwrite() {
     setPendingOverwriteSlot(null)
+  }
+
+  function confirmDelete() {
+    if (pendingDeleteSlot === null) return
+    saveManager.deleteSlot(pendingDeleteSlot)
+    setPendingDeleteSlot(null)
+    setSaveCount(c => c + 1)
+  }
+
+  function cancelDelete() {
+    setPendingDeleteSlot(null)
   }
 
   function handleLoad(slot: number | 'auto') {
@@ -411,6 +464,30 @@ export function SaveLoadMenu({ isOpen, onClose, saveManager, getState, onLoad }:
           </div>
         )}
 
+        {pendingDeleteSlot !== null && (
+          <div style={CONFIRM_BANNER_STYLE} role="alertdialog" aria-live="polite">
+            <div style={{ flex: 1 }}>
+              {pendingDeleteSlot === 'auto' ? 'Delete auto save slot?' : `Delete slot ${pendingDeleteSlot}?`}
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={confirmDelete}
+                style={DELETE_BTN_STYLE}
+                type="button"
+              >
+                Delete
+              </button>
+              <button
+                onClick={cancelDelete}
+                style={LOAD_BTN_STYLE}
+                type="button"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
         <div style={SLOT_LIST_STYLE}>
           {allSlotKeys.map(slotKey => (
             <SlotRow
@@ -419,6 +496,7 @@ export function SaveLoadMenu({ isOpen, onClose, saveManager, getState, onLoad }:
               info={occupiedByKey.get(String(slotKey))}
               onSave={() => handleSave(slotKey)}
               onLoad={occupiedByKey.has(String(slotKey)) ? () => handleLoad(slotKey) : undefined}
+              onDelete={occupiedByKey.has(String(slotKey)) ? () => setPendingDeleteSlot(slotKey) : undefined}
             />
           ))}
         </div>

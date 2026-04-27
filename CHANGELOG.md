@@ -38,6 +38,9 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Player backlog/history API and default `VnBacklog` overlay.
 - Auto mode and skip mode baseline controls in `VnStage`.
 - Seen-dialog tracking for read-only skip behavior.
+- `PlayerPreferences` service and default `VnSettings` panel for reading preferences.
+- Configurable `VnStage` input map for player actions.
+- Save/load slot delete controls and playtime metadata display.
 
 ### Changed
 
@@ -55,3 +58,5 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Engine docs now define singleton versus isolated instance policy.
 - Distribution docs now describe mode-specific wrapper contracts.
 - Save snapshots now include dialog backlog state.
+- `VnStage` now reads player mode state from unified player preferences.
+- Save controls and player reading controls share the same bottom bar styling.
