@@ -113,7 +113,7 @@ export async function build(gameId?: string): Promise<void> {
     { pkg: join(ROOT, 'node_modules/react-dom/client.js'),      out: 'react-dom-client.js',      external: ['react'] },
   ]
   for (const { pkg, out, external } of reactBundles) {
-    const result = await Bun.build({ entrypoints: [pkg], bundle: true, format: 'esm', outdir: vendorDir, naming: out, external })
+    const result = await Bun.build({ entrypoints: [pkg], format: 'esm', outdir: vendorDir, naming: out, external })
     if (!result.success) console.warn(`  Failed to bundle ${out}`)
     else console.log(`    ✓ vendor/${out}`)
   }
@@ -123,7 +123,6 @@ export async function build(gameId?: string): Promise<void> {
   const appResult = await Bun.build({
     entrypoints: [join(gameDir, 'index.html')],
     outdir: distDir,
-    bundle: true,
     format: 'esm',
     external: ['react', 'react/*', 'react-dom/*'],
     minify: true,
@@ -136,7 +135,7 @@ export async function build(gameId?: string): Promise<void> {
       const outPath = join(distDir, 'framework', rel.replace(/\.tsx?$/, '.js'))
       mkdirSync(join(outPath, '..'), { recursive: true })
       try {
-        const r = await Bun.build({ entrypoints: [tsxFile], bundle: true, format: 'esm', external: ['react', 'react/*', 'react-dom/*', './*', '../*'] })
+        const r = await Bun.build({ entrypoints: [tsxFile], format: 'esm', external: ['react', 'react/*', 'react-dom/*', './*', '../*'] })
         if (r.success) {
           let code = await r.outputs[0]!.text()
           code = code.replace(/from\s+(['"])(\..*?)\.tsx?\1/g, `from $1$2.js$1`)

@@ -19,7 +19,7 @@ const IMPORT_MAP = JSON.stringify({
 })
 
 async function bundleVendorModule(pkg: string, out: string, external: string[] = []): Promise<void> {
-  const result = await Bun.build({ entrypoints: [pkg], bundle: true, format: 'esm', outdir: VENDOR_DIR, naming: out, external })
+  const result = await Bun.build({ entrypoints: [pkg], format: 'esm', outdir: VENDOR_DIR, naming: out, external })
   if (!result.success) throw new Error(`Failed to bundle ${out}: ${result.logs.map(l => l.message).join('\n')}`)
 
   const mod = require(pkg) as Record<string, unknown>
@@ -60,7 +60,6 @@ async function ensureReactVendor(): Promise<void> {
 async function transpileTs(filePath: string): Promise<string> {
   const result = await Bun.build({
     entrypoints: [filePath],
-    bundle: true,
     format: 'esm',
     external: ['react', 'react/*', 'react-dom/*', './*', '../*', '../../*', '../../../*'],
   })
@@ -161,7 +160,7 @@ export async function dev(gameId?: string): Promise<void> {
   const gameDir = join(ROOT, 'games', gameId)
   const port = parseInt(process.env['PORT'] ?? '3000')
 
-  globalThis.jsYaml = yaml
+  ;(globalThis as typeof globalThis & { jsYaml: typeof yaml }).jsYaml = yaml
 
   await ensureReactVendor()
 

@@ -8,8 +8,8 @@ import type { GameSaveState } from '../types/save.d.ts'
 
 interface VnAppProps {
   engine: GameEngine
-  showNewGame?: boolean
-  showContinue?: boolean
+  showNewGame?: boolean | undefined
+  showContinue?: boolean | undefined
 }
 
 interface EndScreenPayload {
@@ -62,7 +62,13 @@ function VnApp({ engine, showNewGame, showContinue }: VnAppProps) {
   }, [])
 
   if (endScreen !== null) {
-    return <VnEndScreen title={endScreen.title} message={endScreen.message} onReturnToMenu={handleReturnToMenu} />
+    return (
+      <VnEndScreen
+        {...(endScreen.title !== undefined ? { title: endScreen.title } : {})}
+        {...(endScreen.message !== undefined ? { message: endScreen.message } : {})}
+        onReturnToMenu={handleReturnToMenu}
+      />
+    )
   }
 
   if (!started) {
@@ -72,13 +78,13 @@ function VnApp({ engine, showNewGame, showContinue }: VnAppProps) {
         onStart={handleStart}
         hasSaves={hasSaves}
         onContinue={handleContinue}
-        showNewGame={showNewGame}
-        showContinue={showContinue}
+        {...(showNewGame !== undefined ? { showNewGame } : {})}
+        {...(showContinue !== undefined ? { showContinue } : {})}
       />
     )
   }
 
-  return <VnStage engine={engine} resumeFrom={resumeSave ?? undefined} />
+  return <VnStage engine={engine} {...(resumeSave !== null ? { resumeFrom: resumeSave } : {})} />
 }
 
 /**
@@ -97,7 +103,12 @@ export function mountVnApp(
   options?: { showNewGame?: boolean; showContinue?: boolean },
 ): ReturnType<typeof createRoot> {
   const root = createRoot(container)
-  root.render(<VnApp engine={engine} showNewGame={options?.showNewGame} showContinue={options?.showContinue} />)
+  root.render(
+    <VnApp
+      engine={engine}
+      {...(options?.showNewGame !== undefined ? { showNewGame: options.showNewGame } : {})}
+      {...(options?.showContinue !== undefined ? { showContinue: options.showContinue } : {})}
+    />,
+  )
   return root
 }
-

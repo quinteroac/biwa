@@ -1,10 +1,10 @@
 interface VnEndScreenProps {
   /** Primary heading shown on the end screen. Defaults to "The End". */
-  title?: string
+  title?: string | undefined
   /** Optional message displayed beneath the title. */
-  message?: string
+  message?: string | undefined
   /** Called when the player clicks "Return to Menu". */
-  onReturnToMenu?: () => void
+  onReturnToMenu?: (() => void) | undefined
 }
 
 /**
@@ -23,12 +23,12 @@ export function VnEndScreen({ title = 'The End', message, onReturnToMenu }: VnEn
       style={{
         position: 'fixed',
         inset: 0,
-        background: '#131313',
+        background: 'var(--vn-end-bg, #000)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        fontFamily: 'var(--vn-font, "Manrope", sans-serif)',
+        fontFamily: 'var(--vn-font, "Georgia", serif)',
         color: '#e5e2e1',
         textAlign: 'center',
         padding: '64px',
@@ -77,10 +77,10 @@ export function VnEndScreen({ title = 'The End', message, onReturnToMenu }: VnEn
             fontWeight: 500,
             background: 'transparent',
             color: 'rgba(229,226,225,0.7)',
-            border: '1px solid rgba(255,255,255,0.2)',
+            border: '1px solid var(--vn-accent, rgba(255,255,255,0.2))',
             borderRadius: 0,
             cursor: 'pointer',
-            fontFamily: 'var(--vn-font, "Manrope", sans-serif)',
+            fontFamily: 'var(--vn-font, "Georgia", serif)',
             transition: 'color 0.1s linear, border-color 0.1s linear',
           }}
           onMouseEnter={e => {

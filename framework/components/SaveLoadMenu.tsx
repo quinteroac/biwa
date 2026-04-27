@@ -153,7 +153,7 @@ function SlotRow({
   slotKey: number | 'auto'
   info: SlotInfo | undefined
   onSave: () => void
-  onLoad?: () => void
+  onLoad?: (() => void) | undefined
 }) {
   const label = slotKey === 'auto' ? 'Auto Save' : `Slot ${slotKey}`
   const isOccupied = info !== undefined
@@ -212,7 +212,7 @@ function SlotRow({
             letterSpacing: '0.05em',
           }}
         >
-          Empty
+          Empty slot
         </span>
       )}
       <button

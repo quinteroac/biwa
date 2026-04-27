@@ -1,14 +1,11 @@
 import { Story } from 'inkjs'
 import type { EventBus } from './EventBus.ts'
+import { TagParser } from '../TagParser.ts'
+import type { TagCommand } from '../TagParser.ts'
+
+export type { TagCommand } from '../TagParser.ts'
 
 const SPEAKER_RE = /^([^:]{1,30}):\s*([\s\S]*)$/
-
-export interface TagCommand {
-  type: string
-  id?: string
-  exit?: boolean
-  [key: string]: unknown
-}
 
 export interface StepChoice {
   index: number
@@ -93,7 +90,7 @@ export class ScriptRunner {
       }
     }
 
-    const parsedTags = this.#parseTags(tags)
+    const parsedTags = TagParser.parse(tags)
     const speakerTag = parsedTags.find(t => t.type === 'speaker')
     if (speakerTag?.id) {
       speaker = speakerTag.id
@@ -121,57 +118,6 @@ export class ScriptRunner {
       hasChoices,
       pendingMinigame,
     }
-  }
-
-  #parseTags(tags: string[]): TagCommand[] {
-    return tags.map(raw => {
-      const trimmed = raw.trim().replace(/^#\s*/, '')
-      if (!trimmed) return null
-
-      const parts = trimmed.split(',').map(s => s.trim())
-      const first = parts[0]!
-      const colonIdx = first.indexOf(':')
-
-      if (colonIdx === -1) {
-        return { type: first.trim() }
-      }
-
-      const type = first.slice(0, colonIdx).trim()
-      const remaining = trimmed.slice(colonIdx + 1)
-      const tokens = remaining.split(',').map(s => s.trim())
-      const cmd: TagCommand = { type }
-
-      if (tokens[0] && !tokens[0].includes(':')) {
-        if (tokens[0] === 'exit') {
-          cmd.exit = true
-        } else {
-          cmd.id = tokens[0]
-        }
-        for (let i = 1; i < tokens.length; i++) {
-          const kv = tokens[i]!
-          const ci = kv.indexOf(':')
-          if (ci !== -1) {
-            cmd[kv.slice(0, ci).trim()] = kv.slice(ci + 1).trim()
-          } else if (kv === 'exit') {
-            cmd.exit = true
-          }
-        }
-      } else {
-        for (const token of tokens) {
-          const ci = token.indexOf(':')
-          if (ci !== -1) {
-            const k = token.slice(0, ci).trim()
-            const v = token.slice(ci + 1).trim()
-            cmd[k] = v
-          } else if (token === 'exit') {
-            cmd.exit = true
-          } else if (token) {
-            cmd.id = token
-          }
-        }
-      }
-      return cmd
-    }).filter((c): c is TagCommand => c !== null)
   }
 
   get choices(): StepChoice[] {

@@ -5,25 +5,39 @@ import { VnDialog } from './VnDialog.tsx'
 import { VnChoices } from './VnChoices.tsx'
 import { VnTransition } from './VnTransition.tsx'
 import { VnSaveMenu } from './VnSaveMenu.tsx'
+import { VnVolumeControl } from './VnVolumeControl.tsx'
 import { SaveControlsBar } from './SaveControlsBar.tsx'
 import { getStageAdvanceAction, isAcceptedAdvanceKey } from './VnStageAdvance.ts'
 import type { GameEngine } from '../engine/GameEngine.ts'
 import type { GameSaveState } from '../types/save.d.ts'
+import type { AudioChannel } from '../types/audio.d.ts'
 import type { DialogOptions, VnDialogHandle } from './VnDialog.tsx'
 import type { StepChoice } from '../engine/ScriptRunner.ts'
 
 class AudioManager {
   #bgm: HTMLAudioElement | null = null
   #bgmId: string | null = null
+  #bgmBaseVolume = 1
   #ambience: HTMLAudioElement | null = null
   #ambienceId: string | null = null
+  #ambienceBaseVolume = 1
+  #voice: HTMLAudioElement | null = null
+  #voiceBaseVolume = 1
+  #sfx = new Map<HTMLAudioElement, number>()
+  #volumes: Record<AudioChannel, number> = {
+    master: 1,
+    bgm: 1,
+    sfx: 1,
+    voice: 1,
+  }
 
   playBgm(id: string, audioData: { file?: string; volume?: number } | null): void {
     if (this.#bgmId === id) return
     this.#stopBgm()
     const src = audioData?.file ? `./assets/${audioData.file}` : `./assets/audio/bgm/${id}.ogg`
     const audio = new Audio(src)
-    audio.volume = audioData?.volume ?? 0.8
+    this.#bgmBaseVolume = audioData?.volume ?? 0.8
+    audio.volume = this.#effectiveVolume('bgm', this.#bgmBaseVolume)
     audio.loop = true
     void audio.play().catch(() => {})
     this.#bgm = audio; this.#bgmId = id
@@ -33,6 +47,7 @@ class AudioManager {
     if (!this.#bgm) return
     this.#bgm.pause(); this.#bgm.src = ''
     this.#bgm = null; this.#bgmId = null
+    this.#bgmBaseVolume = 1
   }
 
   playAmbience(id: string, audioData: { file?: string; volume?: number } | null): void {
@@ -40,7 +55,8 @@ class AudioManager {
     this.#stopAmbience()
     const src = audioData?.file ? `./assets/${audioData.file}` : `./assets/audio/ambience/${id}.ogg`
     const audio = new Audio(src)
-    audio.volume = audioData?.volume ?? 0.5
+    this.#ambienceBaseVolume = audioData?.volume ?? 0.5
+    audio.volume = this.#effectiveVolume('bgm', this.#ambienceBaseVolume)
     audio.loop = true
     void audio.play().catch(() => {})
     this.#ambience = audio; this.#ambienceId = id
@@ -50,18 +66,73 @@ class AudioManager {
     if (!this.#ambience) return
     this.#ambience.pause(); this.#ambience.src = ''
     this.#ambience = null; this.#ambienceId = null
+    this.#ambienceBaseVolume = 1
   }
 
   playSfx(id: string, audioData: { file?: string; volume?: number } | null): void {
     const src = audioData?.file ? `./assets/${audioData.file}` : `./assets/audio/sfx/${id}.ogg`
     const audio = new Audio(src)
-    audio.volume = audioData?.volume ?? 1.0
+    const baseVolume = audioData?.volume ?? 1.0
+    audio.volume = this.#effectiveVolume('sfx', baseVolume)
+    this.#sfx.set(audio, baseVolume)
+    audio.addEventListener('ended', () => this.#sfx.delete(audio), { once: true })
     void audio.play().catch(() => {})
+  }
+
+  playVoice(id: string, audioData: { file?: string; volume?: number } | null): void {
+    this.#stopVoice()
+    const src = audioData?.file ? `./assets/${audioData.file}` : `./assets/audio/voice/${id}.ogg`
+    const audio = new Audio(src)
+    this.#voiceBaseVolume = audioData?.volume ?? 1.0
+    audio.volume = this.#effectiveVolume('voice', this.#voiceBaseVolume)
+    audio.loop = false
+    audio.addEventListener('ended', () => {
+      if (this.#voice === audio) this.#voice = null
+    }, { once: true })
+    void audio.play().catch(() => {})
+    this.#voice = audio
+  }
+
+  #stopVoice(): void {
+    if (!this.#voice) return
+    this.#voice.pause(); this.#voice.src = ''
+    this.#voice = null
+    this.#voiceBaseVolume = 1
+  }
+
+  setVolume(channel: AudioChannel, volume: number): void {
+    this.#volumes[channel] = Math.max(0, Math.min(1, volume))
+    this.#applyVolumes()
+  }
+
+  getVolumes(): Record<AudioChannel, number> {
+    return { ...this.#volumes }
+  }
+
+  #effectiveVolume(channel: AudioChannel, baseVolume: number): number {
+    const master = this.#volumes.master
+    const channelVolume = channel === 'master' ? 1 : this.#volumes[channel]
+    return Math.max(0, Math.min(1, baseVolume * master * channelVolume))
+  }
+
+  #applyVolumes(): void {
+    if (this.#bgm) this.#bgm.volume = this.#effectiveVolume('bgm', this.#bgmBaseVolume)
+    if (this.#ambience) this.#ambience.volume = this.#effectiveVolume('bgm', this.#ambienceBaseVolume)
+    if (this.#voice) this.#voice.volume = this.#effectiveVolume('voice', this.#voiceBaseVolume)
+    for (const [audio, baseVolume] of this.#sfx) {
+      audio.volume = this.#effectiveVolume('sfx', baseVolume)
+    }
   }
 
   stopAll(): void {
     this.#stopBgm()
     this.#stopAmbience()
+    this.#stopVoice()
+    for (const audio of this.#sfx.keys()) {
+      audio.pause()
+      audio.src = ''
+    }
+    this.#sfx.clear()
   }
 }
 
@@ -126,6 +197,7 @@ export interface VnStageProps {
 
 export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, showAutoSave = true, resumeFrom }: VnStageProps) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [audioOpen, setAudioOpen] = useState(false)
   const [scene, setScene]           = useState<SceneState | null>(null)
   const [characters, setCharacters] = useState<Map<string, CharacterState>>(new Map())
   const [dialog, setDialog]         = useState<DialogOptions | null>(null)
@@ -182,6 +254,7 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
       bus.on<{ id: string } & Record<string, unknown>>('engine:bgm',      ({ id, ...data }) => audio.playBgm(id, data as { file?: string; volume?: number })),
       bus.on<{ id: string } & Record<string, unknown>>('engine:sfx',      ({ id, ...data }) => audio.playSfx(id, data as { file?: string; volume?: number })),
       bus.on<{ id: string } & Record<string, unknown>>('engine:ambience', ({ id, ...data }) => audio.playAmbience(id, data as { file?: string; volume?: number })),
+      bus.on<{ id: string } & Record<string, unknown>>('engine:voice',    ({ id, ...data }) => audio.playVoice(id, data as { file?: string; volume?: number })),
     ]
 
     if (resumeFrom) {
@@ -290,6 +363,62 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
             engine.restoreState(state)
           }}
         />
+
+        <div
+          style={{
+            position: 'absolute',
+            top: 20,
+            right: 20,
+            width: 340,
+            maxWidth: 'calc(100vw - 40px)',
+            zIndex: 90,
+            pointerEvents: 'auto',
+            fontFamily: 'var(--vn-font, "Manrope", sans-serif)',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            type="button"
+            aria-expanded={audioOpen}
+            aria-controls="vn-audio-controls"
+            onClick={() => setAudioOpen(open => !open)}
+            style={{
+              display: 'block',
+              marginLeft: 'auto',
+              height: 32,
+              padding: '0 14px',
+              background: 'rgba(0,0,0,0.6)',
+              border: '1px solid rgba(255,255,255,0.24)',
+              borderRadius: 0,
+              color: 'rgba(229,226,225,0.78)',
+              fontFamily: 'inherit',
+              fontSize: 11,
+              fontWeight: 500,
+              letterSpacing: '0.18em',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+            }}
+          >
+            Audio
+          </button>
+          {audioOpen && (
+            <div
+              id="vn-audio-controls"
+              style={{
+                marginTop: 8,
+                padding: '14px 16px',
+                background: 'rgba(0,0,0,0.72)',
+                border: '1px solid rgba(255,255,255,0.18)',
+                boxShadow: '0 18px 48px rgba(0,0,0,0.35)',
+              }}
+            >
+              <VnVolumeControl
+                volumes={audioRef.current.getVolumes()}
+                onVolumeChange={(channel, volume) => audioRef.current.setVolume(channel, volume)}
+              />
+            </div>
+          )}
+        </div>
 
         {/* Bottom panel: dialog box stacked above the controls bar */}
         <div style={{

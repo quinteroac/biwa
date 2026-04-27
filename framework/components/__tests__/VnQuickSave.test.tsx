@@ -111,7 +111,6 @@ describe('VnQuickSave', () => {
   it('AC01: quickSave() returns false when localStorage is unavailable', () => {
     const sm = new SaveManager({ gameId: 'vn-qs-test', slots: 3, autoSave: false })
     const originalSetItem = localStorage.setItem
-    // @ts-expect-error intentional override for test
     localStorage.setItem = () => { throw new Error('Storage full') }
     const result = quickSave(sm, makeState)
     expect(result).toBe(false)

@@ -6,7 +6,10 @@
     "dev": "bun manager/cli.ts dev",
     "build": "bun manager/cli.ts build",
     "new": "bun manager/cli.ts new",
-    "list": "bun manager/cli.ts list"
+    "list": "bun manager/cli.ts list",
+    "test": "bun test",
+    "typecheck": "tsc",
+    "check": "bun run test && bun run typecheck"
   },
   "dependencies": {
     "@chenglou/pretext": "^0.0.5",

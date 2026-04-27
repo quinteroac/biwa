@@ -7,19 +7,26 @@ export type { AudioChannel }
  * Tracks active audio sources per channel and applies volume changes
  * to all active sources immediately.
  */
+const MUTE_STORAGE_KEY = 'vn:volume:muted'
+
 export class VolumeController {
   static readonly #CHANNELS: readonly AudioChannel[] = Object.freeze(['master', 'bgm', 'sfx', 'voice'] as const)
 
   #volumes: Map<AudioChannel, number>
   #sources: Map<AudioChannel, Set<HTMLAudioElement>>
+  #muted: boolean
+  #savedVolumes: Map<AudioChannel, number>
 
   constructor() {
     this.#volumes = new Map()
     this.#sources = new Map()
+    this.#muted = false
+    this.#savedVolumes = new Map()
     for (const ch of VolumeController.#CHANNELS) {
       this.#volumes.set(ch, 1.0)
       this.#sources.set(ch, new Set())
     }
+    this.#loadMuteState()
   }
 
   /**
@@ -117,6 +124,14 @@ export class VolumeController {
 
   #normalize(value: number): number {
     return Math.max(0, Math.min(1, value))
+  }
+
+  #loadMuteState(): void {
+    try {
+      this.#muted = localStorage.getItem(MUTE_STORAGE_KEY) === 'true'
+    } catch {
+      this.#muted = false
+    }
   }
 
   /**

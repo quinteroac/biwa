@@ -85,7 +85,9 @@ function SpritesheetRenderer({ file, atlas, expression, expressions }: {
     const drawFrame = (img: HTMLImageElement, frameIdx: number) => {
       const canvas = canvasRef.current
       if (!canvas) return
-      const frameData = atlasData.frames[frameKeys[tag.from + frameIdx]]
+      const frameKey = frameKeys[tag.from + frameIdx]
+      if (!frameKey) return
+      const frameData = atlasData.frames[frameKey]
       if (!frameData) return
       const { x, y, w, h } = frameData.frame
       canvas.width  = w
@@ -98,7 +100,8 @@ function SpritesheetRenderer({ file, atlas, expression, expressions }: {
     const startAnimation = (img: HTMLImageElement) => {
       drawFrame(img, 0)
       if (frameCount > 1) {
-        const duration = atlasData.frames[frameKeys[tag.from]]?.duration ?? 100
+        const firstFrameKey = frameKeys[tag.from]
+        const duration = firstFrameKey ? atlasData.frames[firstFrameKey]?.duration ?? 100 : 100
         timerRef.current = setInterval(() => {
           currentFrame = (currentFrame + 1) % frameCount
           drawFrame(img, currentFrame)

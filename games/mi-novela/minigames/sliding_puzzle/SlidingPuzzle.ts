@@ -1,4 +1,4 @@
-import { MinigameBase, type MinigameResult } from '../../../framework/minigames/MinigameBase.ts'
+import { MinigameBase, type MinigameResult } from '../../../../framework/minigames/MinigameBase.ts'
 
 export class SlidingPuzzle extends MinigameBase {
   private config: Record<string, unknown> = {}
