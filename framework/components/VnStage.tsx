@@ -8,6 +8,7 @@ import { VnSaveMenu } from './VnSaveMenu.tsx'
 import { VnVolumeControl } from './VnVolumeControl.tsx'
 import { SaveControlsBar } from './SaveControlsBar.tsx'
 import { getStageAdvanceAction, isAcceptedAdvanceKey } from './VnStageAdvance.ts'
+import { VolumeController } from '../engine/VolumeController.ts'
 import type { GameEngine } from '../engine/GameEngine.ts'
 import type { GameSaveState } from '../types/save.d.ts'
 import type { AudioChannel } from '../types/audio.d.ts'
@@ -15,78 +16,84 @@ import type { DialogOptions, VnDialogHandle } from './VnDialog.tsx'
 import type { StepChoice } from '../engine/ScriptRunner.ts'
 
 class AudioManager {
+  #volume = new VolumeController()
   #bgm: HTMLAudioElement | null = null
   #bgmId: string | null = null
-  #bgmBaseVolume = 1
   #ambience: HTMLAudioElement | null = null
   #ambienceId: string | null = null
-  #ambienceBaseVolume = 1
   #voice: HTMLAudioElement | null = null
-  #voiceBaseVolume = 1
-  #sfx = new Map<HTMLAudioElement, number>()
-  #volumes: Record<AudioChannel, number> = {
-    master: 1,
-    bgm: 1,
-    sfx: 1,
-    voice: 1,
-  }
+  #sfx = new Set<HTMLAudioElement>()
 
   playBgm(id: string, audioData: { file?: string; volume?: number } | null): void {
+    if (id === 'stop') {
+      this.#stopBgm()
+      return
+    }
     if (this.#bgmId === id) return
     this.#stopBgm()
     const src = audioData?.file ? `./assets/${audioData.file}` : `./assets/audio/bgm/${id}.ogg`
     const audio = new Audio(src)
-    this.#bgmBaseVolume = audioData?.volume ?? 0.8
-    audio.volume = this.#effectiveVolume('bgm', this.#bgmBaseVolume)
     audio.loop = true
+    this.#volume.registerSource('bgm', audio, audioData?.volume ?? 0.8)
     void audio.play().catch(() => {})
     this.#bgm = audio; this.#bgmId = id
   }
 
   #stopBgm(): void {
     if (!this.#bgm) return
+    this.#volume.unregisterSource('bgm', this.#bgm)
     this.#bgm.pause(); this.#bgm.src = ''
     this.#bgm = null; this.#bgmId = null
-    this.#bgmBaseVolume = 1
   }
 
   playAmbience(id: string, audioData: { file?: string; volume?: number } | null): void {
+    if (id === 'stop') {
+      this.#stopAmbience()
+      return
+    }
     if (this.#ambienceId === id) return
     this.#stopAmbience()
     const src = audioData?.file ? `./assets/${audioData.file}` : `./assets/audio/ambience/${id}.ogg`
     const audio = new Audio(src)
-    this.#ambienceBaseVolume = audioData?.volume ?? 0.5
-    audio.volume = this.#effectiveVolume('bgm', this.#ambienceBaseVolume)
     audio.loop = true
+    this.#volume.registerSource('bgm', audio, audioData?.volume ?? 0.5)
     void audio.play().catch(() => {})
     this.#ambience = audio; this.#ambienceId = id
   }
 
   #stopAmbience(): void {
     if (!this.#ambience) return
+    this.#volume.unregisterSource('bgm', this.#ambience)
     this.#ambience.pause(); this.#ambience.src = ''
     this.#ambience = null; this.#ambienceId = null
-    this.#ambienceBaseVolume = 1
   }
 
   playSfx(id: string, audioData: { file?: string; volume?: number } | null): void {
+    if (id === 'stop') return
     const src = audioData?.file ? `./assets/${audioData.file}` : `./assets/audio/sfx/${id}.ogg`
     const audio = new Audio(src)
     const baseVolume = audioData?.volume ?? 1.0
-    audio.volume = this.#effectiveVolume('sfx', baseVolume)
-    this.#sfx.set(audio, baseVolume)
-    audio.addEventListener('ended', () => this.#sfx.delete(audio), { once: true })
+    this.#volume.registerSource('sfx', audio, baseVolume)
+    this.#sfx.add(audio)
+    audio.addEventListener('ended', () => {
+      this.#volume.unregisterSource('sfx', audio)
+      this.#sfx.delete(audio)
+    }, { once: true })
     void audio.play().catch(() => {})
   }
 
   playVoice(id: string, audioData: { file?: string; volume?: number } | null): void {
+    if (id === 'stop') {
+      this.#stopVoice()
+      return
+    }
     this.#stopVoice()
     const src = audioData?.file ? `./assets/${audioData.file}` : `./assets/audio/voice/${id}.ogg`
     const audio = new Audio(src)
-    this.#voiceBaseVolume = audioData?.volume ?? 1.0
-    audio.volume = this.#effectiveVolume('voice', this.#voiceBaseVolume)
     audio.loop = false
+    this.#volume.registerSource('voice', audio, audioData?.volume ?? 1.0)
     audio.addEventListener('ended', () => {
+      this.#volume.unregisterSource('voice', audio)
       if (this.#voice === audio) this.#voice = null
     }, { once: true })
     void audio.play().catch(() => {})
@@ -95,40 +102,25 @@ class AudioManager {
 
   #stopVoice(): void {
     if (!this.#voice) return
+    this.#volume.unregisterSource('voice', this.#voice)
     this.#voice.pause(); this.#voice.src = ''
     this.#voice = null
-    this.#voiceBaseVolume = 1
   }
 
   setVolume(channel: AudioChannel, volume: number): void {
-    this.#volumes[channel] = Math.max(0, Math.min(1, volume))
-    this.#applyVolumes()
+    this.#volume.setVolume(channel, volume)
   }
 
   getVolumes(): Record<AudioChannel, number> {
-    return { ...this.#volumes }
-  }
-
-  #effectiveVolume(channel: AudioChannel, baseVolume: number): number {
-    const master = this.#volumes.master
-    const channelVolume = channel === 'master' ? 1 : this.#volumes[channel]
-    return Math.max(0, Math.min(1, baseVolume * master * channelVolume))
-  }
-
-  #applyVolumes(): void {
-    if (this.#bgm) this.#bgm.volume = this.#effectiveVolume('bgm', this.#bgmBaseVolume)
-    if (this.#ambience) this.#ambience.volume = this.#effectiveVolume('bgm', this.#ambienceBaseVolume)
-    if (this.#voice) this.#voice.volume = this.#effectiveVolume('voice', this.#voiceBaseVolume)
-    for (const [audio, baseVolume] of this.#sfx) {
-      audio.volume = this.#effectiveVolume('sfx', baseVolume)
-    }
+    return this.#volume.getVolumes()
   }
 
   stopAll(): void {
     this.#stopBgm()
     this.#stopAmbience()
     this.#stopVoice()
-    for (const audio of this.#sfx.keys()) {
+    for (const audio of this.#sfx) {
+      this.#volume.unregisterSource('sfx', audio)
       audio.pause()
       audio.src = ''
     }

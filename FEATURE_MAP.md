@@ -161,6 +161,8 @@ Estado: iniciada.
 
 Objetivo: convertir audio en un subsistema centralizado y confiable.
 
+Estado: iniciada.
+
 ### Features
 
 - `VolumeController` como fuente unica de volumen.
@@ -189,6 +191,18 @@ Objetivo: convertir audio en un subsistema centralizado y confiable.
 - Cambiar volumen afecta fuentes activas y futuras.
 - Stop/fade funcionan para BGM y ambience.
 - La UI de volumen refleja estado real y persistido.
+
+### Resultado del primer corte
+
+- `VolumeController` persiste volumen por canal en `localStorage`.
+- `VolumeController` soporta mute persistente sin destruir los valores de canal.
+- Las fuentes registradas ahora tienen volumen base propio antes de la mezcla `master * channel`.
+- `VnStage` delega mezcla, persistencia y actualizacion de fuentes activas a `VolumeController`.
+- SFX registra multiples instancias y las desregistra al terminar.
+- BGM, ambience y voice se desregistran correctamente al detenerse o reemplazarse.
+- Tags con id `stop` detienen BGM, ambience o voice desde el audio manager del stage.
+- Decision actual: ambience comparte canal `bgm` hasta que exista un quinto canal dedicado.
+- Verificacion final: `bun run check` pasa con 283 tests.
 
 ## Fase 4: Renderers visuales
 

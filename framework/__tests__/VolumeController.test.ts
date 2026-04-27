@@ -29,8 +29,20 @@ function installAudioMock(): () => AudioStub[] {
 describe('VolumeController', () => {
   let controller: VolumeController
   let getInstances: () => AudioStub[]
+  const store: Record<string, string> = {}
 
   beforeEach(() => {
+    for (const key of Object.keys(store)) delete store[key]
+    Object.defineProperty(globalThis, 'localStorage', {
+      value: {
+        getItem: (key: string) => store[key] ?? null,
+        setItem: (key: string, value: string) => { store[key] = value },
+        removeItem: (key: string) => { delete store[key] },
+        clear: () => { for (const key of Object.keys(store)) delete store[key] },
+      },
+      writable: true,
+      configurable: true,
+    })
     controller = new VolumeController()
     getInstances = installAudioMock()
   })
@@ -95,6 +107,14 @@ describe('VolumeController', () => {
     expect(stub.volume).toBeCloseTo(0.6)
   })
 
+  it('AC04: registering a source applies source base volume before channel volume', () => {
+    controller.setVolume('master', 0.5)
+    controller.setVolume('bgm', 0.8)
+    const stub = makeAudioStub('test.mp3')
+    controller.registerSource('bgm', stub as unknown as HTMLAudioElement, 0.25)
+    expect(stub.volume).toBeCloseTo(0.1)
+  })
+
   it('AC04: setting channel volume updates all registered sources', () => {
     const stub1 = makeAudioStub('a.mp3')
     const stub2 = makeAudioStub('b.mp3')
@@ -136,6 +156,47 @@ describe('VolumeController', () => {
     expect(bgmStub.volume).toBeCloseTo(0.4)
     // sfx: 0.6 * 0.5 = 0.3
     expect(sfxStub.volume).toBeCloseTo(0.3)
+  })
+
+  it('persists channel volume changes to localStorage', () => {
+    controller.setVolume('bgm', 0.42)
+    expect(store['vn:volume:bgm']).toBe('0.42')
+  })
+
+  it('loads persisted channel volumes on construction', () => {
+    store['vn:volume:master'] = '0.5'
+    store['vn:volume:voice'] = '0.25'
+    const restored = new VolumeController()
+    expect(restored.getVolume('master')).toBeCloseTo(0.5)
+    expect(restored.getVolume('voice')).toBeCloseTo(0.25)
+  })
+
+  it('setMuted forces active source output to zero without changing stored volumes', () => {
+    const stub = makeAudioStub('bgm.mp3')
+    controller.setVolume('bgm', 0.8)
+    controller.registerSource('bgm', stub as unknown as HTMLAudioElement)
+    controller.setMuted(true)
+    expect(stub.volume).toBeCloseTo(0)
+    expect(controller.getVolume('bgm')).toBeCloseTo(0.8)
+    expect(controller.isMuted()).toBe(true)
+    expect(store['vn:volume:muted']).toBe('true')
+  })
+
+  it('unmuting restores effective volume to active sources', () => {
+    const stub = makeAudioStub('bgm.mp3')
+    controller.setVolume('master', 0.5)
+    controller.setVolume('bgm', 0.8)
+    controller.registerSource('bgm', stub as unknown as HTMLAudioElement)
+    controller.setMuted(true)
+    controller.setMuted(false)
+    expect(stub.volume).toBeCloseTo(0.4)
+    expect(controller.isMuted()).toBe(false)
+  })
+
+  it('loads persisted mute state on construction', () => {
+    store['vn:volume:muted'] = 'true'
+    const restored = new VolumeController()
+    expect(restored.isMuted()).toBe(true)
   })
 
   // US-001-AC05: Throws if channel name is invalid

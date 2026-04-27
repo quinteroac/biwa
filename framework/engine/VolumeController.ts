@@ -8,24 +8,26 @@ export type { AudioChannel }
  * to all active sources immediately.
  */
 const MUTE_STORAGE_KEY = 'vn:volume:muted'
+const VOLUME_STORAGE_PREFIX = 'vn:volume:'
 
 export class VolumeController {
   static readonly #CHANNELS: readonly AudioChannel[] = Object.freeze(['master', 'bgm', 'sfx', 'voice'] as const)
 
   #volumes: Map<AudioChannel, number>
   #sources: Map<AudioChannel, Set<HTMLAudioElement>>
+  #baseVolumes: WeakMap<HTMLAudioElement, number>
   #muted: boolean
-  #savedVolumes: Map<AudioChannel, number>
 
   constructor() {
     this.#volumes = new Map()
     this.#sources = new Map()
+    this.#baseVolumes = new WeakMap()
     this.#muted = false
-    this.#savedVolumes = new Map()
     for (const ch of VolumeController.#CHANNELS) {
       this.#volumes.set(ch, 1.0)
       this.#sources.set(ch, new Set())
     }
+    this.#loadVolumes()
     this.#loadMuteState()
   }
 
@@ -41,6 +43,7 @@ export class VolumeController {
     this.#validateChannel(channel)
     const normalized = this.#normalize(value)
     this.#volumes.set(channel, normalized)
+    this.#persistVolume(channel, normalized)
     this.#applyToChannel(channel)
   }
 
@@ -60,11 +63,13 @@ export class VolumeController {
    * Sets its initial volume to the effective channel volume.
    * @param channel The channel this source belongs to.
    * @param source The HTMLAudioElement to track.
+   * @param baseVolume The source's own volume before channel mixing.
    */
-  registerSource(channel: AudioChannel, source: HTMLAudioElement): void {
+  registerSource(channel: AudioChannel, source: HTMLAudioElement, baseVolume = 1): void {
     this.#validateChannel(channel)
     this.#sources.get(channel)!.add(source)
-    source.volume = this.#getEffectiveVolume(channel)
+    this.#baseVolumes.set(source, this.#normalize(baseVolume))
+    source.volume = this.#normalize(this.#normalize(baseVolume) * this.#getEffectiveVolume(channel))
   }
 
   /**
@@ -77,12 +82,48 @@ export class VolumeController {
     this.#sources.get(channel)!.delete(source)
   }
 
+  /** Returns a copy of all channel volumes. */
+  getVolumes(): Record<AudioChannel, number> {
+    return {
+      master: this.getVolume('master'),
+      bgm: this.getVolume('bgm'),
+      sfx: this.getVolume('sfx'),
+      voice: this.getVolume('voice'),
+    }
+  }
+
+  /**
+   * Enables or disables mute. Muting preserves stored channel values while
+   * forcing active source output to zero.
+   */
+  setMuted(muted: boolean): void {
+    this.#muted = muted
+    try {
+      localStorage.setItem(MUTE_STORAGE_KEY, String(muted))
+    } catch { /* non-fatal */ }
+    for (const channel of VolumeController.#CHANNELS) {
+      this.#applyToSources(channel)
+    }
+  }
+
+  /** Returns whether output is currently muted. */
+  isMuted(): boolean {
+    return this.#muted
+  }
+
+  /** Toggles mute and returns the new muted state. */
+  toggleMuted(): boolean {
+    this.setMuted(!this.#muted)
+    return this.#muted
+  }
+
   /**
    * Calculates the effective volume for a channel, accounting for master volume.
    * @param channel The channel to calculate for.
    * @returns The effective volume (channel × master), clamped to 0.0–1.0.
    */
   #getEffectiveVolume(channel: AudioChannel): number {
+    if (this.#muted) return 0
     const channelVol = this.#volumes.get(channel) ?? 1.0
     const masterVol = this.#volumes.get('master') ?? 1.0
     return this.#normalize(channelVol * masterVol)
@@ -110,9 +151,9 @@ export class VolumeController {
   #applyToSources(channel: AudioChannel): void {
     const sources = this.#sources.get(channel)
     if (!sources) return
-    const volume = this.#getEffectiveVolume(channel)
     for (const source of sources) {
-      source.volume = volume
+      const baseVolume = this.#baseVolumes.get(source) ?? 1
+      source.volume = this.#normalize(baseVolume * this.#getEffectiveVolume(channel))
     }
   }
 
@@ -132,6 +173,25 @@ export class VolumeController {
     } catch {
       this.#muted = false
     }
+  }
+
+  #loadVolumes(): void {
+    for (const channel of VolumeController.#CHANNELS) {
+      try {
+        const raw = localStorage.getItem(`${VOLUME_STORAGE_PREFIX}${channel}`)
+        if (raw === null) continue
+        const value = Number(raw)
+        if (!Number.isNaN(value)) {
+          this.#volumes.set(channel, this.#normalize(value))
+        }
+      } catch { /* non-fatal */ }
+    }
+  }
+
+  #persistVolume(channel: AudioChannel, value: number): void {
+    try {
+      localStorage.setItem(`${VOLUME_STORAGE_PREFIX}${channel}`, String(value))
+    } catch { /* non-fatal */ }
   }
 
   /**
