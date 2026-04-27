@@ -5,7 +5,7 @@ A TypeScript visual novel framework built around Ink, React and Bun.
 The project includes:
 
 - `framework/`: engine, React components, save/load, audio, minigames and docs.
-- `manager/`: CLI commands for `new`, `dev`, `doctor`, `build` and `list`.
+- `manager/`: CLI commands for `new`, `dev`, `doctor`, `build`, `preview`, `assets` and `list`.
 - `games/mi-novela/`: richer demo game.
 - `games/smoke-fixture/`: tiny fixture used by CI.
 
@@ -29,6 +29,7 @@ bun manager/cli.ts doctor mi-novela
 bun manager/cli.ts doctor mi-novela --json
 bun manager/cli.ts assets character-atlas mi-novela kai
 bun manager/cli.ts build mi-novela
+bun manager/cli.ts preview mi-novela --build
 bun run verify                 # CI-style check against smoke-fixture
 ```
 
@@ -38,6 +39,7 @@ Production builds are static ESM packages:
 
 ```bash
 bun manager/cli.ts build mi-novela
+bun manager/cli.ts preview mi-novela
 ```
 
 Output is written to `dist/mi-novela/` with a post-build smoke check and `manifest.json` size report.

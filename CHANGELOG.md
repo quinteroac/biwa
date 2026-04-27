@@ -28,6 +28,9 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - `aseprite-atlas-v1` parser helpers and runtime fallback from frame names to expression tags.
 - Subprocess CLI regression suite covering `new`, `doctor --json`, `build`, `list` and atlas generation.
 - Fade-in, fade-out and crossfade support for persistent BGM and ambience playback.
+- `preview` CLI command for serving `dist/<gameId>/`, including `--build` and `--port`.
+- Dev server file watcher for story, data, assets, game config and framework source changes.
+- `GameEngine.create(config)` and public idempotent `engine.boot()` for isolated runtime instances.
 
 ### Changed
 
@@ -42,3 +45,4 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - `doctor` validates character spritesheet atlas JSON when present.
 - Save-state audio restore marks persistent audio as restored so runtime playback skips unnecessary fades.
 - Audio docs now distinguish implemented single-file playback from reserved adaptive/intro-loop metadata.
+- Engine docs now define singleton versus isolated instance policy.

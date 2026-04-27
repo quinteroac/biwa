@@ -13,7 +13,11 @@ const engine = await GameEngine.init(config)
 
 `GameEngine.init(config)` is the app-level entrypoint. It creates a singleton, boots the configured story/data, and returns the same instance on later calls.
 
-`new GameEngine(config)` is supported for tests, previews, and isolated host environments that need more than one runtime in a page. A manually constructed engine does not boot until the private boot flow used by `init`, so application shells should prefer `init`.
+`GameEngine.create(config)` creates and boots an isolated engine without touching the singleton. Use it for tests, previews and host environments that need more than one runtime in a page.
+
+`new GameEngine(config)` is supported when a host needs explicit lifecycle control. A manually constructed engine must call `await engine.boot()` before `start()`, `restoreState()` or UI mounting.
+
+`GameEngine.instance` exposes the current singleton for legacy integration checks. New application code should pass the engine object directly.
 
 ## Public Properties
 
@@ -30,6 +34,9 @@ const engine = await GameEngine.init(config)
 
 | Method | Description |
 |---|---|
+| `boot()` | Loads theme, data, story, save manager and minigames for manually constructed engines. Idempotent. |
+| `GameEngine.create(config)` | Static factory for a booted isolated engine. |
+| `GameEngine.init(config)` | Static app singleton factory. |
 | `start()` | Starts or restarts story advancement. |
 | `advance()` | Advances one dialog step when the engine is in `DIALOG`. |
 | `choose(index)` | Selects an Ink choice and continues. |

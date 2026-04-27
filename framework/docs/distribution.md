@@ -22,6 +22,22 @@ dist/mi-novela/
   framework/
 ```
 
+## Preview
+
+Use `preview` to serve the exact static build output locally:
+
+```bash
+bun manager/cli.ts preview mi-novela
+```
+
+If the build does not exist yet, build and serve in one command:
+
+```bash
+bun manager/cli.ts preview mi-novela --build
+```
+
+The command prints the local URL and serves `dist/<gameId>/` as a static site. Use `--port <port>` when the default port is occupied.
+
 ## Official Runtime Strategy
 
 The framework uses `esm-vendor-importmap` for production:

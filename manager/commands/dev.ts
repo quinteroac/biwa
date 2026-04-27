@@ -1,8 +1,9 @@
-import { readdirSync, readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs'
-import { join, extname } from 'path'
+import { readdirSync, readFileSync, writeFileSync, mkdirSync, existsSync, statSync } from 'fs'
+import { join, extname, relative } from 'path'
 import yaml from 'js-yaml'
 import { Compiler } from 'inkjs/compiler/Compiler.js'
 import { CompilerOptions } from 'inkjs/compiler/CompilerOptions.js'
+import { validateGame } from './doctor.ts'
 
 const ROOT = new URL('../../', import.meta.url).pathname.replace(/\/$/, '')
 const VENDOR_DIR = join(ROOT, 'framework', 'vendor')
@@ -17,6 +18,15 @@ const IMPORT_MAP = JSON.stringify({
 
   },
 })
+
+interface WatchSnapshot {
+  files: Map<string, number>
+  status: 'ok' | 'error'
+}
+
+export interface DevWatcher {
+  stop(): void
+}
 
 async function bundleVendorModule(pkg: string, out: string, external: string[] = []): Promise<void> {
   const result = await Bun.build({ entrypoints: [pkg], format: 'esm', outdir: VENDOR_DIR, naming: out, external })
@@ -162,6 +172,114 @@ function isTranspilable(pathname: string): boolean {
   return pathname.endsWith('.tsx') || pathname.endsWith('.ts') || pathname.endsWith('.jsx')
 }
 
+function isWatchedFile(filePath: string): boolean {
+  return [
+    '.ink',
+    '.md',
+    '.ts',
+    '.tsx',
+    '.js',
+    '.jsx',
+    '.json',
+    '.png',
+    '.jpg',
+    '.jpeg',
+    '.gif',
+    '.webp',
+    '.svg',
+    '.mp3',
+    '.ogg',
+    '.wav',
+    '.webm',
+  ].some(ext => filePath.endsWith(ext))
+}
+
+function scanWatchFiles(dirs: string[]): Map<string, number> {
+  const files = new Map<string, number>()
+  const walk = (dir: string): void => {
+    if (!existsSync(dir)) return
+    const stat = statSync(dir)
+    if (stat.isFile()) {
+      if (isWatchedFile(dir)) files.set(dir, stat.mtimeMs)
+      return
+    }
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const fullPath = join(dir, entry.name)
+      if (entry.isDirectory()) {
+        if (entry.name === 'dist' || entry.name === 'node_modules' || entry.name === '.git') continue
+        walk(fullPath)
+      } else if (isWatchedFile(fullPath)) {
+        files.set(fullPath, statSync(fullPath).mtimeMs)
+      }
+    }
+  }
+  for (const dir of dirs) walk(dir)
+  return files
+}
+
+function changedFiles(previous: Map<string, number>, next: Map<string, number>): string[] {
+  const changed = new Set<string>()
+  for (const [file, mtime] of next) {
+    if (previous.get(file) !== mtime) changed.add(file)
+  }
+  for (const file of previous.keys()) {
+    if (!next.has(file)) changed.add(file)
+  }
+  return Array.from(changed).sort()
+}
+
+export function createDevWatcher(gameId: string, options: { intervalMs?: number; log?: (message: string) => void } = {}): DevWatcher {
+  const log = options.log ?? console.log
+  const gameDir = join(ROOT, 'games', gameId)
+  const watchDirs = [
+    join(gameDir, 'story'),
+    join(gameDir, 'data'),
+    join(gameDir, 'assets'),
+    join(gameDir, 'game.config.ts'),
+    join(ROOT, 'framework'),
+  ]
+  const dirs = watchDirs.filter(path => existsSync(path))
+  const snapshot: WatchSnapshot = {
+    files: scanWatchFiles(dirs),
+    status: 'ok',
+  }
+
+  const timer = setInterval(async () => {
+    const next = scanWatchFiles(dirs)
+    const changed = changedFiles(snapshot.files, next)
+    if (changed.length === 0) return
+    snapshot.files = next
+
+    for (const file of changed.slice(0, 6)) {
+      const rel = file.startsWith(ROOT) ? relative(ROOT, file) : file
+      log(`[dev] changed: ${rel}`)
+    }
+    if (changed.length > 6) log(`[dev] changed: +${changed.length - 6} more files`)
+
+    try {
+      const { issues } = await validateGame(gameId)
+      const errors = issues.filter(issue => issue.severity === 'error')
+      if (errors.length > 0) {
+        snapshot.status = 'error'
+        log(`[dev] validation failed: ${errors[0]!.path}: ${errors[0]!.message}`)
+        return
+      }
+      if (snapshot.status === 'error') {
+        log('[dev] recovered: validation is clean again.')
+      } else {
+        log('[dev] validation ok.')
+      }
+      snapshot.status = 'ok'
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      snapshot.status = 'error'
+      log(`[dev] validation failed: ${err.message}`)
+    }
+  }, options.intervalMs ?? 750)
+
+  return { stop: () => clearInterval(timer) }
+}
+
 function diagnosticResponse(title: string, detail: string, suggestion: string, contentType = 'text/plain; charset=utf-8'): Response {
   return new Response([
     title,
@@ -196,6 +314,7 @@ export async function dev(gameId?: string): Promise<void> {
   console.log(`   URL:  http://localhost:${port}\n`)
   console.log('   Watching story/data/assets through on-demand recompilation.')
   console.log(`   Validate content with: bun manager/cli.ts doctor ${gameId}\n`)
+  createDevWatcher(gameId)
 
   Bun.serve({
     port,

@@ -57,6 +57,7 @@ export class GameEngine {
   #restoredPlaytime = 0
   #pendingChoices: ReturnType<ScriptRunner['choices']['slice']> | null = null
   #advanceInProgress = false
+  #booted = false
   #data: GameData = { characters: {}, scenes: {}, audio: {}, minigames: {} }
 
   constructor(config: GameConfig) {
@@ -71,9 +72,15 @@ export class GameEngine {
 
   static async init(config: GameConfig): Promise<GameEngine> {
     if (GameEngine.#instance) return GameEngine.#instance
-    const engine = new GameEngine(config)
+    const engine = await GameEngine.create(config)
     GameEngine.#instance = engine
-    await engine.#boot()
+    return engine
+  }
+
+  /** Creates and boots an isolated engine without touching the app singleton. */
+  static async create(config: GameConfig): Promise<GameEngine> {
+    const engine = new GameEngine(config)
+    await engine.boot()
     return engine
   }
 
@@ -143,7 +150,10 @@ export class GameEngine {
     this.#bus.emit('engine:state', state)
   }
 
-  async #boot(): Promise<void> {
+  /** Boots data, story and runtime services for manually constructed engines. */
+  async boot(): Promise<void> {
+    if (this.#booted) return
+    this.#booted = true
     this.#setState(STATE.LOADING)
 
     const { theme = {} } = this.#config
