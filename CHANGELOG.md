@@ -56,6 +56,10 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Plugin distribution policy in build manifests, including trusted-local-code stance and plugin API version.
 - Security validation for reserved plugin ids, remote entries, out-of-game entries and unsupported plugin API versions.
 - `smoke-fixture` now includes a declared local plugin fixture for CI distribution coverage.
+- Official prebuilt plugin catalog with `officialPlugins.inkWashBackground()`.
+- `plugins official` CLI command for discovering framework-provided plugins.
+- `plugins scaffold --template feature|renderer|ui` with starter tests and renderer declarations.
+- Plugin authoring docs for first plugin setup, official prebuild usage, compatibility and external renderer recipes.
 
 ### Changed
 

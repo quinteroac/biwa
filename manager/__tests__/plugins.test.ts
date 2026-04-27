@@ -84,7 +84,25 @@ describe('plugins command helpers', () => {
     expect(relDir).toBe('.tmp-plugin-tests/sample-plugin')
     expect(existsSync(join(ROOT, relDir, 'plugin.config.ts'))).toBe(true)
     expect(existsSync(join(ROOT, relDir, 'index.ts'))).toBe(true)
+    expect(existsSync(join(ROOT, relDir, 'sample-plugin.test.ts'))).toBe(true)
     await expect(plugins('validate', relDir)).resolves.toBeUndefined()
+  })
+
+  it('scaffolds renderer templates with renderer declarations', async () => {
+    const outRoot = cleanup(join(ROOT, '.tmp-renderer-plugin-tests'))
+    rmSync(outRoot, { recursive: true, force: true })
+
+    const relDir = scaffoldPlugin('painted-bg', { out: '.tmp-renderer-plugin-tests', template: 'renderer' })
+
+    expect(existsSync(join(ROOT, relDir, 'index.tsx'))).toBe(true)
+    const config = readFileSync(join(ROOT, relDir, 'plugin.config.ts'), 'utf8')
+    expect(config).toContain("capabilities: ['renderer']")
+    expect(config).toContain("renderers: { background: ['painted-bg-background'] }")
+    await expect(plugins('validate', relDir)).resolves.toBeUndefined()
+  })
+
+  it('lists official prebuilt plugins', async () => {
+    await expect(plugins('official')).resolves.toBeUndefined()
   })
 
   it('doctor accepts custom renderers only when declared by a plugin', async () => {

@@ -18,27 +18,7 @@ El framework ya tiene una base tecnica estable para runtime, UI de jugador, dato
 
 ## Pendientes
 
-### P4 - Ecosistema Y DX
-
-Objetivo: hacer que crear renderers y plugins sea ergonomico para autores.
-
-Alcance:
-
-- Docs completas:
-  - crear primer plugin.
-  - crear renderer de background.
-  - crear renderer de character.
-  - empaquetar plugin local.
-  - diagnosticar errores.
-- Templates de plugin con tests.
-- Ejemplo de renderer externo no trivial.
-- Guia de compatibilidad semver.
-- Recetas para integrar librerias externas como Three.js, Pixi.js o Spine cuando existan dependencias.
-
-Criterios de salida:
-
-- Un autor puede crear un plugin siguiendo docs sin leer codigo interno.
-- Templates tienen tests y pasan `bun run verify`.
+No hay pendientes activos en este mapa. El siguiente roadmap debe abrirse aqui cuando definamos el proximo foco del framework.
 
 ## Fuera De Alcance Actual
 

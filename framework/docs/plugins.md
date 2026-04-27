@@ -2,7 +2,10 @@
 
 Plugins let a game register trusted local extensions without forking the framework.
 
-This first contract is intentionally small: plugins can be declared, validated, registered and given a lifecycle. Renderer registration builds on this foundation in the next phase.
+The framework supports two plugin sources:
+
+- Local game plugins declared in `game.config.ts`.
+- Official prebuilt plugins imported explicitly from `framework/plugins/prebuilt/index.ts`.
 
 ## Declaring Plugins
 
@@ -26,6 +29,22 @@ plugins: [
 ```
 
 `entry` is declarative metadata used by tooling and diagnostics. `loader` is the runtime loader used by local game code.
+
+Official prebuilt plugins do not need a local `entry` because their module is imported from the framework:
+
+```ts
+import { officialPlugins } from '../../framework/plugins/prebuilt/index.ts'
+
+plugins: [
+  officialPlugins.inkWashBackground(),
+]
+```
+
+Use the official catalog to discover prebuilt plugins:
+
+```bash
+bun manager/cli.ts plugins official
+```
 
 ## Manifest Fields
 
@@ -128,12 +147,53 @@ Use the manager plugin commands while developing plugins:
 
 ```bash
 bun manager/cli.ts plugins scaffold my-plugin
+bun manager/cli.ts plugins scaffold painted-bg --template renderer
+bun manager/cli.ts plugins scaffold custom-menu --template ui
 bun manager/cli.ts plugins validate plugins/my-plugin
 bun manager/cli.ts plugins list my-game
 bun manager/cli.ts plugins validate my-game
+bun manager/cli.ts plugins official
 ```
 
-`scaffold` writes `plugin.config.ts` and `index.ts`. `validate` accepts either a plugin folder/config file or a game id. `list` shows declared plugins, capabilities, renderer declarations and entry status for a game.
+`scaffold` writes `plugin.config.ts`, an entry module and a starter test. Templates:
+
+- `feature`: lifecycle/event plugin. This is the default.
+- `renderer`: background renderer plugin.
+- `ui`: reserved overlay renderer plugin.
+
+`validate` accepts either a plugin folder/config file or a game id. `list` shows declared plugins, capabilities, renderer declarations and entry status for a game.
+
+## First Plugin
+
+Create a feature plugin:
+
+```bash
+bun manager/cli.ts plugins scaffold story-logger --out games/my-game/plugins
+```
+
+Then declare it from the game config:
+
+```ts
+plugins: [
+  {
+    id: 'story-logger',
+    name: 'Story Logger',
+    version: '0.1.0',
+    type: 'plugin',
+    entry: './plugins/story-logger/index.ts',
+    capabilities: ['engine-event'],
+    compatibility: { pluginApi: 'vn-plugin-api-v1' },
+    loader: () => import('./plugins/story-logger/index.ts'),
+  },
+]
+```
+
+Validate the game before running or building:
+
+```bash
+bun manager/cli.ts plugins validate my-game
+bun manager/cli.ts doctor my-game
+```
 
 ## Registering Renderers
 
@@ -195,3 +255,55 @@ Transition renderers are selected from Ink transition tags:
 ```
 
 If no external renderer exists, the framework keeps using its built-in renderer or fallback message.
+
+## Official Ink Wash Background
+
+The first official prebuilt renderer is `officialPlugins.inkWashBackground()`. It registers the `background` renderer type `ink-wash`.
+
+```ts
+import { officialPlugins } from '../../framework/plugins/prebuilt/index.ts'
+
+const config = {
+  plugins: [
+    officialPlugins.inkWashBackground(),
+  ],
+}
+```
+
+Scene data:
+
+```yaml
+background:
+  type: ink-wash
+  image: scenes/opening/background.jpg
+  tint: rgba(24, 21, 18, 0.28)
+  contrast: 1.12
+  saturation: 0.72
+  grainOpacity: 0.1
+```
+
+## Compatibility
+
+The current plugin API is `vn-plugin-api-v1`. Plugins should set:
+
+```ts
+compatibility: { pluginApi: 'vn-plugin-api-v1' }
+```
+
+Version recommendations until public package publishing exists:
+
+- Patch versions: bug fixes that do not change manifest or renderer contracts.
+- Minor versions: additive plugin options or new renderer types.
+- Major versions: behavior or data-shape changes that require game content updates.
+
+When the framework introduces a new plugin API contract, `doctor` will reject unsupported values so games fail early.
+
+## External Renderer Recipes
+
+When integrating rendering libraries:
+
+- Keep library state inside the React renderer component, not in the plugin manifest.
+- Dispose timers, animation frames and library instances in React effect cleanup.
+- Resolve game assets through the `resolveAsset` prop for backgrounds or `assetBase` for characters.
+- Register only renderer types declared in `plugins[].renderers`; this keeps `doctor` and build manifests accurate.
+- Prefer a local plugin first. Package publishing and remote marketplace installs are intentionally out of scope.

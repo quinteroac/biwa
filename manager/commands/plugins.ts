@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { join, relative, resolve } from 'path'
 import { pathToFileURL } from 'url'
 import { validatePluginManifest } from '../../framework/plugins/PluginRegistry.ts'
+import { officialPluginCatalog } from '../../framework/plugins/prebuilt/index.ts'
 import type { GameConfig } from '../../framework/types/game-config.d.ts'
 import type { VnPluginDescriptor, VnPluginManifest } from '../../framework/types/plugins.d.ts'
 
@@ -14,9 +15,10 @@ interface ParsedArgs {
 
 function usage(): string {
   return `Usage:
+  bun manager/cli.ts plugins official
   bun manager/cli.ts plugins list <gameId>
   bun manager/cli.ts plugins validate <path|gameId>
-  bun manager/cli.ts plugins scaffold <pluginId> [--out <dir>]`
+  bun manager/cli.ts plugins scaffold <pluginId> [--out <dir>] [--template feature|renderer|ui]`
 }
 
 function parseArgs(args: string[]): ParsedArgs {
@@ -47,6 +49,10 @@ function pluginIdIsValid(id: string): boolean {
 function strFlag(flags: Record<string, string | boolean>, key: string, fallback: string): string {
   const value = flags[key]
   return typeof value === 'string' && value.length > 0 ? value : fallback
+}
+
+function pluginTitle(pluginId: string): string {
+  return pluginId.split('-').map(part => part[0]?.toUpperCase() + part.slice(1)).join(' ')
 }
 
 async function loadGameConfig(gameId: string): Promise<{ gameDir: string; config: GameConfig }> {
@@ -86,26 +92,144 @@ function rendererSummary(plugin: VnPluginDescriptor): string {
   return parts.length > 0 ? parts.join(',') : '—'
 }
 
-export function scaffoldPlugin(pluginId: string, flags: Record<string, string | boolean> = {}): string {
-  if (!pluginIdIsValid(pluginId)) throw new Error('Invalid pluginId. Use lowercase letters, numbers and hyphens.')
-  const outRoot = strFlag(flags, 'out', 'plugins')
-  const pluginDir = join(ROOT, outRoot, pluginId)
-  mkdirSync(pluginDir, { recursive: true })
+type PluginTemplate = 'feature' | 'renderer' | 'ui'
 
-  const config = `import type { VnPluginManifest } from '../../framework/types/plugins.d.ts'
+function parseTemplate(value: string): PluginTemplate {
+  if (value === 'feature' || value === 'renderer' || value === 'ui') return value
+  throw new Error('Invalid plugin template. Use feature, renderer or ui.')
+}
+
+function scaffoldFiles(pluginId: string, template: PluginTemplate): { config: string; indexName: string; index: string; test: string } {
+  const title = pluginTitle(pluginId)
+  const rendererType = `${pluginId}-background`
+  if (template === 'renderer') {
+    return {
+      indexName: 'index.tsx',
+      config: `import type { VnPluginManifest } from '../../framework/types/plugins.d.ts'
 
 const manifest: VnPluginManifest = {
   id: '${pluginId}',
-  name: '${pluginId.split('-').map(part => part[0]?.toUpperCase() + part.slice(1)).join(' ')}',
+  name: '${title}',
+  version: '0.1.0',
+  type: 'plugin',
+  entry: './index.tsx',
+  capabilities: ['renderer'],
+  renderers: { background: ['${rendererType}'] },
+  compatibility: { pluginApi: 'vn-plugin-api-v1' },
+}
+
+export default manifest
+`,
+      index: `import type { BackgroundRendererProps } from '../../framework/renderers/RendererRegistry.ts'
+import type { VnPluginModule } from '../../framework/types/plugins.d.ts'
+
+function ${title.replace(/[^A-Za-z0-9]/g, '')}Background({ background, resolveAsset }: BackgroundRendererProps) {
+  const image = typeof background.image === 'string' ? resolveAsset(background.image) : null
+  return (
+    <div style={{ position: 'absolute', inset: 0, background: '#111', overflow: 'hidden' }}>
+      {image && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: \`url("\${image}")\`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+const plugin: VnPluginModule = {
+  setup({ rendererRegistry }) {
+    rendererRegistry.register('background', '${rendererType}', ${title.replace(/[^A-Za-z0-9]/g, '')}Background, {
+      pluginId: '${pluginId}',
+    })
+  },
+}
+
+export default plugin
+`,
+      test: `import { describe, expect, it } from 'bun:test'
+import manifest from './plugin.config.ts'
+
+describe('${pluginId}', () => {
+  it('declares its background renderer', () => {
+    expect(manifest.renderers?.background).toContain('${rendererType}')
+  })
+})
+`,
+    }
+  }
+
+  if (template === 'ui') {
+    return {
+      indexName: 'index.tsx',
+      config: `import type { VnPluginManifest } from '../../framework/types/plugins.d.ts'
+
+const manifest: VnPluginManifest = {
+  id: '${pluginId}',
+  name: '${title}',
+  version: '0.1.0',
+  type: 'plugin',
+  entry: './index.tsx',
+  capabilities: ['renderer', 'overlay'],
+  renderers: { overlay: ['${pluginId}-overlay'] },
+  compatibility: { pluginApi: 'vn-plugin-api-v1' },
+}
+
+export default manifest
+`,
+      index: `import type { OverlayRendererProps } from '../../framework/renderers/RendererRegistry.ts'
+import type { VnPluginModule } from '../../framework/types/plugins.d.ts'
+
+function ${title.replace(/[^A-Za-z0-9]/g, '')}Overlay({ id }: OverlayRendererProps) {
+  return (
+    <div data-plugin-overlay={id} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }} />
+  )
+}
+
+const plugin: VnPluginModule = {
+  setup({ rendererRegistry }) {
+    rendererRegistry.register('overlay', '${pluginId}-overlay', ${title.replace(/[^A-Za-z0-9]/g, '')}Overlay, {
+      pluginId: '${pluginId}',
+    })
+  },
+}
+
+export default plugin
+`,
+      test: `import { describe, expect, it } from 'bun:test'
+import manifest from './plugin.config.ts'
+
+describe('${pluginId}', () => {
+  it('declares its overlay renderer', () => {
+    expect(manifest.renderers?.overlay).toContain('${pluginId}-overlay')
+  })
+})
+`,
+    }
+  }
+
+  return {
+    indexName: 'index.ts',
+    config: `import type { VnPluginManifest } from '../../framework/types/plugins.d.ts'
+
+const manifest: VnPluginManifest = {
+  id: '${pluginId}',
+  name: '${title}',
   version: '0.1.0',
   type: 'plugin',
   entry: './index.ts',
   capabilities: ['engine-event'],
+  compatibility: { pluginApi: 'vn-plugin-api-v1' },
 }
 
 export default manifest
-`
-  const index = `import type { VnPluginModule } from '../../framework/types/plugins.d.ts'
+`,
+    index: `import type { VnPluginModule } from '../../framework/types/plugins.d.ts'
 
 const plugin: VnPluginModule = {
   setup(context) {
@@ -118,11 +242,41 @@ const plugin: VnPluginModule = {
 }
 
 export default plugin
-`
+`,
+    test: `import { describe, expect, it } from 'bun:test'
+import manifest from './plugin.config.ts'
 
-  writeFileSync(join(pluginDir, 'plugin.config.ts'), config)
-  writeFileSync(join(pluginDir, 'index.ts'), index)
+describe('${pluginId}', () => {
+  it('declares a valid plugin id', () => {
+    expect(manifest.id).toBe('${pluginId}')
+  })
+})
+`,
+  }
+}
+
+export function scaffoldPlugin(pluginId: string, flags: Record<string, string | boolean> = {}): string {
+  if (!pluginIdIsValid(pluginId)) throw new Error('Invalid pluginId. Use lowercase letters, numbers and hyphens.')
+  const outRoot = strFlag(flags, 'out', 'plugins')
+  const template = parseTemplate(strFlag(flags, 'template', 'feature'))
+  const pluginDir = join(ROOT, outRoot, pluginId)
+  mkdirSync(pluginDir, { recursive: true })
+  const files = scaffoldFiles(pluginId, template)
+
+  writeFileSync(join(pluginDir, 'plugin.config.ts'), files.config)
+  writeFileSync(join(pluginDir, files.indexName), files.index)
+  writeFileSync(join(pluginDir, `${pluginId}.test.ts`), files.test)
   return relative(ROOT, pluginDir)
+}
+
+function listOfficialPlugins(): void {
+  console.log('\nOfficial prebuilt plugins:\n')
+  console.log(`${'ID'.padEnd(34)} ${'Name'.padEnd(28)} Description`)
+  console.log('─'.repeat(100))
+  for (const plugin of officialPluginCatalog) {
+    console.log(`${plugin.id.padEnd(34)} ${plugin.name.padEnd(28)} ${plugin.description}`)
+  }
+  console.log('\nImport from framework/plugins/prebuilt/index.ts and declare the factory in game.config.ts.\n')
 }
 
 async function listPlugins(gameId: string): Promise<void> {
@@ -182,6 +336,12 @@ export async function plugins(...args: string[]): Promise<void> {
   }
 
   const parsed = parseArgs(rest)
+  if (subcommand === 'official') {
+    if (parsed.positional.length > 0) throw new Error(`Unexpected plugins argument: ${parsed.positional[0]}`)
+    listOfficialPlugins()
+    return
+  }
+
   if (subcommand === 'list') {
     const [gameId, ...extra] = parsed.positional
     if (!gameId) throw new Error(`Missing gameId.\n\n${usage()}`)
