@@ -21,7 +21,7 @@ interface CharacterLayer {
   default: string
 }
 
-interface CharacterData {
+export interface CharacterData {
   displayName?: string
   nameColor?: string
   defaultPosition?: 'left' | 'center' | 'right'
@@ -38,7 +38,7 @@ interface CharacterData {
   layers?: CharacterLayer[]
 }
 
-interface VnCharacterProps {
+export interface VnCharacterProps {
   id: string
   charData: CharacterData | null
   position: 'left' | 'center' | 'right'

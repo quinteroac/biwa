@@ -1,13 +1,13 @@
 import { useEffect, useRef } from 'react'
 
-interface TransitionConfig {
+export interface TransitionConfig {
   type?: 'fade' | 'fade-color' | 'slide' | 'wipe' | 'cut'
   duration?: number
   color?: string
   direction?: 'left' | 'right' | 'up' | 'down'
 }
 
-interface VnTransitionProps {
+export interface VnTransitionProps {
   config: TransitionConfig
   onDone: () => void
 }

@@ -372,6 +372,22 @@ Objetivo: permitir juegos distintos sin modificar `framework/`.
 - Los overrides estan tipados.
 - Hay ejemplo funcional de custom shell.
 
+### Estado fase 7
+
+- `VnStage` acepta `components` con overrides tipados para background, character, dialog, choices, transition, save menu, save controls y volume control.
+- `mountVnApp` acepta `components` para reemplazar start menu, end screen, stage completo o `stageComponents` internos.
+- Exportados contratos de props para componentes reemplazables: `VnBackgroundProps`, `VnCharacterProps`, `VnDialogProps`, `VnChoicesProps`, `VnTransitionProps`, `VnEndScreenProps`, `VnStageProps`, `VnStageComponents`, `VnAppOptions`.
+- Los defaults actuales siguen intactos cuando no se pasan overrides.
+- Agregados tests estructurales y SSR para overrides de `VnStage` y opciones custom de `mountVnApp`.
+- Actualizada `framework/docs/customizing-components.md` con el flujo recomendado de slots y ejemplos de `StartMenu`/`Dialog` custom.
+- Verificacion final: `bun run check` pasa con 294 tests; `doctor mi-novela` y `build mi-novela` pasan.
+
+### Pendientes fase 7
+
+- Falta un ejemplo funcional dentro de `games/` con UI custom real; por ahora el ejemplo vive en docs y tests.
+- El sistema de plugins para renderers externos queda modelado como slots React, pero no hay registry declarativo por `game.config.ts`.
+- El sistema de plugins de minijuegos sigue usando el map lazy `config.minigames`; falta una capa de plugin metadata/versionado.
+
 ## Fase 8: Distribucion
 
 Objetivo: poder publicar juegos de forma confiable.
@@ -397,6 +413,26 @@ Objetivo: poder publicar juegos de forma confiable.
 - `bun run build mi-novela` produce una carpeta navegable.
 - El build funciona fuera del dev server.
 - Assets, story y data cargan bajo subpath.
+
+### Estado fase 8
+
+- `build` ahora limpia `dist/<gameId>` antes de escribir, evitando artefactos viejos.
+- Estrategia oficial definida: `esm-vendor-importmap`.
+- El framework y los modulos del juego se transpilan de TS/TSX a ESM `.js`.
+- `index.html` final usa imports relativos y vendor import map para React/React DOM.
+- Minijuegos TS se transpilan a JS con imports relativos corregidos dentro de `dist`.
+- `build` ejecuta smoke post-build: archivos requeridos, story locales, import map, URLs no absolutas e imports JS relativos dentro de `dist`.
+- `build` escribe `manifest.json` con modo de distribucion, estrategia, entrypoint, warnings y tamaños.
+- `build` imprime reporte de tamaño por framework, assets, story, data y total.
+- Verificado servidor estatico bajo subpath `/mi-novela/` sirviendo `dist/`: `index.html`, `game.config.js`, `framework/engine/GameEngine.js`, `story/es/main.json`, `data/index.json` y `manifest.json` responden correctamente.
+- Agregada guia `framework/docs/distribution.md`.
+- Verificacion final: `bun run check` pasa con 294 tests y `bun manager/cli.ts build mi-novela` pasa.
+
+### Pendientes fase 8
+
+- Los modos `portal`, `embedded` y `static` comparten salida relativa funcional, pero aun no generan wrappers/manifests especificos por portal.
+- Falta smoke de navegador real con Playwright para confirmar render/hidratacion, no solo resolucion estatica de archivos.
+- Assets del demo pesan mucho; conviene una fase de optimizacion o fixtures livianos para CI.
 
 ## Fase 9: Calidad de producto
 

@@ -1,4 +1,4 @@
-interface VnEndScreenProps {
+export interface VnEndScreenProps {
   /** Primary heading shown on the end screen. Defaults to "The End". */
   title?: string | undefined
   /** Optional message displayed beneath the title. */

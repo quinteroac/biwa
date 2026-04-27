@@ -169,3 +169,43 @@ describe('VnStage – US-005 visibility props', () => {
     expect(html).toContain('Quick Save')
   })
 })
+
+describe('VnStage – component overrides', () => {
+  it('accepts custom background and save menu components', () => {
+    const engine = makeEngine()
+    const CustomBackground = () => createElement('div', { 'data-testid': 'custom-background' }, 'Custom BG')
+    const CustomSaveMenu = () => createElement('div', { 'data-testid': 'custom-save-menu' }, 'Custom Save')
+
+    const html = renderToString(
+      createElement(VnStage, {
+        engine,
+        components: {
+          Background: CustomBackground,
+          SaveMenu: CustomSaveMenu,
+        },
+      }),
+    )
+
+    expect(html).toContain('custom-background')
+    expect(html).toContain('Custom BG')
+    expect(html).toContain('custom-save-menu')
+  })
+
+  it('accepts custom choices, transition and control components structurally', () => {
+    const engine = makeEngine()
+    const CustomChoices = () => createElement('div', null, 'Custom Choices')
+    const CustomTransition = () => createElement('div', null, 'Custom Transition')
+    const CustomControls = () => createElement('div', null, 'Custom Controls')
+
+    const el = createElement(VnStage, {
+      engine,
+      components: {
+        Choices: CustomChoices,
+        Transition: CustomTransition,
+        SaveControls: CustomControls,
+      },
+    })
+
+    expect(el).toBeTruthy()
+  })
+})

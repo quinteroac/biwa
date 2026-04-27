@@ -9,7 +9,7 @@ This guide explains how to replace or extend any visual component in the framewo
 | Level | Mechanism | Touches framework? |
 |---|---|---|
 | Colors, fonts, spacing | CSS variables in `game.config.ts → theme.cssVars` | No |
-| Layout, UX, full replacement | Write your own component, skip `mountVnApp` | No |
+| Layout, UX, full replacement | Pass component overrides to `mountVnApp` or `VnStage` | No |
 
 Start at the first level. Only drop to the second when CSS variables are not enough.
 
@@ -40,73 +40,72 @@ const config: GameConfig = {
 
 ---
 
-## Level 2 — Full component replacement
+## Level 2 — Component Overrides
 
-When you need a different layout, additional screens, or behaviour that CSS cannot express, you bypass `mountVnApp` and mount your own React tree.
+When you need a different layout, additional screens, or behaviour that CSS cannot express, pass replacement components through `mountVnApp`.
 
-### Step 1 — Create a `main.tsx` entry point in your game
-
-```
-games/my-novel/
-  main.tsx          ← new file, your app shell
-  components/
-    MyStartMenu.tsx ← your custom component
-  game.config.ts
-  index.html
-```
-
-### Step 2 — Write your app shell
-
-Import only the framework pieces you need. `VnStage` is the full game rendering layer; everything above it is yours to define.
+### Replace app-level screens
 
 ```tsx
-// games/my-novel/main.tsx
-import { useState } from '../../../framework/vendor/react-jsx-runtime.js'
-import { createRoot } from '../../../framework/vendor/react-dom-client.js'
+// games/my-novel/index.html inline module can import this component,
+// or you can move the boot code to main.tsx.
 import { GameEngine } from '../../framework/engine/GameEngine.ts'
-import { VnStage } from '../../framework/components/VnStage.tsx'
-import MyStartMenu from './components/MyStartMenu.tsx'
+import { mountVnApp } from '../../framework/components/VnApp.tsx'
+import type { VnStartMenuProps } from '../../framework/components/VnStartMenu.tsx'
 import config from './game.config.ts'
 
-const engine = new GameEngine(config)
-
-function App() {
-  const [started, setStarted] = useState(false)
-
-  if (!started) {
-    return <MyStartMenu onStart={() => setStarted(true)} />
-  }
-
-  return <VnStage engine={engine} />
-}
-
-createRoot(document.getElementById('app')!).render(<App />)
-```
-
-### Step 3 — Write your custom component
-
-Importing `VnStartMenuProps` from the framework gives you the same prop contract, making the component a drop-in replacement if you ever want to switch back.
-
-```tsx
-// games/my-novel/components/MyStartMenu.tsx
-import type { VnStartMenuProps } from '../../../framework/components/VnStartMenu.tsx'
-
-export default function MyStartMenu({ onStart, hasSaves, onContinue }: VnStartMenuProps) {
+function MyStartMenu({ title, onStart, hasSaves, onContinue }: VnStartMenuProps) {
   return (
-    <div style={{ background: 'url(./assets/ui/cover.jpg) center/cover' }}>
-      <h1>My Novel</h1>
+    <main>
+      <h1>{title}</h1>
       <button onClick={onStart}>New Game</button>
       {hasSaves && <button onClick={onContinue}>Continue</button>}
-    </div>
+    </main>
   )
 }
+
+const engine = await GameEngine.init(config)
+mountVnApp(engine, document.getElementById('root')!, {
+  components: {
+    StartMenu: MyStartMenu,
+  },
+})
 ```
 
-### Step 4 — Point `index.html` to the new entry point
+### Replace stage internals
 
-```html
-<!-- games/my-novel/index.html -->
-<script type="module" src="./main.tsx"></script>
+`VnStage` accepts a `components` map. Omit anything you want the framework to keep rendering.
+
+```tsx
+import { forwardRef, useImperativeHandle } from 'react'
+import { GameEngine } from '../../framework/engine/GameEngine.ts'
+import { mountVnApp } from '../../framework/components/VnApp.tsx'
+import type { VnDialogHandle, VnDialogProps } from '../../framework/components/VnDialog.tsx'
+import config from './game.config.ts'
+
+const MyDialog = forwardRef<VnDialogHandle, VnDialogProps>(function MyDialog({ dialog, onComplete }, ref) {
+  useImperativeHandle(ref, () => ({
+    get isTyping() { return false },
+    skip() {},
+  }), [])
+
+  if (!dialog) return null
+  return (
+    <section onAnimationEnd={() => onComplete(dialog.advanceMode)}>
+      {dialog.speaker && <strong>{dialog.speaker}</strong>}
+      <p>{dialog.text}</p>
+    </section>
+  )
+})
+
+const engine = await GameEngine.init(config)
+mountVnApp(engine, document.getElementById('root')!, {
+  components: {
+    stageComponents: {
+      Dialog: MyDialog,
+    },
+  },
+})
 ```
 
 ---
@@ -118,11 +117,17 @@ Any component under `framework/components/` is a candidate. The most common repl
 | Component | What to replace it with |
 |---|---|
 | `VnStartMenu` | Your own start/title screen |
-| `VnStage` | Unusual if you need fine-grained control over the whole stage |
-| `VnDialog` | Custom dialog box UI (pass as prop once `VnStage` exposes it) |
-| `SaveLoadMenu` / `SaveControlsBar` | Custom save UI |
+| `VnEndScreen` | Credits, gallery unlocks, replay UI |
+| `VnStage` | A fully custom stage orchestrator |
+| `VnBackground` | Custom background renderer shell |
+| `VnCharacter` | Custom character renderer |
+| `VnDialog` | Custom dialog box UI |
+| `VnChoices` | Custom choice UI |
+| `VnSaveMenu` / `SaveControlsBar` | Custom save UI |
+| `VnVolumeControl` | Custom audio settings UI |
+| `VnTransition` | Custom transitions |
 
-For components that `VnStage` renders internally (like `VnDialog`), the path is: either keep using `VnStage` and override visuals via CSS variables, or compose your own stage from the smaller pieces.
+For components that `VnStage` renders internally, prefer `stageComponents` before writing a full replacement stage.
 
 ---
 
@@ -134,11 +139,10 @@ You can use `GameEngine`, `ScriptRunner`, `SaveManager`, and `EventBus` independ
 import { GameEngine } from '../../framework/engine/GameEngine.ts'
 import config from './game.config.ts'
 
-const engine = new GameEngine(config)
-await engine.init()
+const engine = await GameEngine.init(config)
 engine.start()
 
-engine.eventBus.on('dialog', (payload) => {
+engine.bus.on('engine:dialog', (payload) => {
   // Drive your own UI with raw engine events
 })
 ```
@@ -154,11 +158,11 @@ Need different colors / fonts?
   └─ Yes → Use theme.cssVars in game.config.ts (Level 1)
 
 Need different layout or behaviour for the start menu?
-  └─ Yes → Create main.tsx + MyStartMenu.tsx (Level 2)
+  └─ Yes → Pass components.StartMenu to mountVnApp
 
 Need to add a screen that doesn't exist (e.g. credits, gallery)?
-  └─ Yes → Add it in your main.tsx shell, between VnStartMenu and VnStage
+  └─ Yes → Pass components.Stage or write your own app shell
 
 Need to replace VnDialog?
-  └─ Try CSS variables first. If not enough → compose your own stage.
+  └─ Try CSS variables first. If not enough → pass components.stageComponents.Dialog
 ```

@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, mkdirSync, writeFileSync, cpSync, existsSync } from 'fs'
+import { readdirSync, readFileSync, mkdirSync, writeFileSync, cpSync, existsSync, rmSync, statSync } from 'fs'
 import { dirname, join, relative } from 'path'
 import yaml from 'js-yaml'
 import { Compiler } from 'inkjs/compiler/Compiler.js'
@@ -46,6 +46,43 @@ function walkFiles(dir: string, exts: string[]): string[] {
   return results
 }
 
+function toImportPath(path: string): string {
+  const normalized = path.replace(/\\/g, '/')
+  return normalized.startsWith('.') ? normalized : `./${normalized}`
+}
+
+function replaceTsImportExtensions(code: string): string {
+  return code
+    .replace(/from\s+(['"])(\..*?)\.tsx?\1/g, 'from $1$2.js$1')
+    .replace(/import\(\s*(['"])(\..*?)\.tsx?\1\s*\)/g, 'import($1$2.js$1)')
+}
+
+function rewriteGameFrameworkImports(code: string, outPath: string, distDir: string): string {
+  const frameworkRel = toImportPath(relative(dirname(outPath), join(distDir, 'framework')))
+  return code.replace(
+    /(from\s+['"]|import\(\s*['"])(?:\.\.\/)+framework\/([^'"]+?)\.(?:tsx?|js)(['"]\s*\)?)/g,
+    (_match, prefix: string, rest: string, suffix: string) => `${prefix}${frameworkRel}/${rest}.js${suffix}`,
+  )
+}
+
+async function transpileModule(filePath: string, outPath: string, distDir: string, rewriteFrameworkImports = false): Promise<void> {
+  const result = await Bun.build({
+    entrypoints: [filePath],
+    format: 'esm',
+    external: ['react', 'react/*', 'react-dom/*', './*', '../*', '../../*', '../../../*', '../../../../*'],
+    minify: false,
+  })
+  if (!result.success) {
+    throw new Error(result.logs.map(log => log.message).join('\n'))
+  }
+
+  let code = await result.outputs[0]!.text()
+  code = replaceTsImportExtensions(code)
+  if (rewriteFrameworkImports) code = rewriteGameFrameworkImports(code, outPath, distDir)
+  mkdirSync(dirname(outPath), { recursive: true })
+  writeFileSync(outPath, code)
+}
+
 function writeDataIndexes(dataSrcDir: string, dataOutDir: string): void {
   const mdFiles = walkFiles(dataSrcDir, ['.md'])
   const dirs = new Set<string>([dataSrcDir])
@@ -67,6 +104,109 @@ function writeDataIndexes(dataSrcDir: string, dataOutDir: string): void {
     mkdirSync(outDir, { recursive: true })
     writeFileSync(join(outDir, 'index.json'), JSON.stringify(files, null, 2))
   }
+}
+
+function dirSize(dir: string): number {
+  let total = 0
+  if (!existsSync(dir)) return total
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const fullPath = join(dir, entry.name)
+    if (entry.isDirectory()) total += dirSize(fullPath)
+    else total += statSync(fullPath).size
+  }
+  return total
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  const kb = bytes / 1024
+  if (kb < 1024) return `${kb.toFixed(1)} KB`
+  return `${(kb / 1024).toFixed(2)} MB`
+}
+
+function assertFile(path: string, label: string): void {
+  if (!existsSync(path)) throw new Error(`Post-build smoke failed: missing ${label} (${path})`)
+}
+
+function assertJsImportsResolve(distDir: string): void {
+  const jsFiles = walkFiles(distDir, ['.js'])
+    .filter(file => !file.includes(`${join('framework', 'vendor')}`))
+  const importRe = /(?:from\s+['"]|import\(\s*['"])(\.[^'"]+)(?:['"]\s*\)?)/g
+  for (const file of jsFiles) {
+    const code = readFileSync(file, 'utf8')
+    for (const match of code.matchAll(importRe)) {
+      const spec = match[1]!
+      const resolved = join(dirname(file), spec)
+      if (!resolved.startsWith(distDir)) {
+        throw new Error(`Post-build smoke failed: ${relative(distDir, file)} imports outside dist: ${spec}`)
+      }
+      assertFile(resolved, `${relative(distDir, file)} import ${spec}`)
+    }
+  }
+}
+
+function readImportMap(html: string): Record<string, string> {
+  const match = html.match(/<script\s+type=["']importmap["'][^>]*>([\s\S]*?)<\/script>/)
+  if (!match) return {}
+  const parsed = JSON.parse(match[1]!) as { imports?: Record<string, string> }
+  return parsed.imports ?? {}
+}
+
+function validateStaticOutput(distDir: string, config: Awaited<ReturnType<typeof validateGame>>['config']): void {
+  const indexPath = join(distDir, 'index.html')
+  assertFile(indexPath, 'index.html')
+  assertFile(join(distDir, 'game.config.js'), 'game.config.js')
+  assertFile(join(distDir, 'framework', 'engine', 'GameEngine.js'), 'framework engine')
+  assertFile(join(distDir, 'framework', 'components', 'VnApp.js'), 'framework app component')
+  assertFile(join(distDir, 'data', 'index.json'), 'data index')
+
+  for (const storyPath of Object.values(config.story.locales)) {
+    assertFile(join(distDir, storyPath.replace(/^\.\//, '').replace(/\.ink$/, '.json')), `story entry ${storyPath}`)
+  }
+
+  const html = readFileSync(indexPath, 'utf8')
+  if (html.includes('../../framework/')) {
+    throw new Error('Post-build smoke failed: index.html still references ../../framework/.')
+  }
+  const absoluteAssetRef = html.match(/\s(?:src|href)=["']\/(?!\/)/)
+  if (absoluteAssetRef) {
+    throw new Error('Post-build smoke failed: index.html contains root-absolute asset URLs.')
+  }
+
+  const importMap = readImportMap(html)
+  for (const [name, target] of Object.entries(importMap)) {
+    if (!target.startsWith('./')) throw new Error(`Post-build smoke failed: import "${name}" is not relative: ${target}`)
+    assertFile(join(distDir, target), `import map target ${name}`)
+  }
+  assertJsImportsResolve(distDir)
+}
+
+function writeBuildManifest(distDir: string, config: Awaited<ReturnType<typeof validateGame>>['config'], warnings: number): void {
+  const frameworkSize = dirSize(join(distDir, 'framework'))
+  const assetsSize = dirSize(join(distDir, 'assets'))
+  const storySize = dirSize(join(distDir, 'story'))
+  const dataSize = dirSize(join(distDir, 'data'))
+  const totalSize = dirSize(distDir)
+  const manifest = {
+    id: config.id,
+    title: config.title,
+    version: config.version,
+    distribution: {
+      mode: config.distribution?.mode ?? 'standalone',
+      basePath: config.distribution?.basePath ?? null,
+      strategy: 'esm-vendor-importmap',
+      entry: 'index.html',
+    },
+    warnings,
+    sizes: {
+      framework: frameworkSize,
+      assets: assetsSize,
+      story: storySize,
+      data: dataSize,
+      total: totalSize,
+    },
+  }
+  writeFileSync(join(distDir, 'manifest.json'), JSON.stringify(manifest, null, 2))
 }
 
 export async function build(gameId?: string): Promise<void> {
@@ -91,6 +231,7 @@ export async function build(gameId?: string): Promise<void> {
   const warnings = issues.filter(issue => issue.severity === 'warning')
   console.log(`    ✓ doctor passed (${warnings.length} warning${warnings.length === 1 ? '' : 's'})`)
 
+  rmSync(distDir, { recursive: true, force: true })
   mkdirSync(distDir, { recursive: true })
 
   // 1. Compile configured story entrypoints. Included Ink files are compiled through these roots.
@@ -130,13 +271,45 @@ export async function build(gameId?: string): Promise<void> {
   }
   writeDataIndexes(join(gameDir, 'data'), join(distDir, 'data'))
 
-  // 3. Copy framework (skip .ts/.tsx → bundled separately)
+  // 3. Copy framework static files and transpile runtime TS/TSX as ESM.
   console.log('  Copying framework...')
   mkdirSync(join(distDir, 'framework'), { recursive: true })
   cpSync(frameworkDir, join(distDir, 'framework'), {
     recursive: true,
-    filter: (src) => !src.endsWith('.tsx') && !src.endsWith('.ts') || src.endsWith('.d.ts'),
+    filter: (src) => {
+      if (src.includes('__tests__')) return false
+      return (!src.endsWith('.tsx') && !src.endsWith('.ts')) || src.endsWith('.d.ts')
+    },
   })
+
+  console.log('  Transpiling framework modules...')
+  const frameworkTsFiles = walkFiles(frameworkDir, ['.tsx', '.ts'])
+    .filter(file => !file.endsWith('.d.ts') && !file.includes('__tests__'))
+  for (const file of frameworkTsFiles) {
+    const rel = relative(frameworkDir, file)
+    const outPath = join(distDir, 'framework', rel.replace(/\.tsx?$/, '.js'))
+    try {
+      await transpileModule(file, outPath, distDir)
+      console.log(`    ✓ framework/${rel.replace(/\.tsx?$/, '.js')}`)
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      throw new Error(`Failed to transpile framework/${rel}:\n${err.message}`)
+    }
+  }
+
+  console.log('  Transpiling game modules...')
+  const gameTsFiles = walkFiles(gameDir, ['.tsx', '.ts']).filter(file => !file.endsWith('.d.ts'))
+  for (const file of gameTsFiles) {
+    const rel = relative(gameDir, file)
+    const outPath = join(distDir, rel.replace(/\.tsx?$/, '.js'))
+    try {
+      await transpileModule(file, outPath, distDir, true)
+      console.log(`    ✓ ${rel.replace(/\.tsx?$/, '.js')}`)
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      throw new Error(`Failed to transpile ${rel}:\n${err.message}`)
+    }
+  }
 
   // Bundle React vendor dependencies
   const vendorDir = join(distDir, 'framework', 'vendor')
@@ -153,38 +326,6 @@ export async function build(gameId?: string): Promise<void> {
     else console.log(`    ✓ vendor/${out}`)
   }
 
-  // Bundle the entire app (TS + TSX) into one file
-  console.log('  Bundling app...')
-  const appResult = await Bun.build({
-    entrypoints: [join(gameDir, 'index.html')],
-    outdir: distDir,
-    format: 'esm',
-    external: ['react', 'react/*', 'react-dom/*'],
-    minify: true,
-  })
-  if (!appResult.success) {
-    // Fallback: transpile individual .tsx/.ts files
-    const tsxFiles = walkFiles(frameworkDir, ['.tsx', '.ts']).filter(f => !f.endsWith('.d.ts'))
-    for (const tsxFile of tsxFiles) {
-      const rel = relative(frameworkDir, tsxFile)
-      const outPath = join(distDir, 'framework', rel.replace(/\.tsx?$/, '.js'))
-      mkdirSync(join(outPath, '..'), { recursive: true })
-      try {
-        const r = await Bun.build({ entrypoints: [tsxFile], format: 'esm', external: ['react', 'react/*', 'react-dom/*', './*', '../*'] })
-        if (r.success) {
-          let code = await r.outputs[0]!.text()
-          code = code.replace(/from\s+(['"])(\..*?)\.tsx?\1/g, `from $1$2.js$1`)
-          writeFileSync(outPath, code)
-        }
-      } catch (e) {
-        const err = e instanceof Error ? e : new Error(String(e))
-          throw new Error(`Failed to transpile framework/${rel}:\n${err.message}`)
-      }
-    }
-  } else {
-    console.log(`    ✓ app bundled`)
-  }
-
   // 4. Copy assets
   const assetsDir = join(gameDir, 'assets')
   if (existsSync(assetsDir)) {
@@ -195,7 +336,10 @@ export async function build(gameId?: string): Promise<void> {
   // 5. Copy minigames
   const mgDir = join(gameDir, 'minigames')
   if (existsSync(mgDir)) {
-    cpSync(mgDir, join(distDir, 'minigames'), { recursive: true })
+    cpSync(mgDir, join(distDir, 'minigames'), {
+      recursive: true,
+      filter: (src) => !src.endsWith('.ts') && !src.endsWith('.tsx') && !src.endsWith('.d.ts'),
+    })
   }
 
   // 6. Write production index.html
@@ -210,12 +354,24 @@ export async function build(gameId?: string): Promise<void> {
       'react/jsx-runtime': './framework/vendor/react-jsx-runtime.js',
       'react/jsx-dev-runtime': './framework/vendor/react-jsx-dev-runtime.js',
       'react-dom/client': './framework/vendor/react-dom-client.js',
-      inkjs: './framework/vendor/inkjs.esm.js',
     }})
     const tag = `<script type="importmap">${importMap}</script>`
     html = html.includes('<head>') ? html.replace('<head>', `<head>\n  ${tag}`) : tag + '\n' + html
     writeFileSync(join(distDir, 'index.html'), html)
   }
+
+  console.log('  Running post-build smoke...')
+  validateStaticOutput(distDir, config)
+  writeBuildManifest(distDir, config, warnings.length)
+  console.log('    ✓ static output verified')
+
+  const totalSize = dirSize(distDir)
+  console.log('\n  Size report:')
+  console.log(`    framework: ${formatBytes(dirSize(join(distDir, 'framework')))}`)
+  console.log(`    assets:    ${formatBytes(dirSize(join(distDir, 'assets')))}`)
+  console.log(`    story:     ${formatBytes(dirSize(join(distDir, 'story')))}`)
+  console.log(`    data:      ${formatBytes(dirSize(join(distDir, 'data')))}`)
+  console.log(`    total:     ${formatBytes(totalSize)}`)
 
   console.log(`\n✅ Build complete: dist/${gameId}/\n`)
 }

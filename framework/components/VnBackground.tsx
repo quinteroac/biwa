@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 
 type BackgroundFit = 'cover' | 'contain' | 'fill'
 
-interface BackgroundVariant {
+export interface BackgroundVariant {
   image?: string
   fit?: BackgroundFit
   position?: string
@@ -10,7 +10,7 @@ interface BackgroundVariant {
   intensity?: number
 }
 
-interface BackgroundConfig extends BackgroundVariant {
+export interface BackgroundConfig extends BackgroundVariant {
   type: 'static' | 'parallax' | 'video' | 'canvas' | 'spine' | 'three'
   poster?: string
   variants?: Record<string, BackgroundVariant>
@@ -25,7 +25,7 @@ interface SceneData {
   }
 }
 
-interface VnBackgroundProps {
+export interface VnBackgroundProps {
   scene: { id: string; data: SceneData['data']; variant?: string } | null
 }
 

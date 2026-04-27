@@ -163,7 +163,7 @@ Controls how the novel is deployed and accessed.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `distribution.mode` | `"standalone"` \| `"portal"` | ✅ | `"standalone"` — the novel is its own website. `"portal"` — the novel lives inside a shared multi-novel site. |
+| `distribution.mode` | `"standalone"` \| `"portal"` \| `"embedded"` \| `"static"` | ✅ | `"standalone"` — the novel is its own website. `"portal"` — the novel lives inside a shared multi-novel site. `"embedded"`/`"static"` are static-hosting variants using the same relative ESM output. |
 | `distribution.basePath` | `string` | — | Required in `"portal"` mode. The URL prefix for all asset and route resolution. Example: `"/novels/midnight-cafe"`. |
 
 ```ts

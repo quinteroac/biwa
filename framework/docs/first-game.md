@@ -70,3 +70,5 @@ bun manager/cli.ts build midnight-cafe
 ```
 
 The build command validates content first, compiles configured Ink locale entrypoints, converts data to JSON, copies assets and writes `dist/midnight-cafe/`.
+
+See [distribution.md](./distribution.md) for hosting layouts and the production runtime strategy.

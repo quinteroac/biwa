@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { StepChoice } from '../engine/ScriptRunner.ts'
 
-interface VnChoicesProps {
+export interface VnChoicesProps {
   choices: StepChoice[]
   onChoose: (index: number) => void
 }

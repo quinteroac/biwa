@@ -128,7 +128,7 @@ class AudioManager {
   }
 }
 
-interface CharacterState {
+export interface CharacterState {
   id: string
   charData: Record<string, unknown> | null
   position: 'left' | 'center' | 'right'
@@ -136,13 +136,13 @@ interface CharacterState {
   exiting: boolean
 }
 
-interface SceneState {
+export interface SceneState {
   id: string
   data: Record<string, unknown>
   variant?: string
 }
 
-interface TransitionState {
+export interface TransitionState {
   config: Record<string, unknown>
   done: () => void
 }
@@ -186,9 +186,34 @@ export interface VnStageProps {
    * calling `engine.start()`. Used by the "Continue" flow in {@link VnApp}.
    */
   resumeFrom?: GameSaveState
+
+  /**
+   * Optional component overrides for games that need a custom shell without
+   * forking the stage orchestration. Omitted slots use the framework defaults.
+   */
+  components?: VnStageComponents
 }
 
-export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, showAutoSave = true, resumeFrom }: VnStageProps) {
+export interface VnStageComponents {
+  Background?: typeof VnBackground
+  Character?: typeof VnCharacter
+  Dialog?: typeof VnDialog
+  Choices?: typeof VnChoices
+  Transition?: typeof VnTransition
+  SaveMenu?: typeof VnSaveMenu
+  SaveControls?: typeof SaveControlsBar
+  VolumeControl?: typeof VnVolumeControl
+}
+
+export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, showAutoSave = true, resumeFrom, components = {} }: VnStageProps) {
+  const BackgroundComponent = components.Background ?? VnBackground
+  const CharacterComponent = components.Character ?? VnCharacter
+  const DialogComponent = components.Dialog ?? VnDialog
+  const ChoicesComponent = components.Choices ?? VnChoices
+  const TransitionComponent = components.Transition ?? VnTransition
+  const SaveMenuComponent = components.SaveMenu ?? VnSaveMenu
+  const SaveControlsComponent = components.SaveControls ?? SaveControlsBar
+  const VolumeControlComponent = components.VolumeControl ?? VnVolumeControl
   const [menuOpen, setMenuOpen] = useState(false)
   const [audioOpen, setAudioOpen] = useState(false)
   const [scene, setScene]           = useState<SceneState | null>(null)
@@ -333,11 +358,11 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
           fontFamily: 'var(--vn-font, "Manrope", sans-serif)',
         }}
       >
-        <VnBackground scene={scene as Parameters<typeof VnBackground>[0]['scene']} />
+        <BackgroundComponent scene={scene as Parameters<typeof VnBackground>[0]['scene']} />
 
         <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
           {[...characters.values()].map(char => (
-            <VnCharacter
+            <CharacterComponent
               key={char.id}
               id={char.id}
               charData={char.charData as Parameters<typeof VnCharacter>[0]['charData']}
@@ -349,7 +374,7 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
           ))}
         </div>
 
-        <VnSaveMenu
+        <SaveMenuComponent
           isOpen={menuOpen}
           onClose={() => setMenuOpen(false)}
           saveManager={engine.saveManager}
@@ -407,7 +432,7 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
                 boxShadow: '0 18px 48px rgba(0,0,0,0.35)',
               }}
             >
-              <VnVolumeControl
+              <VolumeControlComponent
                 volumes={audioRef.current.getVolumes()}
                 onVolumeChange={(channel, volume) => audioRef.current.setVolume(channel, volume)}
               />
@@ -421,9 +446,9 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
           display: 'flex', flexDirection: 'column',
           pointerEvents: 'none',
         }}>
-          <VnDialog ref={dialogRef} dialog={dialog} onComplete={handleDialogComplete} />
+          <DialogComponent ref={dialogRef} dialog={dialog} onComplete={handleDialogComplete} />
           {dialog && (
-            <SaveControlsBar
+            <SaveControlsComponent
               saveManager={engine.saveManager}
               getState={() => engine.getState()}
               onOpenMenu={() => setMenuOpen(true)}
@@ -436,11 +461,11 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
         </div>
 
         {choices && (
-          <VnChoices choices={choices} onChoose={handleChoose} />
+          <ChoicesComponent choices={choices} onChoose={handleChoose} />
         )}
 
         {transition && (
-          <VnTransition
+          <TransitionComponent
             config={transition.config as Parameters<typeof VnTransition>[0]['config']}
             onDone={() => {
               const done = transition.done

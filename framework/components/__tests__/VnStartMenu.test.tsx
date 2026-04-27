@@ -261,6 +261,26 @@ describe('VnStartMenu – US-004', () => {
     // Verify function arity allows the options parameter
     expect(mountVnApp.length).toBeLessThanOrEqual(3)
   })
+
+  it('accepts custom app component options structurally', () => {
+    const { mountVnApp } = require('../VnApp.tsx') as typeof import('../VnApp.tsx')
+    const CustomStart = () => createElement('div', null, 'Custom Start')
+    const CustomEnd = () => createElement('div', null, 'Custom End')
+    const CustomStage = () => createElement('div', null, 'Custom Stage')
+
+    const options: Parameters<typeof mountVnApp>[2] = {
+      showNewGame: true,
+      showContinue: true,
+      showSlotMenu: false,
+      components: {
+        StartMenu: CustomStart,
+        EndScreen: CustomEnd,
+        Stage: CustomStage,
+      },
+    }
+
+    expect(options.components?.StartMenu).toBe(CustomStart)
+  })
 })
 
 describe('VnStartMenu – US-003', () => {

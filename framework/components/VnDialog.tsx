@@ -14,7 +14,7 @@ export interface VnDialogHandle {
   skip: () => void
 }
 
-interface VnDialogProps {
+export interface VnDialogProps {
   dialog: DialogOptions | null
   onComplete: (advanceMode: DialogOptions['advanceMode']) => void
 }
