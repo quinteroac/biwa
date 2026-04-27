@@ -77,7 +77,8 @@
           "compatibility": {
             "type": "object",
             "properties": {
-              "framework": { "type": "string" }
+              "framework": { "type": "string" },
+              "pluginApi": { "type": "string" }
             },
             "additionalProperties": false
           },

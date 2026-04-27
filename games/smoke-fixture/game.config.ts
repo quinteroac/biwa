@@ -21,6 +21,19 @@ const config: GameConfig = {
 
   minigames: {},
 
+  plugins: [{
+    id: 'smoke-logger',
+    name: 'Smoke Logger',
+    version: '0.1.0',
+    type: 'plugin',
+    entry: './plugins/smoke-logger/index.ts',
+    capabilities: ['engine-event'],
+    compatibility: {
+      pluginApi: 'vn-plugin-api-v1',
+    },
+    loader: () => import('./plugins/smoke-logger/index.ts'),
+  }],
+
   theme: {
     font: '"Georgia", serif',
     accent: '#c084fc',

@@ -88,6 +88,7 @@ describe('P2 build modes and schema validation', () => {
     let manifest = readJson(distPath(gameId, 'manifest.json'))
     expect(manifest.distribution.mode).toBe('portal')
     expect(manifest.distribution.wrappers).toEqual(['portal.json'])
+    expect(manifest.pluginPolicy.load).toBe('declared-plugins-only')
 
     expect(runCli('build', gameId, '--mode', 'embedded').exitCode).toBe(0)
     expect(existsSync(distPath(gameId, 'embed.html'))).toBe(true)

@@ -7,6 +7,7 @@ export type VnPluginCapability = 'renderer' | 'stage' | 'overlay' | 'engine-even
 
 export interface VnPluginCompatibility {
   framework?: string
+  pluginApi?: string
 }
 
 export interface VnPluginRendererDeclarations {

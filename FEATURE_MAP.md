@@ -18,26 +18,6 @@ El framework ya tiene una base tecnica estable para runtime, UI de jugador, dato
 
 ## Pendientes
 
-### P3 - Distribucion Y Seguridad
-
-Objetivo: poder distribuir juegos con plugins sin romper el modo standalone/static/portal/embedded.
-
-Alcance:
-
-- Politica de carga: solo plugins declarados en config.
-- Aislar nombres de plugins y evitar ids reservados por framework.
-- Documentar limites: los plugins son codigo de confianza del juego, no sandbox fuerte.
-- Compatibilidad con import map y rutas relativas en build.
-- Estrategia de versionado para contratos de plugin.
-- Hooks de migracion si un contrato cambia.
-- Fixture con plugin real de ejemplo en CI.
-
-Criterios de salida:
-
-- El build standalone puede cargar un plugin local.
-- El manifest de distribucion describe plugins y capabilities.
-- Docs explican que se puede considerar estable y que es experimental.
-
 ### P4 - Ecosistema Y DX
 
 Objetivo: hacer que crear renderers y plugins sea ergonomico para autores.

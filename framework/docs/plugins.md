@@ -18,7 +18,7 @@ plugins: [
     entry: './plugins/my-plugin/index.ts',
     capabilities: ['engine-event'],
     compatibility: {
-      framework: '0.x',
+      pluginApi: 'vn-plugin-api-v1',
     },
     loader: () => import('./plugins/my-plugin/index.ts'),
   },
@@ -38,6 +38,7 @@ plugins: [
 | `entry` | No | Local source entry path for diagnostics and build tooling. |
 | `capabilities` | Yes | Declared extension permissions. |
 | `compatibility.framework` | No | Framework compatibility hint. |
+| `compatibility.pluginApi` | No | Plugin API contract. Current value: `vn-plugin-api-v1`. |
 
 Supported capabilities:
 
@@ -83,6 +84,31 @@ export default plugin
 
 Plugins are trusted game code. They are not sandboxed.
 
+## Security And Distribution Policy
+
+Plugin loading is intentionally conservative:
+
+- Only plugins declared in `game.config.ts` are loaded.
+- Plugin ids using framework-reserved names are rejected. Avoid `vn-*`, `framework`, `core`, `engine`, `stage`, `renderer` and `renderers`.
+- `entry` must point to local game code. Remote URLs are rejected by `doctor`.
+- `entry` must stay inside the game directory.
+- Plugins are trusted local game code. There is no strong sandbox.
+- The current plugin API contract is `vn-plugin-api-v1`.
+
+Production builds record this policy in `manifest.json`:
+
+```json
+{
+  "pluginPolicy": {
+    "apiVersion": "vn-plugin-api-v1",
+    "trust": "trusted-local-game-code",
+    "sandbox": "none",
+    "load": "declared-plugins-only",
+    "remoteEntriesAllowed": false
+  }
+}
+```
+
 ## Diagnostics
 
 `doctor` validates:
@@ -91,6 +117,9 @@ Plugins are trusted game code. They are not sandboxed.
 - duplicate plugin ids.
 - unknown capabilities.
 - missing local `entry` files.
+- reserved plugin ids.
+- unsupported `compatibility.pluginApi` values.
+- remote or out-of-game plugin entries.
 - renderer types used by game data or Ink transition tags but not declared by any plugin.
 
 ## CLI Tooling

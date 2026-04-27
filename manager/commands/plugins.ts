@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
-import { basename, join, relative, resolve } from 'path'
+import { join, relative, resolve } from 'path'
 import { pathToFileURL } from 'url'
 import { validatePluginManifest } from '../../framework/plugins/PluginRegistry.ts'
 import type { GameConfig } from '../../framework/types/game-config.d.ts'
@@ -72,8 +72,9 @@ async function loadPluginConfig(pathArg: string): Promise<{ dir: string; manifes
 function validatePluginEntry(baseDir: string, plugin: VnPluginDescriptor): string {
   validatePluginManifest(plugin)
   if (!plugin.entry) return 'ok'
-  if (/^https?:\/\//.test(plugin.entry)) return 'remote'
-  const entryPath = join(baseDir, plugin.entry)
+  if (/^https?:\/\//.test(plugin.entry)) return 'remote-entry-blocked'
+  const entryPath = resolve(baseDir, plugin.entry)
+  if (!entryPath.startsWith(resolve(baseDir))) return 'outside-game-blocked'
   return existsSync(entryPath) ? 'ok' : 'missing-entry'
 }
 
@@ -158,6 +159,8 @@ async function validateTarget(target: string): Promise<void> {
       ids.add(plugin.id)
       const status = validatePluginEntry(gameDir, plugin)
       if (status === 'missing-entry') throw new Error(`Plugin entry not found: ${plugin.entry}`)
+      if (status === 'remote-entry-blocked') throw new Error(`Remote plugin entries are not allowed: ${plugin.entry}`)
+      if (status === 'outside-game-blocked') throw new Error(`Plugin entry must stay inside the game directory: ${plugin.entry}`)
     }
     console.log(`Plugins valid for ${target}: ${config.plugins?.length ?? 0}`)
     return
@@ -166,6 +169,8 @@ async function validateTarget(target: string): Promise<void> {
   const { dir, manifest } = await loadPluginConfig(target)
   const status = validatePluginEntry(dir, manifest)
   if (status === 'missing-entry') throw new Error(`Plugin entry not found: ${manifest.entry}`)
+  if (status === 'remote-entry-blocked') throw new Error(`Remote plugin entries are not allowed: ${manifest.entry}`)
+  if (status === 'outside-game-blocked') throw new Error(`Plugin entry must stay inside the plugin directory: ${manifest.entry}`)
   console.log(`Plugin valid: ${manifest.id}`)
 }
 

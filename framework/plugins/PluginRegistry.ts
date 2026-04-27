@@ -12,6 +12,9 @@ import type {
 
 const PLUGIN_ID_RE = /^[a-z0-9][a-z0-9-]*$/
 const KNOWN_CAPABILITIES = new Set(['renderer', 'stage', 'overlay', 'engine-event', 'asset-loader'])
+const RESERVED_PLUGIN_IDS = new Set(['framework', 'core', 'engine', 'stage', 'renderer', 'renderers', 'vn'])
+
+export const VN_PLUGIN_API_VERSION = 'vn-plugin-api-v1'
 
 export class PluginValidationError extends Error {
   constructor(message: string) {
@@ -89,6 +92,9 @@ function normalizePluginModule(value: unknown): VnPluginModule {
 export function validatePluginManifest(manifest: VnPluginManifest): void {
   if (!manifest || typeof manifest !== 'object') throw new PluginValidationError('Plugin manifest must be an object.')
   if (!PLUGIN_ID_RE.test(manifest.id)) throw new PluginValidationError('Plugin id must use lowercase letters, numbers and hyphens.')
+  if (RESERVED_PLUGIN_IDS.has(manifest.id) || manifest.id.startsWith('vn-')) {
+    throw new PluginValidationError(`Plugin id "${manifest.id}" is reserved by the framework.`)
+  }
   if (typeof manifest.name !== 'string' || manifest.name.length === 0) throw new PluginValidationError(`Plugin "${manifest.id}" is missing name.`)
   if (typeof manifest.version !== 'string' || manifest.version.length === 0) throw new PluginValidationError(`Plugin "${manifest.id}" is missing version.`)
   if (manifest.type !== 'plugin') throw new PluginValidationError(`Plugin "${manifest.id}" must use type "plugin".`)
@@ -110,6 +116,10 @@ export function validatePluginManifest(manifest: VnPluginManifest): void {
         throw new PluginValidationError(`Plugin "${manifest.id}" renderer declarations must be non-empty string arrays.`)
       }
     }
+  }
+  const pluginApi = manifest.compatibility?.pluginApi
+  if (pluginApi !== undefined && pluginApi !== VN_PLUGIN_API_VERSION) {
+    throw new PluginValidationError(`Plugin "${manifest.id}" requires unsupported plugin API "${pluginApi}". Current API is "${VN_PLUGIN_API_VERSION}".`)
   }
 }
 

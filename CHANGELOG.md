@@ -53,6 +53,9 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - `plugins` CLI subcommands for listing, validating and scaffolding plugin projects.
 - Doctor diagnostics for undeclared external renderer types in scene, character and transition data.
 - Build manifest plugin metadata including capabilities and renderer declarations.
+- Plugin distribution policy in build manifests, including trusted-local-code stance and plugin API version.
+- Security validation for reserved plugin ids, remote entries, out-of-game entries and unsupported plugin API versions.
+- `smoke-fixture` now includes a declared local plugin fixture for CI distribution coverage.
 
 ### Changed
 

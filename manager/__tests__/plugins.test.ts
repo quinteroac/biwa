@@ -126,9 +126,37 @@ export default config
 
     await build(validGameId)
     const manifest = JSON.parse(readFileSync(join(ROOT, 'dist', validGameId, 'manifest.json'), 'utf8')) as {
-      plugins: Array<{ id: string; renderers: { background?: string[] } }>
+      pluginPolicy: { remoteEntriesAllowed: boolean; apiVersion: string }
+      plugins: Array<{ id: string; entry: string | null; renderers: { background?: string[] } }>
     }
     expect(manifest.plugins[0]?.id).toBe('ink-wash')
     expect(manifest.plugins[0]?.renderers.background).toEqual(['ink-wash'])
+    expect(manifest.pluginPolicy.remoteEntriesAllowed).toBe(false)
+    expect(manifest.pluginPolicy.apiVersion).toBe('vn-plugin-api-v1')
+    expect(manifest.plugins[0]?.entry).toBe('./plugins/ink-wash/index.js')
+  })
+
+  it('doctor rejects remote plugin entries and reserved plugin ids', async () => {
+    const gameId = 'plugin-security-doctor'
+    writeMinimalGame(gameId, `plugins: [{
+    id: 'vn-core',
+    name: 'Bad Plugin',
+    version: '1.0.0',
+    type: 'plugin',
+    entry: 'https://example.test/plugin.js',
+    capabilities: ['engine-event'],
+  }, {
+    id: 'remote-plugin',
+    name: 'Remote Plugin',
+    version: '1.0.0',
+    type: 'plugin',
+    entry: 'https://example.test/plugin.js',
+    capabilities: ['engine-event'],
+  }],`)
+
+    const result = await validateGame(gameId)
+    const codes = result.issues.map(issue => issue.code)
+    expect(codes).toContain('plugin_manifest_invalid')
+    expect(codes).toContain('plugin_entry_remote')
   })
 })

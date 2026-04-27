@@ -3,6 +3,7 @@ import { dirname, join, relative } from 'path'
 import yaml from 'js-yaml'
 import { Compiler } from 'inkjs/compiler/Compiler.js'
 import { CompilerOptions } from 'inkjs/compiler/CompilerOptions.js'
+import { VN_PLUGIN_API_VERSION } from '../../framework/plugins/PluginRegistry.ts'
 import { printIssues, summarizeIssues, validateGame } from './doctor.ts'
 
 const ROOT = new URL('../../', import.meta.url).pathname.replace(/\/$/, '')
@@ -335,6 +336,15 @@ function writeBuildManifest(
   const storySize = dirSize(join(distDir, 'story'))
   const dataSize = dirSize(join(distDir, 'data'))
   const totalSize = dirSize(distDir)
+  const plugins = (config.plugins ?? []).map(plugin => ({
+    id: plugin.id,
+    name: plugin.name,
+    version: plugin.version,
+    entry: plugin.entry ? plugin.entry.replace(/\.tsx?$/, '.js') : null,
+    capabilities: plugin.capabilities,
+    renderers: plugin.renderers ?? {},
+    compatibility: plugin.compatibility ?? {},
+  }))
   const manifest = {
     id: config.id,
     title: config.title,
@@ -346,16 +356,16 @@ function writeBuildManifest(
       entry: 'index.html',
       wrappers: distributionWrapperFiles(mode),
     },
+    pluginPolicy: {
+      apiVersion: VN_PLUGIN_API_VERSION,
+      trust: 'trusted-local-game-code',
+      sandbox: 'none',
+      load: 'declared-plugins-only',
+      remoteEntriesAllowed: false,
+    },
     warnings: issues.filter(issue => issue.severity === 'warning').length,
     diagnostics: serializeDiagnostics(gameDir, issues),
-    plugins: (config.plugins ?? []).map(plugin => ({
-      id: plugin.id,
-      name: plugin.name,
-      version: plugin.version,
-      entry: plugin.entry ?? null,
-      capabilities: plugin.capabilities,
-      renderers: plugin.renderers ?? {},
-    })),
+    plugins,
     sizes: {
       framework: frameworkSize,
       assets: assetsSize,
@@ -384,6 +394,11 @@ function writeDistributionWrapper(distDir: string, config: Awaited<ReturnType<ty
       entry: 'index.html',
       manifest: 'manifest.json',
       assetsRoot: 'assets/',
+      plugins: {
+        count: config.plugins?.length ?? 0,
+        policy: 'trusted-local-game-code',
+        apiVersion: VN_PLUGIN_API_VERSION,
+      },
     }, null, 2))
     return
   }

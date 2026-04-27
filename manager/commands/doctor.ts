@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync } from 'fs'
-import { join, relative } from 'path'
+import { join, relative, resolve } from 'path'
 import { pathToFileURL } from 'url'
 import yaml from 'js-yaml'
 import { TagParser } from '../../framework/TagParser.ts'
@@ -602,8 +602,26 @@ function validatePluginConfig(gameDir: string, config: GameConfig, issues: Issue
     }
     ids.add(plugin.id)
 
-    if (plugin.entry && !/^https?:\/\//.test(plugin.entry)) {
-      const entryPath = plugin.entry.startsWith('./') ? join(gameDir, plugin.entry) : join(gameDir, plugin.entry)
+    if (plugin.entry && /^https?:\/\//.test(plugin.entry)) {
+      issues.push({
+        severity: 'error',
+        path,
+        code: 'plugin_entry_remote',
+        message: `Remote plugin entries are not allowed: ${plugin.entry}`,
+        suggestion: 'Use a trusted local plugin entry inside the game directory.',
+      })
+    } else if (plugin.entry) {
+      const entryPath = resolve(gameDir, plugin.entry)
+      if (!entryPath.startsWith(resolve(gameDir))) {
+        issues.push({
+          severity: 'error',
+          path,
+          code: 'plugin_entry_outside_game',
+          message: `Plugin entry must stay inside the game directory: ${plugin.entry}`,
+          suggestion: 'Move the plugin under the game folder or update plugins[].entry.',
+        })
+        continue
+      }
       if (!existsSync(entryPath)) {
         issues.push({
           severity: 'error',

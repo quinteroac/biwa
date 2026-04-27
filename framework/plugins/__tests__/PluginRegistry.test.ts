@@ -17,6 +17,14 @@ describe('PluginRegistry', () => {
     expect(() => validatePluginManifest({ ...manifest, capabilities: ['wat' as never] })).toThrow('unknown capability')
   })
 
+  it('rejects reserved ids and unsupported plugin API versions', () => {
+    expect(() => validatePluginManifest({ ...manifest, id: 'vn-core' })).toThrow('reserved')
+    expect(() => validatePluginManifest({
+      ...manifest,
+      compatibility: { pluginApi: 'future-api' },
+    })).toThrow('unsupported plugin API')
+  })
+
   it('registers plugins once and rejects duplicate ids', () => {
     const registry = new PluginRegistry()
     registry.register(manifest, {})
