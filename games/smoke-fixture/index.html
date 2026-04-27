@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smoke Fixture</title>
+  <link rel="stylesheet" href="../../framework/styles/base.css">
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module">
+    import config from './game.config.ts'
+    import { GameEngine } from '../../framework/engine/GameEngine.ts'
+    import { mountVnApp } from '../../framework/components/VnApp.tsx'
+
+    const engine = await GameEngine.init(config)
+    mountVnApp(engine, document.getElementById('root'))
+  </script>
+</body>
+</html>

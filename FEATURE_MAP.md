@@ -461,6 +461,25 @@ Objetivo: hacer que el framework se sienta estable y mantenible a largo plazo.
 - Los cambios publicos quedan documentados.
 - El roadmap se puede ejecutar por iteraciones pequenas.
 
+### Estado fase 9
+
+- Creado `README.md` publico con quick start, comandos, feature matrix y quality gate.
+- Creado `CHANGELOG.md` con cambios notables acumulados y gaps conocidos.
+- Creado `CONTRIBUTING.md` con setup, loop de desarrollo, quality gate y criterios de documentacion.
+- Agregado workflow `.github/workflows/ci.yml` para ejecutar `bun run verify` en PRs y pushes a `master`.
+- Agregados scripts:
+  - `build:demo`: build de `smoke-fixture`.
+  - `verify`: tests, typecheck, doctor y build de fixture.
+- Agregada `games/smoke-fixture/`, una fixture liviana que pasa `doctor` sin warnings y build con assets minimos.
+- Actualizado `.agents/PROJECT_CONTEXT.md` para reflejar la distribucion ESM estatica y los component overrides actuales.
+- Verificacion final: `bun run verify` pasa con 294 tests, `doctor smoke-fixture` 0 errores/0 warnings y `build smoke-fixture` OK.
+
+### Pendientes fase 9
+
+- Coverage minimo formal no configurado todavia.
+- No se agrego Playwright; browser E2E queda pendiente para una iteracion dedicada.
+- Falta versionado/publicacion real de paquete si el framework se externaliza.
+
 ## Matriz de prioridad
 
 | Prioridad | Area | Motivo |

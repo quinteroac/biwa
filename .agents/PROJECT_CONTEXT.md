@@ -14,7 +14,7 @@
 - Frameworks: React 19 (JSX transform `react-jsx`), inkjs 2.x (Ink narrative engine)
 - Key libraries: `js-yaml` (YAML parsing in manager CLI)
 - Package manager: Bun (`bun.lock`)
-- Build / tooling: Bun bundler (`moduleResolution: bundler`); CLI entry at `manager/cli.ts`; no separate transpile step
+- Build / tooling: Bun bundler (`moduleResolution: bundler`); CLI entry at `manager/cli.ts`; production build transpiles framework/game TS to static ESM output under `dist/<gameId>/`
 
 ## Code Standards
 - Style patterns: private fields via `#field` (not `_field`); no `public` keyword; `Object.freeze` for constants
@@ -93,7 +93,7 @@ color: '#f8f8f8'
 Games **never modify framework source files**. Two levels are available:
 
 1. **CSS variables** — override colors, fonts, spacing via `game.config.ts → theme.cssVars`. All framework components read every visual value from CSS custom properties. This is always the first option.
-2. **Full replacement** — skip `mountVnApp`, write a `main.tsx` in the game folder, and compose your own React shell using framework pieces (`VnStage`, `GameEngine`, `EventBus`, etc.).
+2. **Component overrides** — pass `components` to `mountVnApp` or `VnStage` to replace start menu, end screen, stage internals, dialog, choices, save UI, volume UI, transitions, background or characters without forking framework source.
 
 `GameEngine`, `ScriptRunner`, `SaveManager`, and `EventBus` have no React dependency and can be used without any framework UI component.
 

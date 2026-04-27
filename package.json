@@ -10,7 +10,9 @@
     "doctor": "bun manager/cli.ts doctor",
     "test": "bun test",
     "typecheck": "tsc",
-    "check": "bun run test && bun run typecheck"
+    "check": "bun run test && bun run typecheck",
+    "build:demo": "bun manager/cli.ts build smoke-fixture",
+    "verify": "bun run check && bun manager/cli.ts doctor smoke-fixture && bun run build:demo"
   },
   "dependencies": {
     "@chenglou/pretext": "^0.0.5",
