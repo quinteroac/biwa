@@ -46,6 +46,9 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Default `VnGallery` and `VnMusicRoom` overlays with `VnStage` override slots.
 - Configurable `data.gallery`, `data.music` and `data.replay` folders with doctor validation.
 - Player extras documentation for gallery, music room and replay metadata.
+- Plugin manifest types, registry, runtime lifecycle and `GameEngine` plugin loading.
+- `game.config.ts` plugin declarations with schema and doctor validation.
+- Plugin contract documentation.
 
 ### Changed
 

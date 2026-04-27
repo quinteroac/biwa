@@ -48,6 +48,34 @@
       "type": "object",
       "additionalProperties": { "description": "Entry for lazy-loading a minigame (path or function)", "anyOf": [{ "type": "string" }, { "type": "function" }, { "type": "object" }, { "type": "null" }] }
     },
+    "plugins": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "version", "type", "capabilities"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+          "name": { "type": "string", "minLength": 1 },
+          "version": { "type": "string", "minLength": 1 },
+          "type": { "type": "string", "enum": ["plugin"] },
+          "entry": { "type": "string" },
+          "capabilities": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["renderer", "stage", "overlay", "engine-event", "asset-loader"] }
+          },
+          "compatibility": {
+            "type": "object",
+            "properties": {
+              "framework": { "type": "string" }
+            },
+            "additionalProperties": false
+          },
+          "module": { "description": "Runtime-only plugin module object", "anyOf": [{ "type": "object" }, { "type": "null" }] },
+          "loader": { "description": "Runtime-only plugin loader function", "anyOf": [{ "type": "function" }, { "type": "object" }, { "type": "null" }] }
+        },
+        "additionalProperties": false
+      }
+    },
     "theme": {
       "type": "object",
       "properties": {

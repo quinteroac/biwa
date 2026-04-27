@@ -9,6 +9,7 @@ import { SfxController } from './SfxController.ts'
 import { AmbienceController } from './AmbienceController.ts'
 import { VoiceController } from './VoiceController.ts'
 import { PlayerUnlocks } from '../player/PlayerUnlocks.ts'
+import { PluginRegistry, createPluginContext, loadPluginDescriptor } from '../plugins/PluginRegistry.ts'
 import type { BacklogEntry, GameSaveState, SavedAudioState, SavedCharacterState, SavedVisualState } from '../types/save.d.ts'
 import type { GameConfig } from '../types/game-config.d.ts'
 import type { TagCommand } from './ScriptRunner.ts'
@@ -50,6 +51,7 @@ export class GameEngine {
   #unlockStore!: PlayerUnlocks
   #assetLoader!: AssetLoader
   #minigameRegistry = new MinigameRegistry()
+  #pluginRegistry = new PluginRegistry()
   #bgm: BgmController
   #sfx: SfxController
   #ambience: AmbienceController
@@ -110,6 +112,7 @@ export class GameEngine {
 
   /** Expose the internal SaveManager instance for UI components. */
   get saveManager(): SaveManager { return this.#saveManager }
+  get plugins(): PluginRegistry { return this.#pluginRegistry }
 
   /** Return a serialisable snapshot compatible with `SaveManager.save()` */
   getState(): GameSaveState {
@@ -238,12 +241,26 @@ export class GameEngine {
       this.#minigameRegistry.register(id, loader)
     }
 
+    await this.#loadPlugins()
+
     await this.#loadData()
 
     this.#locale = this.#config.story.defaultLocale
     const storyPath = this.#config.story.locales[this.#locale]
     if (!storyPath) throw new Error(`[GameEngine] No story path for locale "${this.#locale}"`)
     await this.#runner.load(storyPath)
+  }
+
+  async #loadPlugins(): Promise<void> {
+    for (const descriptor of this.#config.plugins ?? []) {
+      const { manifest, module } = await loadPluginDescriptor(descriptor)
+      this.#pluginRegistry.register(manifest, module)
+    }
+    await this.#pluginRegistry.setupAll(createPluginContext(this, this.#bus))
+  }
+
+  async dispose(): Promise<void> {
+    await this.#pluginRegistry.disposeAll()
   }
 
   async #loadData(): Promise<void> {

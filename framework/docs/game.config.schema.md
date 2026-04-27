@@ -119,6 +119,38 @@ minigames: {
 
 ---
 
+### Plugins
+
+Declares trusted local framework extensions. Plugins are validated by `doctor`, loaded during engine boot and receive a small lifecycle context.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `plugins[].id` | `string` | ✅ | Lowercase plugin id. |
+| `plugins[].name` | `string` | ✅ | Human-readable name. |
+| `plugins[].version` | `string` | ✅ | Plugin version. |
+| `plugins[].type` | `"plugin"` | ✅ | Manifest discriminator. |
+| `plugins[].entry` | `string` | — | Local source entry path for diagnostics/build tooling. |
+| `plugins[].capabilities` | `string[]` | ✅ | Declared capabilities such as `renderer` or `engine-event`. |
+| `plugins[].compatibility.framework` | `string` | — | Framework compatibility hint. |
+
+```ts
+plugins: [
+  {
+    id: 'my-plugin',
+    name: 'My Plugin',
+    version: '1.0.0',
+    type: 'plugin',
+    entry: './plugins/my-plugin/index.ts',
+    capabilities: ['engine-event'],
+    loader: () => import('./plugins/my-plugin/index.ts'),
+  },
+],
+```
+
+See `framework/docs/plugins.md` for the lifecycle contract.
+
+---
+
 ### Theme
 
 Visual customization for this novel. All fields are optional — the framework provides sensible defaults. Values are applied as CSS custom properties on `:root` at startup.

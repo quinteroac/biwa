@@ -4,6 +4,7 @@ import { pathToFileURL } from 'url'
 import yaml from 'js-yaml'
 import { TagParser } from '../../framework/TagParser.ts'
 import { validateAsepriteAtlas } from '../../framework/engine/AsepriteAtlas.ts'
+import { validatePluginManifest } from '../../framework/plugins/PluginRegistry.ts'
 import { validateJsonSchema } from '../schemaValidator.ts'
 import type { GameConfig } from '../../framework/types/game-config.d.ts'
 import type { TagCommand } from '../../framework/TagParser.ts'
@@ -494,6 +495,7 @@ function validateConfig(gameDir: string, config: GameConfig, issues: Issue[]): v
     })
   }
   if (!config.story?.defaultLocale) issues.push({ severity: 'error', path: 'game.config.ts', message: 'Missing story.defaultLocale.', suggestion: 'Set story.defaultLocale to one of the keys in story.locales.' })
+  validatePluginConfig(gameDir, config, issues)
   const locales = config.story?.locales ?? {}
   for (const [locale, storyPath] of Object.entries(locales)) {
     const fullPath = join(gameDir, storyPath)
@@ -514,6 +516,50 @@ function validateConfig(gameDir: string, config: GameConfig, issues: Issue[]): v
       message: `No story path for default locale "${config.story?.defaultLocale}".`,
       suggestion: 'Make story.defaultLocale match one key in story.locales.',
     })
+  }
+}
+
+function validatePluginConfig(gameDir: string, config: GameConfig, issues: Issue[]): void {
+  const plugins = config.plugins ?? []
+  const ids = new Set<string>()
+  for (const [idx, plugin] of plugins.entries()) {
+    const path = `game.config.ts:plugins[${idx}]`
+    try {
+      validatePluginManifest(plugin)
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      issues.push({
+        severity: 'error',
+        path,
+        code: 'plugin_manifest_invalid',
+        message: err.message,
+        suggestion: 'Align the plugin declaration with the framework plugin manifest contract.',
+      })
+      continue
+    }
+    if (ids.has(plugin.id)) {
+      issues.push({
+        severity: 'error',
+        path,
+        code: 'plugin_duplicate',
+        message: `Duplicate plugin id "${plugin.id}".`,
+        suggestion: 'Each plugin id must be declared only once.',
+      })
+    }
+    ids.add(plugin.id)
+
+    if (plugin.entry && !/^https?:\/\//.test(plugin.entry)) {
+      const entryPath = plugin.entry.startsWith('./') ? join(gameDir, plugin.entry) : join(gameDir, plugin.entry)
+      if (!existsSync(entryPath)) {
+        issues.push({
+          severity: 'error',
+          path,
+          code: 'plugin_entry_missing',
+          message: `Plugin entry not found: ${plugin.entry}`,
+          suggestion: 'Create the plugin entry file or update plugins[].entry.',
+        })
+      }
+    }
   }
 }
 
@@ -571,6 +617,7 @@ function inferIssueCode(issue: Issue): string {
   if (issue.message.startsWith('Unknown ') && issue.message.includes(' id "')) return 'story_reference_unknown'
   if (issue.message === 'Missing config.id.') return 'config_id_missing'
   if (issue.message.startsWith('Config schema violation:')) return 'config_schema_invalid'
+  if (issue.message.startsWith('Plugin ') || issue.message.includes('plugin')) return issue.code ?? 'plugin_invalid'
   if (issue.message === 'Missing config.title.') return 'config_title_missing'
   if (issue.message === 'Missing story.defaultLocale.') return 'config_default_locale_missing'
   if (issue.message.startsWith('Story path for locale')) return 'story_locale_path_missing'

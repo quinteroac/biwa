@@ -1,3 +1,5 @@
+import type { VnPluginDescriptor } from './plugins.d.ts';
+
 export interface GameConfig {
   id: string;
   title: string;
@@ -16,6 +18,7 @@ export interface GameConfig {
     [key: string]: string | undefined;
   };
   minigames?: Record<string, (() => Promise<any>) | string>;
+  plugins?: VnPluginDescriptor[];
   theme?: {
     font?: string;
     dialogBg?: string;
