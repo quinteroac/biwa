@@ -28,6 +28,8 @@ type EngineState = typeof STATE[keyof typeof STATE]
 interface GameData {
   characters: Record<string, Record<string, unknown>>
   scenes: Record<string, Record<string, unknown>>
+  audio: Record<string, Record<string, unknown>>
+  minigames: Record<string, Record<string, unknown>>
 }
 
 export class GameEngine {
@@ -48,7 +50,7 @@ export class GameEngine {
   #currentSceneId: string | null = null
   #pendingChoices: ReturnType<ScriptRunner['choices']['slice']> | null = null
   #advanceInProgress = false
-  #data: GameData = { characters: {}, scenes: {} }
+  #data: GameData = { characters: {}, scenes: {}, audio: {}, minigames: {} }
 
   constructor(config: GameConfig) {
     this.#config = config
@@ -148,11 +150,18 @@ export class GameEngine {
   }
 
   async #loadData(): Promise<void> {
-    const { characters: charDir, scenes: scenesDir } = this.#config.data ?? {}
+    const {
+      characters: charDir,
+      scenes: scenesDir,
+      audio: audioDir,
+      minigames: minigamesDir,
+    } = this.#config.data ?? {}
 
     await Promise.allSettled([
       this.#loadDataDir(charDir, 'characters'),
       this.#loadDataDir(scenesDir, 'scenes'),
+      this.#loadDataDir(audioDir, 'audio'),
+      this.#loadDataDir(minigamesDir, 'minigames'),
     ])
   }
 
@@ -168,7 +177,7 @@ export class GameEngine {
             const r = await fetch(`${dir}${filename}`)
             if (!r.ok) return
             const data = await r.json() as Record<string, unknown>
-            const id = filename.replace(/\.json$/, '')
+            const id = filename.split('/').pop()!.replace(/\.json$/, '')
             this.#data[key][id] = data
           } catch { /* non-fatal */ }
         })
@@ -252,16 +261,16 @@ export class GameEngine {
           this.#bus.emit('engine:scene', { id: tag.id, data: this.#data.scenes[tag.id ?? ''] })
           break
         case 'bgm':
-          this.#bus.emit('engine:bgm', tag)
+          this.#bus.emit('engine:bgm', this.#withAudioData(tag))
           break
         case 'sfx':
-          this.#bus.emit('engine:sfx', tag)
+          this.#bus.emit('engine:sfx', this.#withAudioData(tag))
           break
         case 'ambience':
-          this.#bus.emit('engine:ambience', tag)
+          this.#bus.emit('engine:ambience', this.#withAudioData(tag))
           break
         case 'voice':
-          this.#bus.emit('engine:voice', tag)
+          this.#bus.emit('engine:voice', this.#withAudioData(tag))
           break
         case 'character':
           this.#bus.emit('engine:character', tag)
@@ -295,13 +304,23 @@ export class GameEngine {
     })
   }
 
+  #withAudioData(tag: TagCommand): TagCommand {
+    const data = tag.id ? this.#data.audio[tag.id] : undefined
+    return data ? { ...data, ...tag } : tag
+  }
+
   async #runMinigame(id: string, tag: Record<string, unknown>): Promise<void> {
     this.#setState(STATE.MINIGAME)
     this.#bus.emit('engine:minigame:start', { id, tag })
 
     try {
+      const metadata = this.#data.minigames[id] ?? {}
+      const defaultConfig = metadata['config']
+      const config = typeof defaultConfig === 'object' && defaultConfig !== null
+        ? { ...(defaultConfig as Record<string, unknown>), ...tag }
+        : tag
       const instance = await this.#minigameRegistry.get(id)
-      await instance.init(tag)
+      await instance.init(config)
       const result = await instance.start()
 
       this.#bus.emit('engine:minigame:end', { id, result })

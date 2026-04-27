@@ -7,6 +7,7 @@
     "build": "bun manager/cli.ts build",
     "new": "bun manager/cli.ts new",
     "list": "bun manager/cli.ts list",
+    "doctor": "bun manager/cli.ts doctor",
     "test": "bun test",
     "typecheck": "tsc",
     "check": "bun run test && bun run typecheck"

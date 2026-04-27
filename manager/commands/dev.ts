@@ -103,6 +103,20 @@ function detectGameId(): string | null {
   } catch { return null }
 }
 
+function walkMdRelative(dir: string, baseDir = dir): string[] {
+  const results: string[] = []
+  if (!existsSync(dir)) return results
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const fullPath = join(dir, entry.name)
+    if (entry.isDirectory()) {
+      results.push(...walkMdRelative(fullPath, baseDir))
+    } else if (entry.name.endsWith('.md')) {
+      results.push(fullPath.slice(baseDir.length + 1).replace(/\\/g, '/').replace(/\.md$/, '.json'))
+    }
+  }
+  return results
+}
+
 function injectImportMap(html: string): string {
   const tag = `<script type="importmap">${IMPORT_MAP}</script>`
   if (html.includes('<head>')) {
@@ -223,9 +237,7 @@ export async function dev(gameId?: string): Promise<void> {
       if (pathname.match(/^\/data\/.*\/index\.json$/)) {
         const dirPath = join(gameDir, pathname.replace('/index.json', ''))
         try {
-          const files = readdirSync(dirPath)
-            .filter(f => f.endsWith('.md'))
-            .map(f => f.replace('.md', '.json'))
+          const files = walkMdRelative(dirPath)
           return new Response(JSON.stringify(files), {
             headers: { 'Content-Type': 'application/json' },
           })

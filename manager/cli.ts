@@ -5,6 +5,7 @@ import { dev }      from './commands/dev.ts'
 import { build }    from './commands/build.ts'
 import { newGame }  from './commands/new.ts'
 import { list }     from './commands/list.ts'
+import { doctor }   from './commands/doctor.ts'
 
 const [,, command, ...args] = process.argv
 
@@ -13,6 +14,7 @@ const commands: Record<string, (...a: string[]) => Promise<void>> = {
   build,
   new: newGame,
   list,
+  doctor,
 }
 
 if (!command || !commands[command]) {
@@ -26,6 +28,7 @@ Commands:
   build [gameId]          Build game for production
   new   <gameId> [title]  Scaffold a new game
   list                    List all games
+  doctor [gameId]         Validate game content pipeline
 `)
   process.exit(command ? 1 : 0)
 }

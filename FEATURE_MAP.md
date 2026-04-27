@@ -116,6 +116,8 @@ Estado: iniciada.
 
 Objetivo: hacer que los datos del juego sean consistentes, validables y previsibles.
 
+Estado: iniciada.
+
 ### Features
 
 - Carga runtime de `characters`, `scenes`, `audio` y `minigames`.
@@ -144,6 +146,16 @@ Objetivo: hacer que los datos del juego sean consistentes, validables y previsib
 - `doctor` detecta data invalida y assets faltantes.
 - `build` produce un paquete con indices de data completos.
 - El demo pasa `doctor`.
+
+### Resultado del primer corte
+
+- `GameEngine` carga `characters`, `scenes`, `audio` y `minigames`.
+- Tags de audio enriquecen sus eventos con metadata de `data/audio` cuando existe.
+- Minijuegos reciben config por defecto desde `data/minigames` mezclada con overrides del tag.
+- `dev` sirve `index.json` recursivos para carpetas de data anidadas.
+- `build` genera `index.json` para `data/` y subdirectorios.
+- Agregado comando `doctor` y script `bun run doctor`.
+- `doctor mi-novela` termina con 0 errores y warnings accionables de assets faltantes.
 
 ## Fase 3: Audio robusto
 

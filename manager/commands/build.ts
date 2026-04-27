@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync, mkdirSync, writeFileSync, cpSync, existsSync } from 'fs'
-import { join, relative } from 'path'
+import { dirname, join, relative } from 'path'
 import yaml from 'js-yaml'
 import { Compiler } from 'inkjs/compiler/Compiler.js'
 import { CompilerOptions } from 'inkjs/compiler/CompilerOptions.js'
@@ -43,6 +43,29 @@ function walkFiles(dir: string, exts: string[]): string[] {
     }
   }
   return results
+}
+
+function writeDataIndexes(dataSrcDir: string, dataOutDir: string): void {
+  const mdFiles = walkFiles(dataSrcDir, ['.md'])
+  const dirs = new Set<string>([dataSrcDir])
+  for (const mdFile of mdFiles) {
+    let current = dirname(mdFile)
+    while (current.startsWith(dataSrcDir)) {
+      dirs.add(current)
+      if (current === dataSrcDir) break
+      current = dirname(current)
+    }
+  }
+
+  for (const dir of dirs) {
+    const relDir = relative(dataSrcDir, dir)
+    const files = mdFiles
+      .filter(file => file.startsWith(dir))
+      .map(file => relative(dir, file).replace(/\\/g, '/').replace(/\.md$/, '.json'))
+    const outDir = join(dataOutDir, relDir)
+    mkdirSync(outDir, { recursive: true })
+    writeFileSync(join(outDir, 'index.json'), JSON.stringify(files, null, 2))
+  }
 }
 
 export async function build(gameId?: string): Promise<void> {
@@ -94,6 +117,7 @@ export async function build(gameId?: string): Promise<void> {
       console.warn(`    ✗ ${rel}: ${err.message}`)
     }
   }
+  writeDataIndexes(join(gameDir, 'data'), join(distDir, 'data'))
 
   // 3. Copy framework (skip .ts/.tsx → bundled separately)
   console.log('  Copying framework...')
