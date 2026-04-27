@@ -48,6 +48,9 @@ interface DataMaps {
   scenes: Map<string, Record<string, unknown>>
   audio: Map<string, Record<string, unknown>>
   minigames: Map<string, Record<string, unknown>>
+  gallery: Map<string, Record<string, unknown>>
+  music: Map<string, Record<string, unknown>>
+  replay: Map<string, Record<string, unknown>>
 }
 
 interface DiagnosticSuppression {
@@ -215,6 +218,9 @@ function loadDataMaps(gameDir: string, config: GameConfig, issues: Issue[]): Dat
     scenes: new Map(),
     audio: new Map(),
     minigames: new Map(),
+    gallery: new Map(),
+    music: new Map(),
+    replay: new Map(),
   }
 
   const dataConfig = config.data ?? {}
@@ -223,6 +229,9 @@ function loadDataMaps(gameDir: string, config: GameConfig, issues: Issue[]): Dat
     scenes: dataConfig.scenes,
     audio: dataConfig.audio,
     minigames: dataConfig.minigames,
+    gallery: dataConfig.gallery,
+    music: dataConfig.music,
+    replay: dataConfig.replay,
   } as const
 
   for (const [kind, configuredDir] of Object.entries(dirs)) {
@@ -241,7 +250,7 @@ function loadDataMaps(gameDir: string, config: GameConfig, issues: Issue[]): Dat
       const data = parseFrontmatter(filePath, issues)
       if (!data) continue
       addDataFile(maps[kind as keyof DataMaps], filePath, data, issues)
-      validateDataFile(kind as keyof DataMaps, gameDir, filePath, data, issues)
+      validateDataFile(kind as keyof DataMaps, gameDir, filePath, data, issues, maps)
     }
   }
 
@@ -254,6 +263,7 @@ function validateDataFile(
   filePath: string,
   data: Record<string, unknown>,
   issues: Issue[],
+  maps: DataMaps,
 ): void {
   if (kind === 'characters') {
     const animation = asRecord(data['animation'])
@@ -347,6 +357,44 @@ function validateDataFile(
       })
     }
   }
+
+  if (kind === 'gallery') {
+    if (typeof data['image'] !== 'string' && typeof data['file'] !== 'string') {
+      issues.push({
+        severity: 'error',
+        path: filePath,
+        message: 'Gallery item missing required image or file field.',
+        suggestion: 'Set image: path/to/cg.png or file: path/to/cg.png.',
+      })
+    }
+    checkAsset(gameDir, filePath, data['image'] ?? data['file'], issues, 'Gallery image')
+    checkAsset(gameDir, filePath, data['thumbnail'], issues, 'Gallery thumbnail')
+  }
+
+  if (kind === 'music') {
+    if (typeof data['file'] !== 'string') {
+      issues.push({
+        severity: 'error',
+        path: filePath,
+        message: 'Music room track missing required file field.',
+        suggestion: 'Set file: audio/bgm/example.ogg.',
+      })
+    }
+    checkAsset(gameDir, filePath, data['file'], issues, 'Music room track')
+  }
+
+  if (kind === 'replay') {
+    checkAsset(gameDir, filePath, data['thumbnail'], issues, 'Replay thumbnail')
+    if (typeof data['sceneId'] === 'string' && !maps.scenes.has(data['sceneId'])) {
+      issues.push({
+        severity: 'warning',
+        path: filePath,
+        code: 'replay_scene_unknown',
+        message: `Replay scene references unknown scene id "${data['sceneId']}".`,
+        suggestion: 'Create a matching scene data file or update sceneId.',
+      })
+    }
+  }
 }
 
 function validateStoryReferences(gameDir: string, maps: DataMaps, issues: Issue[]): void {
@@ -391,6 +439,27 @@ function validateTagReference(
     ambience: maps.audio,
     voice: maps.audio,
     minigame: maps.minigames,
+    unlock_gallery: maps.gallery,
+    unlock_music: maps.music.size > 0 ? maps.music : maps.audio,
+    unlock_replay: maps.replay,
+  }
+  if (tag.type === 'unlock') {
+    const kind = typeof tag['kind'] === 'string' ? tag['kind'] : typeof tag['category'] === 'string' ? tag['category'] : 'gallery'
+    const unlockRefs: Record<string, Map<string, Record<string, unknown>>> = {
+      gallery: maps.gallery,
+      music: maps.music.size > 0 ? maps.music : maps.audio,
+      replay: maps.replay,
+    }
+    const unlockMap = unlockRefs[kind]
+    if (tag.id && unlockMap && !unlockMap.has(tag.id)) {
+      issues.push({
+        severity: 'error',
+        path: `${filePath}:${line}`,
+        message: `Unknown ${kind} unlock id "${tag.id}".`,
+        suggestion: `Create a matching data file or update the Ink unlock tag.`,
+      })
+    }
+    return
   }
   const map = refs[tag.type]
   if (map && !map.has(tag.id)) {

@@ -5,6 +5,8 @@ export type PlayerInputAction =
   | 'skip'
   | 'saveLoad'
   | 'settings'
+  | 'gallery'
+  | 'musicRoom'
 
 export type PlayerInputMap = Record<PlayerInputAction, string[]>
 
@@ -15,11 +17,15 @@ export const DEFAULT_PLAYER_INPUT_MAP: PlayerInputMap = {
   skip: ['s', 'S'],
   saveLoad: ['Escape'],
   settings: ['m', 'M'],
+  gallery: ['g', 'G'],
+  musicRoom: ['r', 'R'],
 }
 
 const INPUT_PRIORITY: PlayerInputAction[] = [
   'saveLoad',
   'settings',
+  'gallery',
+  'musicRoom',
   'backlog',
   'auto',
   'skip',
@@ -34,6 +40,8 @@ export function mergePlayerInputMap(overrides?: Partial<PlayerInputMap>): Player
     skip: overrides?.skip ?? DEFAULT_PLAYER_INPUT_MAP.skip,
     saveLoad: overrides?.saveLoad ?? DEFAULT_PLAYER_INPUT_MAP.saveLoad,
     settings: overrides?.settings ?? DEFAULT_PLAYER_INPUT_MAP.settings,
+    gallery: overrides?.gallery ?? DEFAULT_PLAYER_INPUT_MAP.gallery,
+    musicRoom: overrides?.musicRoom ?? DEFAULT_PLAYER_INPUT_MAP.musicRoom,
   }
 }
 

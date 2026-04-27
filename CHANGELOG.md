@@ -41,6 +41,11 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - `PlayerPreferences` service and default `VnSettings` panel for reading preferences.
 - Configurable `VnStage` input map for player actions.
 - Save/load slot delete controls and playtime metadata display.
+- Player extras unlock storage with `gallery`, `music` and `replay` categories.
+- `GameEngine` unlock API helpers and Ink unlock tags for player extras.
+- Default `VnGallery` and `VnMusicRoom` overlays with `VnStage` override slots.
+- Configurable `data.gallery`, `data.music` and `data.replay` folders with doctor validation.
+- Player extras documentation for gallery, music room and replay metadata.
 
 ### Changed
 
@@ -60,3 +65,5 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Save snapshots now include dialog backlog state.
 - `VnStage` now reads player mode state from unified player preferences.
 - Save controls and player reading controls share the same bottom bar styling.
+- `VnStage` exposes gallery and music-room access when player extras are configured.
+- `VnStage` now groups settings, gallery and music room under a top-right gear menu beside audio controls.

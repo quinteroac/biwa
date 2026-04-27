@@ -8,10 +8,12 @@ import { BgmController } from './BgmController.ts'
 import { SfxController } from './SfxController.ts'
 import { AmbienceController } from './AmbienceController.ts'
 import { VoiceController } from './VoiceController.ts'
+import { PlayerUnlocks } from '../player/PlayerUnlocks.ts'
 import type { BacklogEntry, GameSaveState, SavedAudioState, SavedCharacterState, SavedVisualState } from '../types/save.d.ts'
 import type { GameConfig } from '../types/game-config.d.ts'
 import type { TagCommand } from './ScriptRunner.ts'
 import type { EngineEventMap } from '../types/events.d.ts'
+import type { GalleryItem, MusicRoomTrack, PlayerUnlockState, ReplayScene, UnlockKind } from '../types/extras.d.ts'
 
 const STATE = Object.freeze({
   IDLE:       'IDLE',
@@ -31,6 +33,9 @@ interface GameData {
   scenes: Record<string, Record<string, unknown>>
   audio: Record<string, Record<string, unknown>>
   minigames: Record<string, Record<string, unknown>>
+  gallery: Record<string, Record<string, unknown>>
+  music: Record<string, Record<string, unknown>>
+  replay: Record<string, Record<string, unknown>>
 }
 
 export class GameEngine {
@@ -42,6 +47,7 @@ export class GameEngine {
   #vars = new VariableStore()
   #runner: ScriptRunner
   #saveManager!: SaveManager
+  #unlockStore!: PlayerUnlocks
   #assetLoader!: AssetLoader
   #minigameRegistry = new MinigameRegistry()
   #bgm: BgmController
@@ -61,7 +67,7 @@ export class GameEngine {
   #pendingChoices: ReturnType<ScriptRunner['choices']['slice']> | null = null
   #advanceInProgress = false
   #booted = false
-  #data: GameData = { characters: {}, scenes: {}, audio: {}, minigames: {} }
+  #data: GameData = { characters: {}, scenes: {}, audio: {}, minigames: {}, gallery: {}, music: {}, replay: {} }
 
   constructor(config: GameConfig) {
     this.#config = config
@@ -140,6 +146,41 @@ export class GameEngine {
     return this.#backlog.map(entry => ({ ...entry }))
   }
 
+  getUnlocks(): PlayerUnlockState {
+    return this.#unlockStore.load()
+  }
+
+  unlock(kind: UnlockKind, id: string): PlayerUnlockState {
+    const next = this.#unlockStore.unlock(kind, id)
+    this.#bus.emit('engine:unlocks', { unlocks: next, kind, id })
+    return next
+  }
+
+  unlockGallery(id: string): PlayerUnlockState {
+    return this.unlock('gallery', id)
+  }
+
+  unlockMusic(id: string): PlayerUnlockState {
+    return this.unlock('music', id)
+  }
+
+  unlockReplay(id: string): PlayerUnlockState {
+    return this.unlock('replay', id)
+  }
+
+  getGalleryItems(): GalleryItem[] {
+    return Object.entries(this.#data.gallery).map(([id, data]) => normalizeGalleryItem(id, data))
+  }
+
+  getMusicTracks(): MusicRoomTrack[] {
+    const source = Object.keys(this.#data.music).length > 0 ? this.#data.music : this.#data.audio
+    return Object.entries(source).map(([id, data]) => normalizeMusicTrack(id, data))
+  }
+
+  getReplayScenes(): ReplayScene[] {
+    return Object.entries(this.#data.replay).map(([id, data]) => normalizeReplayScene(id, data))
+  }
+
   clearBacklog(): void {
     this.#backlog = []
     this.#bus.emit('engine:backlog', { entries: this.getBacklog() })
@@ -188,6 +229,7 @@ export class GameEngine {
       slots:       this.#config.saves?.slots ?? 5,
       autoSave:    this.#config.saves?.autoSave ?? true,
     })
+    this.#unlockStore = new PlayerUnlocks(this.#config.id)
     this.#assetLoader = new AssetLoader()
     this.#loadSeenDialogKeys()
 
@@ -210,6 +252,9 @@ export class GameEngine {
       scenes: scenesDir,
       audio: audioDir,
       minigames: minigamesDir,
+      gallery: galleryDir,
+      music: musicDir,
+      replay: replayDir,
     } = this.#config.data ?? {}
 
     await Promise.allSettled([
@@ -217,6 +262,9 @@ export class GameEngine {
       this.#loadDataDir(scenesDir, 'scenes'),
       this.#loadDataDir(audioDir, 'audio'),
       this.#loadDataDir(minigamesDir, 'minigames'),
+      this.#loadDataDir(galleryDir, 'gallery'),
+      this.#loadDataDir(musicDir, 'music'),
+      this.#loadDataDir(replayDir, 'replay'),
     ])
   }
 
@@ -349,10 +397,23 @@ export class GameEngine {
         case 'save':
           this.#autoSave()
           break
+        case 'unlock':
+        case 'unlock_gallery':
+        case 'unlock_music':
+        case 'unlock_replay':
+          this.#processUnlockTag(tag)
+          break
         case 'speaker':
           break
       }
     }
+  }
+
+  #processUnlockTag(tag: TagCommand): void {
+    const kind = normalizeUnlockKind(tag.type === 'unlock' ? tag['kind'] ?? tag['category'] : tag.type.replace(/^unlock_/, ''))
+    const id = typeof tag.id === 'string' ? tag.id : undefined
+    if (!kind || !id) return
+    this.unlock(kind, id)
   }
 
   #runTransition(config: Record<string, unknown>): Promise<void> {
@@ -548,4 +609,65 @@ export class GameEngine {
   choose(index: number): void {
     this.#choose(index)
   }
+}
+
+function readString(data: Record<string, unknown>, key: string): string | undefined {
+  const value = data[key]
+  return typeof value === 'string' && value.length > 0 ? value : undefined
+}
+
+function normalizeGalleryItem(id: string, data: Record<string, unknown>): GalleryItem {
+  const itemId = readString(data, 'id') ?? id
+  const item: GalleryItem = {
+    id: itemId,
+    image: readString(data, 'image') ?? readString(data, 'file') ?? '',
+  }
+  const title = readString(data, 'title')
+  const thumbnail = readString(data, 'thumbnail')
+  const description = readString(data, 'description')
+  if (title) item.title = title
+  if (thumbnail) item.thumbnail = thumbnail
+  if (description) item.description = description
+  return item
+}
+
+function normalizeMusicTrack(id: string, data: Record<string, unknown>): MusicRoomTrack {
+  const itemId = readString(data, 'id') ?? id
+  const loop = typeof data['loop'] === 'boolean' ? data['loop'] : undefined
+  const volume = typeof data['volume'] === 'number' ? data['volume'] : undefined
+  const item: MusicRoomTrack = {
+    id: itemId,
+  }
+  const title = readString(data, 'title')
+  const file = readString(data, 'file')
+  const description = readString(data, 'description')
+  if (title) item.title = title
+  if (file) item.file = file
+  if (description) item.description = description
+  if (loop !== undefined) item.loop = loop
+  if (volume !== undefined) item.volume = volume
+  return item
+}
+
+function normalizeReplayScene(id: string, data: Record<string, unknown>): ReplayScene {
+  const itemId = readString(data, 'id') ?? id
+  const item: ReplayScene = {
+    id: itemId,
+  }
+  const title = readString(data, 'title')
+  const sceneId = readString(data, 'sceneId')
+  const storyPath = readString(data, 'storyPath')
+  const thumbnail = readString(data, 'thumbnail')
+  const description = readString(data, 'description')
+  if (title) item.title = title
+  if (sceneId) item.sceneId = sceneId
+  if (storyPath) item.storyPath = storyPath
+  if (thumbnail) item.thumbnail = thumbnail
+  if (description) item.description = description
+  return item
+}
+
+function normalizeUnlockKind(value: unknown): UnlockKind | null {
+  if (value === 'gallery' || value === 'music' || value === 'replay') return value
+  return null
 }

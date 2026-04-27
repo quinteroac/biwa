@@ -47,19 +47,19 @@ const OVERLAY_STYLE: React.CSSProperties = {
 }
 
 const PANEL_STYLE: React.CSSProperties = {
-  width: '100%',
-  maxWidth: 540,
-  background: '#201f1f',
+  width: 'min(820px, calc(100vw - 32px))',
+  background: 'rgba(28,27,27,0.98)',
   border: '1px solid rgba(255,255,255,0.12)',
   borderRadius: 0,
-  padding: '28px 32px',
+  padding: '26px 32px 28px',
   fontFamily: 'var(--vn-font, "Manrope", sans-serif)',
   color: '#e5e2e1',
   display: 'flex',
   flexDirection: 'column',
-  gap: 20,
-  maxHeight: '80vh',
+  gap: 18,
+  maxHeight: '86vh',
   overflowY: 'auto',
+  boxShadow: '0 28px 90px rgba(0,0,0,0.5)',
 }
 
 const HEADER_STYLE: React.CSSProperties = {
@@ -99,15 +99,17 @@ const SLOT_LIST_STYLE: React.CSSProperties = {
   display: 'flex',
   flexDirection: 'column',
   gap: 0,
+  borderTop: '0.5px solid rgba(255,255,255,0.08)',
 }
 
 const THUMB_STYLE: React.CSSProperties = {
-  width: 64,
-  height: 36,
+  width: 96,
+  height: 54,
   objectFit: 'cover',
-  border: '1px solid rgba(255,255,255,0.12)',
+  border: '1px solid rgba(255,255,255,0.16)',
   background: 'rgba(255,255,255,0.04)',
   flexShrink: 0,
+  boxShadow: '0 8px 18px rgba(0,0,0,0.25)',
 }
 
 const THUMB_PLACEHOLDER_STYLE: React.CSSProperties = {
@@ -122,39 +124,39 @@ const THUMB_PLACEHOLDER_STYLE: React.CSSProperties = {
 }
 
 const SAVE_BTN_STYLE: React.CSSProperties = {
-  marginLeft: 'auto',
   flexShrink: 0,
-  padding: '0 12px',
-  height: 28,
-  background: 'transparent',
-  border: '1px solid rgba(255,255,255,0.2)',
+  minWidth: 76,
+  padding: '0 10px',
+  height: 30,
+  background: 'rgba(255,255,255,0.045)',
+  border: '1px solid rgba(255,255,255,0.22)',
   borderRadius: 0,
-  color: 'rgba(229,226,225,0.6)',
+  color: 'rgba(229,226,225,0.76)',
   fontFamily: 'inherit',
   fontSize: 11,
   fontWeight: 500,
-  letterSpacing: '0.15em',
+  letterSpacing: '0.12em',
   textTransform: 'uppercase',
   cursor: 'pointer',
-  transition: 'color 0.1s linear, border-color 0.1s linear',
+  transition: 'background 0.1s linear, color 0.1s linear, border-color 0.1s linear',
 }
 
 const LOAD_BTN_STYLE: React.CSSProperties = {
-  marginLeft: 8,
   flexShrink: 0,
-  padding: '0 12px',
-  height: 28,
-  background: 'transparent',
-  border: '1px solid rgba(255,255,255,0.12)',
+  minWidth: 76,
+  padding: '0 10px',
+  height: 30,
+  background: 'rgba(255,255,255,0.025)',
+  border: '1px solid rgba(255,255,255,0.14)',
   borderRadius: 0,
-  color: 'rgba(229,226,225,0.45)',
+  color: 'rgba(229,226,225,0.52)',
   fontFamily: 'inherit',
   fontSize: 11,
   fontWeight: 500,
-  letterSpacing: '0.15em',
+  letterSpacing: '0.12em',
   textTransform: 'uppercase',
   cursor: 'pointer',
-  transition: 'color 0.1s linear, border-color 0.1s linear',
+  transition: 'background 0.1s linear, color 0.1s linear, border-color 0.1s linear',
 }
 
 const DELETE_BTN_STYLE: React.CSSProperties = {
@@ -186,6 +188,76 @@ const CONFIRM_BANNER_STYLE: React.CSSProperties = {
   gap: 12,
 }
 
+const SLOT_ROW_STYLE: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: '82px minmax(0, 1fr) 86px',
+  alignItems: 'center',
+  gap: 14,
+  minHeight: 96,
+  padding: '14px 0',
+  borderBottom: '0.5px solid rgba(255,255,255,0.08)',
+}
+
+const SLOT_LABEL_STYLE: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 500,
+  textTransform: 'uppercase',
+  letterSpacing: '0.18em',
+  lineHeight: 1.45,
+}
+
+const SLOT_CONTENT_STYLE: React.CSSProperties = {
+  minWidth: 0,
+  display: 'grid',
+  gridTemplateColumns: '96px minmax(0, 1fr)',
+  alignItems: 'center',
+  gap: 14,
+}
+
+const SLOT_META_STYLE: React.CSSProperties = {
+  minWidth: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 5,
+}
+
+const SLOT_TITLE_STYLE: React.CSSProperties = {
+  margin: 0,
+  fontSize: 17,
+  lineHeight: 1.15,
+  fontWeight: 300,
+  color: '#f2eeee',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+}
+
+const SLOT_SUBTITLE_STYLE: React.CSSProperties = {
+  fontSize: 12,
+  fontWeight: 400,
+  color: 'rgba(229,226,225,0.46)',
+  letterSpacing: '0.04em',
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+}
+
+const SLOT_TIME_STYLE: React.CSSProperties = {
+  fontSize: 11,
+  fontWeight: 400,
+  color: 'rgba(229,226,225,0.36)',
+  letterSpacing: '0.04em',
+}
+
+const SLOT_ACTIONS_STYLE: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'flex-end',
+  gap: 8,
+  flexWrap: 'wrap',
+  maxWidth: 86,
+}
+
 function SlotRow({
   slotKey,
   info,
@@ -209,106 +281,88 @@ function SlotRow({
   }, [info?.meta.thumbnail])
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 16,
-        padding: '12px 0',
-        borderBottom: '0.5px solid rgba(255,255,255,0.08)',
-      }}
-    >
+    <div style={SLOT_ROW_STYLE}>
       <div
         style={{
-          width: 72,
-          flexShrink: 0,
-          fontSize: 11,
-          fontWeight: 500,
+          ...SLOT_LABEL_STYLE,
           color: isOccupied ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.2)',
-          textTransform: 'uppercase',
-          letterSpacing: '0.15em',
         }}
       >
         {label}
       </div>
 
-      {isOccupied ? (
-        <>
-        {thumbnailSrc ? (
-          <img
-            src={thumbnailSrc}
-            alt=""
-            aria-hidden="true"
-            loading="lazy"
-            onError={() => setThumbnailFailed(true)}
-            style={THUMB_STYLE}
-          />
-        ) : (
-          <div style={THUMB_PLACEHOLDER_STYLE} aria-hidden="true">
-            No Img
+      <div style={SLOT_CONTENT_STYLE}>
+        {isOccupied ? (
+          <>
+          {thumbnailSrc ? (
+            <img
+              src={thumbnailSrc}
+              alt=""
+              aria-hidden="true"
+              loading="lazy"
+              onError={() => setThumbnailFailed(true)}
+              style={THUMB_STYLE}
+            />
+          ) : (
+            <div style={THUMB_PLACEHOLDER_STYLE} aria-hidden="true">
+              No Img
+            </div>
+          )}
+          <div style={SLOT_META_STYLE}>
+            <h3 style={SLOT_TITLE_STYLE}>{info.meta.displayName}</h3>
+            <span style={SLOT_SUBTITLE_STYLE}>{info.meta.sceneName}</span>
+            <span style={SLOT_TIME_STYLE}>
+              {formatTimestamp(info.meta.timestamp)} · {formatPlaytime(info.meta.playtime)}
+            </span>
           </div>
-        )}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
+          </>
+        ) : (
+          <>
+          <div style={THUMB_PLACEHOLDER_STYLE} aria-hidden="true">
+            Empty
+          </div>
           <span
             style={{
-              fontSize: 14,
-              fontWeight: 300,
-              color: '#e5e2e1',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
+              ...SLOT_SUBTITLE_STYLE,
+              color: 'rgba(229,226,225,0.28)',
             }}
           >
-            {info.meta.displayName}
+            Empty slot
           </span>
-          <span style={{ fontSize: 11, fontWeight: 400, color: 'rgba(229,226,225,0.4)', letterSpacing: '0.05em' }}>
-            {info.meta.sceneName}
-          </span>
-          <span style={{ fontSize: 11, fontWeight: 400, color: 'rgba(229,226,225,0.3)', letterSpacing: '0.05em' }}>
-            {formatTimestamp(info.meta.timestamp)} · {formatPlaytime(info.meta.playtime)}
-          </span>
-        </div>
-        </>
-      ) : (
-        <span
-          style={{
-            fontSize: 11,
-            fontWeight: 300,
-            color: 'rgba(229,226,225,0.25)',
-            letterSpacing: '0.05em',
-          }}
-        >
-          Empty slot
-        </span>
-      )}
-      <button
-        onClick={onSave}
-        style={SAVE_BTN_STYLE}
-        aria-label={`Save to ${label}`}
-        type="button"
-      >
-        Save
-      </button>
-      {isOccupied && onLoad !== undefined && (
+          </>
+        )}
+      </div>
+
+      <div style={SLOT_ACTIONS_STYLE}>
         <button
-          onClick={onLoad}
-          style={LOAD_BTN_STYLE}
-          aria-label={`Load from ${label}`}
+          onClick={onSave}
+          style={SAVE_BTN_STYLE}
+          aria-label={`Save to ${label}`}
           type="button"
         >
-          Load
+          Save
         </button>
-      )}
-      {isOccupied && onDelete !== undefined && (
-        <button
-          onClick={onDelete}
-          style={DELETE_BTN_STYLE}
-          aria-label={`Delete ${label}`}
-          type="button"
-        >
-          Delete
-        </button>
-      )}
+        {isOccupied && onLoad !== undefined && (
+          <button
+            onClick={onLoad}
+            style={LOAD_BTN_STYLE}
+            aria-label={`Load from ${label}`}
+            type="button"
+          >
+            Load
+          </button>
+        )}
+        {isOccupied && onDelete !== undefined && (
+          <button
+            onClick={onDelete}
+            style={DELETE_BTN_STYLE}
+            aria-label={`Delete ${label}`}
+            type="button"
+          >
+            Delete
+          </button>
+        )}
+      </div>
     </div>
   )
 }

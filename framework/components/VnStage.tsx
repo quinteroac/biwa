@@ -8,6 +8,8 @@ import { VnSaveMenu } from './VnSaveMenu.tsx'
 import { VnVolumeControl } from './VnVolumeControl.tsx'
 import { VnBacklog } from './VnBacklog.tsx'
 import { VnSettings } from './VnSettings.tsx'
+import { VnGallery } from './VnGallery.tsx'
+import { VnMusicRoom } from './VnMusicRoom.tsx'
 import { SaveControlsBar } from './SaveControlsBar.tsx'
 import { getStageAdvanceAction } from './VnStageAdvance.ts'
 import { getAutoDelayMs, getAutoModeAction, getSkipModeAction } from './VnPlayerModes.ts'
@@ -21,6 +23,7 @@ import type { DialogOptions, VnDialogHandle } from './VnDialog.tsx'
 import type { StepChoice } from '../engine/ScriptRunner.ts'
 import type { PlayerInputMap } from './VnInputMap.ts'
 import type { PlayerPreferencesPatch, PlayerPreferencesState } from '../player/PlayerPreferences.ts'
+import type { GalleryItem, MusicRoomTrack, PlayerUnlockState, ReplayScene } from '../types/extras.d.ts'
 
 export interface CharacterState {
   id: string
@@ -54,6 +57,10 @@ interface PlayerFeatureEngine {
   id?: string
   getBacklog?: () => BacklogEntry[]
   clearBacklog?: () => void
+  getUnlocks?: () => PlayerUnlockState
+  getGalleryItems?: () => GalleryItem[]
+  getMusicTracks?: () => MusicRoomTrack[]
+  getReplayScenes?: () => ReplayScene[]
 }
 
 function getPlayerFeatureEngine(engine: GameEngine): PlayerFeatureEngine {
@@ -70,6 +77,22 @@ function getEngineBacklog(engine: GameEngine): BacklogEntry[] {
 
 function clearEngineBacklog(engine: GameEngine): void {
   getPlayerFeatureEngine(engine).clearBacklog?.()
+}
+
+function getEngineUnlocks(engine: GameEngine): PlayerUnlockState {
+  return getPlayerFeatureEngine(engine).getUnlocks?.() ?? { gallery: [], music: [], replay: [] }
+}
+
+function getEngineGalleryItems(engine: GameEngine): GalleryItem[] {
+  return getPlayerFeatureEngine(engine).getGalleryItems?.() ?? []
+}
+
+function getEngineMusicTracks(engine: GameEngine): MusicRoomTrack[] {
+  return getPlayerFeatureEngine(engine).getMusicTracks?.() ?? []
+}
+
+function getEngineReplayScenes(engine: GameEngine): ReplayScene[] {
+  return getPlayerFeatureEngine(engine).getReplayScenes?.() ?? []
 }
 
 /**
@@ -126,6 +149,8 @@ export interface VnStageComponents {
   VolumeControl?: typeof VnVolumeControl
   Backlog?: typeof VnBacklog
   Settings?: typeof VnSettings
+  Gallery?: typeof VnGallery
+  MusicRoom?: typeof VnMusicRoom
 }
 
 export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, showAutoSave = true, resumeFrom, inputMap, components = {} }: VnStageProps) {
@@ -139,14 +164,20 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
   const VolumeControlComponent = components.VolumeControl ?? VnVolumeControl
   const BacklogComponent = components.Backlog ?? VnBacklog
   const SettingsComponent = components.Settings ?? VnSettings
+  const GalleryComponent = components.Gallery ?? VnGallery
+  const MusicRoomComponent = components.MusicRoom ?? VnMusicRoom
   const engineStorageId = getEngineStorageId(engine)
   const preferencesStore = useMemo(() => new PlayerPreferences(engineStorageId), [engineStorageId])
   const resolvedInputMap = useMemo(() => mergePlayerInputMap(inputMap), [inputMap])
   const [menuOpen, setMenuOpen] = useState(false)
   const [audioOpen, setAudioOpen] = useState(false)
+  const [systemMenuOpen, setSystemMenuOpen] = useState(false)
   const [backlogOpen, setBacklogOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [galleryOpen, setGalleryOpen] = useState(false)
+  const [musicRoomOpen, setMusicRoomOpen] = useState(false)
   const [preferences, setPreferences] = useState<PlayerPreferencesState>(() => preferencesStore.load())
+  const [unlocks, setUnlocks] = useState<PlayerUnlockState>(() => getEngineUnlocks(engine))
   const [scene, setScene]           = useState<SceneState | null>(null)
   const [characters, setCharacters] = useState<Map<string, CharacterState>>(new Map())
   const [dialog, setDialog]         = useState<DialogOptions | null>(null)
@@ -215,6 +246,10 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
         setBacklog(entries)
       }),
 
+      bus.on<{ unlocks: PlayerUnlockState }>('engine:unlocks', ({ unlocks }) => {
+        setUnlocks(unlocks)
+      }),
+
       bus.on<{ choices: StepChoice[] }>('engine:choices', ({ choices }) => {
         setChoices(choices)
       }),
@@ -266,14 +301,47 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
       } else if (action === 'skip') {
         updatePreferences({ skipMode: !preferences.skipMode, autoMode: false })
       } else if (action === 'saveLoad') {
-        if (!menuOpen) setMenuOpen(true)
+        if (settingsOpen) {
+          setSettingsOpen(false)
+        } else if (galleryOpen) {
+          setGalleryOpen(false)
+        } else if (musicRoomOpen) {
+          setMusicRoomOpen(false)
+        } else if (backlogOpen) {
+          setBacklogOpen(false)
+        } else if (systemMenuOpen) {
+          setSystemMenuOpen(false)
+        } else if (audioOpen) {
+          setAudioOpen(false)
+        } else if (!menuOpen && transition === null) {
+          setMenuOpen(true)
+        }
       } else if (action === 'settings') {
         setSettingsOpen(open => !open)
+      } else if (action === 'gallery') {
+        setGalleryOpen(open => !open)
+      } else if (action === 'musicRoom') {
+        setMusicRoomOpen(open => !open)
       }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [engine, choices, menuOpen, preferences.autoMode, preferences.skipMode, resolvedInputMap, updatePreferences])
+  }, [
+    engine,
+    choices,
+    menuOpen,
+    audioOpen,
+    systemMenuOpen,
+    backlogOpen,
+    settingsOpen,
+    galleryOpen,
+    musicRoomOpen,
+    transition,
+    preferences.autoMode,
+    preferences.skipMode,
+    resolvedInputMap,
+    updatePreferences,
+  ])
 
   const handleStageClick = useCallback(() => {
     const action = getStageAdvanceAction(choices !== null, dialogRef.current?.isTyping ?? false)
@@ -293,7 +361,7 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
       const action = getAutoModeAction({
         hasDialog: Boolean(dialog),
         hasChoices: choices !== null,
-        hasBlockingOverlay: menuOpen || audioOpen || backlogOpen || settingsOpen || transition !== null,
+        hasBlockingOverlay: menuOpen || audioOpen || systemMenuOpen || backlogOpen || settingsOpen || galleryOpen || musicRoomOpen || transition !== null,
         isTyping: dialogRef.current?.isTyping ?? false,
       })
       if (action !== 'advance') return
@@ -306,7 +374,7 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
       clearInterval(interval)
       if (scheduled) clearTimeout(scheduled)
     }
-  }, [preferences.autoMode, preferences.autoBaseDelayMs, preferences.autoPerCharacterDelayMs, dialog, choices, menuOpen, audioOpen, backlogOpen, settingsOpen, transition, engine])
+  }, [preferences.autoMode, preferences.autoBaseDelayMs, preferences.autoPerCharacterDelayMs, dialog, choices, menuOpen, audioOpen, systemMenuOpen, backlogOpen, settingsOpen, galleryOpen, musicRoomOpen, transition, engine])
 
   useEffect(() => {
     if (!preferences.skipMode || !dialog) return
@@ -314,7 +382,7 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
       const action = getSkipModeAction({
         hasDialog: Boolean(dialog),
         hasChoices: choices !== null,
-        hasBlockingOverlay: menuOpen || audioOpen || backlogOpen || settingsOpen || transition !== null,
+        hasBlockingOverlay: menuOpen || audioOpen || systemMenuOpen || backlogOpen || settingsOpen || galleryOpen || musicRoomOpen || transition !== null,
         isTyping: dialogRef.current?.isTyping ?? false,
         dialogSeenBefore: dialog.seenBefore,
       }, preferences.skipReadOnly)
@@ -327,7 +395,7 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
       }
     }, 80)
     return () => clearInterval(interval)
-  }, [preferences.skipMode, preferences.skipReadOnly, dialog, choices, menuOpen, audioOpen, backlogOpen, settingsOpen, transition, engine, updatePreferences])
+  }, [preferences.skipMode, preferences.skipReadOnly, dialog, choices, menuOpen, audioOpen, systemMenuOpen, backlogOpen, settingsOpen, galleryOpen, musicRoomOpen, transition, engine, updatePreferences])
 
   const handleDialogComplete = useCallback((advanceMode: DialogOptions['advanceMode']) => {
     if (advanceMode === 'next') {
@@ -393,15 +461,6 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
       >
         Read
       </button>
-      <button
-        type="button"
-        aria-label="Open player settings"
-        aria-pressed={settingsOpen}
-        onClick={() => setSettingsOpen(true)}
-        style={getPlayerButtonStyle(settingsOpen)}
-      >
-        Settings
-      </button>
     </div>
   )
 
@@ -455,30 +514,65 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          <button
-            type="button"
-            aria-expanded={audioOpen}
-            aria-controls="vn-audio-controls"
-            onClick={() => setAudioOpen(open => !open)}
-            style={{
-              display: 'block',
-              marginLeft: 'auto',
-              height: 32,
-              padding: '0 14px',
-              background: 'rgba(0,0,0,0.6)',
-              border: '1px solid rgba(255,255,255,0.24)',
-              borderRadius: 0,
-              color: 'rgba(229,226,225,0.78)',
-              fontFamily: 'inherit',
-              fontSize: 11,
-              fontWeight: 500,
-              letterSpacing: '0.18em',
-              textTransform: 'uppercase',
-              cursor: 'pointer',
-            }}
-          >
-            Audio
-          </button>
+          <div style={topControlsStyle}>
+            <button
+              type="button"
+              aria-expanded={audioOpen}
+              aria-controls="vn-audio-controls"
+              onClick={() => setAudioOpen(open => !open)}
+              style={topButtonStyle}
+            >
+              Audio
+            </button>
+            <button
+              type="button"
+              aria-label="Open extras and settings menu"
+              aria-expanded={systemMenuOpen}
+              aria-controls="vn-system-menu"
+              onClick={() => setSystemMenuOpen(open => !open)}
+              style={gearButtonStyle}
+              title="Settings and extras"
+            >
+              ⚙
+            </button>
+          </div>
+          {systemMenuOpen && (
+            <div id="vn-system-menu" role="menu" aria-label="Settings and extras" style={systemMenuStyle}>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setSettingsOpen(true)
+                  setSystemMenuOpen(false)
+                }}
+                style={systemMenuItemStyle}
+              >
+                Settings
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setGalleryOpen(true)
+                  setSystemMenuOpen(false)
+                }}
+                style={systemMenuItemStyle}
+              >
+                Gallery
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setMusicRoomOpen(true)
+                  setSystemMenuOpen(false)
+                }}
+                style={systemMenuItemStyle}
+              >
+                Music
+              </button>
+            </div>
+          )}
           {audioOpen && (
             <div
               id="vn-audio-controls"
@@ -511,6 +605,22 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
           onChange={updatePreferences}
           onReset={resetPreferences}
           onClose={() => setSettingsOpen(false)}
+        />
+
+        <GalleryComponent
+          isOpen={galleryOpen}
+          items={getEngineGalleryItems(engine)}
+          unlockedIds={unlocks.gallery}
+          onClose={() => setGalleryOpen(false)}
+        />
+
+        <MusicRoomComponent
+          isOpen={musicRoomOpen}
+          tracks={getEngineMusicTracks(engine)}
+          unlockedTrackIds={unlocks.music}
+          replayScenes={getEngineReplayScenes(engine)}
+          unlockedReplayIds={unlocks.replay}
+          onClose={() => setMusicRoomOpen(false)}
         />
 
         {/* Bottom panel: dialog box stacked above the controls bar */}
@@ -582,6 +692,63 @@ const playerControlsStyle = {
   gap: 8,
   pointerEvents: 'auto' as const,
   fontFamily: 'var(--vn-font, "Manrope", sans-serif)',
+}
+
+const topControlsStyle = {
+  display: 'flex',
+  justifyContent: 'flex-end',
+  gap: 8,
+}
+
+const topButtonStyle = {
+  height: 32,
+  padding: '0 14px',
+  background: 'rgba(0,0,0,0.6)',
+  border: '1px solid rgba(255,255,255,0.24)',
+  borderRadius: 0,
+  color: 'rgba(229,226,225,0.78)',
+  fontFamily: 'inherit',
+  fontSize: 11,
+  fontWeight: 500,
+  letterSpacing: '0.18em',
+  textTransform: 'uppercase' as const,
+  cursor: 'pointer',
+}
+
+const gearButtonStyle = {
+  ...topButtonStyle,
+  width: 32,
+  padding: 0,
+  fontSize: 15,
+  lineHeight: 1,
+  letterSpacing: 0,
+}
+
+const systemMenuStyle = {
+  width: 168,
+  marginTop: 8,
+  marginLeft: 'auto',
+  padding: '6px 0',
+  background: 'rgba(0,0,0,0.78)',
+  border: '1px solid rgba(255,255,255,0.18)',
+  boxShadow: '0 18px 48px rgba(0,0,0,0.35)',
+}
+
+const systemMenuItemStyle = {
+  width: '100%',
+  height: 34,
+  padding: '0 14px',
+  display: 'block',
+  background: 'transparent',
+  border: 0,
+  color: 'rgba(229,226,225,0.76)',
+  fontFamily: 'inherit',
+  fontSize: 11,
+  fontWeight: 500,
+  letterSpacing: '0.14em',
+  textAlign: 'left' as const,
+  textTransform: 'uppercase' as const,
+  cursor: 'pointer',
 }
 
 function getPlayerButtonStyle(active: boolean) {

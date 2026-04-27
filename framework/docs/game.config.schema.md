@@ -82,6 +82,9 @@ Paths to the folders containing the game's `.md` data files. The `DataLoader` sc
 | `data.scenes` | `string` | ✅ | Path to the folder containing `scenes/*.md` files. |
 | `data.audio` | `string` | ✅ | Root path for audio data. The loader supports `bgm/`, `ambience/`, `sfx/` and `voice/` subfolders inside. |
 | `data.minigames` | `string` | — | Path to the folder containing `minigames/*.md` files. Omit if the novel has no minigames. |
+| `data.gallery` | `string` | — | Path to unlockable CG/gallery item data. |
+| `data.music` | `string` | — | Path to music-room track data. When omitted, the stage can use `data.audio` as a fallback. |
+| `data.replay` | `string` | — | Path to replay-list metadata. |
 
 ```ts
 data: {
@@ -89,6 +92,9 @@ data: {
   scenes:     './data/scenes/',
   audio:      './data/audio/',
   minigames:  './data/minigames/',
+  gallery:    './data/gallery/',
+  music:      './data/music/',
+  replay:     './data/replay/',
 },
 ```
 

@@ -92,6 +92,8 @@ Default keyboard actions:
 - skip: `S`.
 - save/load: `Escape`.
 - settings: `M`.
+- gallery: `G`.
+- music room / replay: `R`.
 
 Mouse/touch click on the stage still advances or reveals dialog. Buttons remain available for touch-first players.
 
@@ -106,3 +108,7 @@ Occupied slots support:
 - delete confirmation.
 
 Autosave remains visually distinguished as the `Auto Save` slot.
+
+## Player Extras
+
+`VnStage` also exposes default `Gallery` and `Music` entries from the top-right gear menu for unlocked extras. See `framework/docs/player-extras.md` for the data schema, Ink tags and component override contracts.

@@ -1,5 +1,6 @@
 import type { TagCommand } from '../TagParser.ts'
 import type { EngineState } from '../engine/GameEngine.ts'
+import type { PlayerUnlockState, UnlockKind } from './extras.d.ts'
 import type { BacklogEntry } from './save.d.ts'
 
 export interface EngineDialogEvent {
@@ -50,6 +51,12 @@ export interface EngineMinigameEndEvent {
   error?: string
 }
 
+export interface EngineUnlocksEvent {
+  unlocks: PlayerUnlockState
+  kind: UnlockKind
+  id: string
+}
+
 export interface EndScreenEvent {
   title?: string
   message?: string
@@ -69,6 +76,7 @@ export interface EngineEventMap {
   'engine:transition': EngineTransitionEvent
   'engine:minigame:start': EngineMinigameStartEvent
   'engine:minigame:end': EngineMinigameEndEvent
+  'engine:unlocks': EngineUnlocksEvent
   'engine:end': Record<string, never>
   end_screen: EndScreenEvent
 }

@@ -73,3 +73,13 @@ When omitted, the engine uses `endScreen` values from `game.config.ts`.
 ```
 
 Triggers an auto-save using the current engine snapshot.
+
+## Unlocks
+
+```ink
+# unlock: cg_001, kind: gallery
+# unlock_music: main_theme
+# unlock_replay: chapter_01
+```
+
+Unlock tags persist extras per game id. Supported kinds are `gallery`, `music` and `replay`.

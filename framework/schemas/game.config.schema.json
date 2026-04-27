@@ -37,7 +37,10 @@
         "characters": { "type": "string" },
         "scenes": { "type": "string" },
         "audio": { "type": "string" },
-        "minigames": { "type": "string" }
+        "minigames": { "type": "string" },
+        "gallery": { "type": "string" },
+        "music": { "type": "string" },
+        "replay": { "type": "string" }
       },
       "additionalProperties": { "type": "string" }
     },
