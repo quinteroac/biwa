@@ -18,30 +18,6 @@ El framework ya tiene una base tecnica estable para runtime, UI de jugador, dato
 
 ## Pendientes
 
-### P2 - Tooling CLI Y Doctor
-
-Objetivo: que desarrollar plugins sea un flujo soportado por la suite de manager.
-
-Alcance:
-
-- `manager plugins list <gameId>` para ver plugins declarados, cargables e incompatibles.
-- `manager plugins scaffold <pluginId>` para crear estructura base.
-- `manager plugins validate <path|gameId>` para validar manifiesto, entry y capabilities.
-- `doctor` valida:
-  - plugin declarado pero no encontrado.
-  - entry inexistente.
-  - capability desconocida.
-  - renderer usado por data pero no declarado.
-  - version incompatible del framework.
-- Build copia/transpila plugins al `dist` con rutas relativas.
-- Manifest de build incluye plugins y renderers registrados.
-
-Criterios de salida:
-
-- Un plugin scaffold pasa validacion desde cero.
-- `doctor` detecta errores comunes antes de runtime.
-- `build smoke-fixture` mantiene salida limpia sin plugins.
-
 ### P3 - Distribucion Y Seguridad
 
 Objetivo: poder distribuir juegos con plugins sin romper el modo standalone/static/portal/embedded.

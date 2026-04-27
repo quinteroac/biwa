@@ -348,6 +348,14 @@ function writeBuildManifest(
     },
     warnings: issues.filter(issue => issue.severity === 'warning').length,
     diagnostics: serializeDiagnostics(gameDir, issues),
+    plugins: (config.plugins ?? []).map(plugin => ({
+      id: plugin.id,
+      name: plugin.name,
+      version: plugin.version,
+      entry: plugin.entry ?? null,
+      capabilities: plugin.capabilities,
+      renderers: plugin.renderers ?? {},
+    })),
     sizes: {
       framework: frameworkSize,
       assets: assetsSize,

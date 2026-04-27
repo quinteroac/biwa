@@ -131,6 +131,7 @@ Declares trusted local framework extensions. Plugins are validated by `doctor`, 
 | `plugins[].type` | `"plugin"` | ✅ | Manifest discriminator. |
 | `plugins[].entry` | `string` | — | Local source entry path for diagnostics/build tooling. |
 | `plugins[].capabilities` | `string[]` | ✅ | Declared capabilities such as `renderer` or `engine-event`. |
+| `plugins[].renderers` | `object` | — | Renderer type declarations grouped by kind. Used by `doctor` and build manifests. |
 | `plugins[].compatibility.framework` | `string` | — | Framework compatibility hint. |
 
 ```ts

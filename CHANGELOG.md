@@ -50,6 +50,9 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - `game.config.ts` plugin declarations with schema and doctor validation.
 - Plugin contract documentation.
 - `RendererRegistry` with external renderer dispatch for backgrounds, characters and transitions.
+- `plugins` CLI subcommands for listing, validating and scaffolding plugin projects.
+- Doctor diagnostics for undeclared external renderer types in scene, character and transition data.
+- Build manifest plugin metadata including capabilities and renderer declarations.
 
 ### Changed
 

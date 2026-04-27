@@ -98,6 +98,19 @@ export function validatePluginManifest(manifest: VnPluginManifest): void {
       throw new PluginValidationError(`Plugin "${manifest.id}" declares unknown capability "${capability}".`)
     }
   }
+  if (manifest.renderers !== undefined && !manifest.capabilities.includes('renderer')) {
+    throw new PluginValidationError(`Plugin "${manifest.id}" declares renderers without the "renderer" capability.`)
+  }
+  if (manifest.renderers) {
+    for (const [kind, values] of Object.entries(manifest.renderers)) {
+      if (!['background', 'character', 'transition', 'overlay', 'extras'].includes(kind)) {
+        throw new PluginValidationError(`Plugin "${manifest.id}" declares unknown renderer kind "${kind}".`)
+      }
+      if (!Array.isArray(values) || values.some(value => typeof value !== 'string' || value.length === 0)) {
+        throw new PluginValidationError(`Plugin "${manifest.id}" renderer declarations must be non-empty string arrays.`)
+      }
+    }
+  }
 }
 
 export function createPluginContext(engine: GameEngine, bus: EventBus<EngineEventMap>, assetBase = './assets/'): VnPluginContext {

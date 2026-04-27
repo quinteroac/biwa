@@ -63,6 +63,17 @@
             "type": "array",
             "items": { "type": "string", "enum": ["renderer", "stage", "overlay", "engine-event", "asset-loader"] }
           },
+          "renderers": {
+            "type": "object",
+            "properties": {
+              "background": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+              "character": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+              "transition": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+              "overlay": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+              "extras": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+            },
+            "additionalProperties": false
+          },
           "compatibility": {
             "type": "object",
             "properties": {

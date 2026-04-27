@@ -61,6 +61,15 @@ interface DiagnosticSuppression {
   reason: string
 }
 
+type RendererKind = 'background' | 'character' | 'transition'
+type RendererDeclarations = Record<RendererKind, Set<string>>
+
+const BUILT_IN_RENDERERS: Record<RendererKind, Set<string>> = {
+  background: new Set(['static', 'parallax', 'video']),
+  character: new Set(['sprites', 'spritesheet']),
+  transition: new Set(['fade', 'fade-color', 'slide', 'wipe', 'cut']),
+}
+
 function detectGameId(): string | null {
   const gamesDir = join(ROOT, 'games')
   try {
@@ -213,6 +222,41 @@ function expectedIdFromPath(filePath: string): string {
   return filePath.split('/').pop()!.replace(/\.md$/, '')
 }
 
+function declaredRenderers(config: GameConfig): RendererDeclarations {
+  const declarations: RendererDeclarations = {
+    background: new Set(),
+    character: new Set(),
+    transition: new Set(),
+  }
+  for (const plugin of config.plugins ?? []) {
+    for (const kind of Object.keys(declarations) as RendererKind[]) {
+      for (const type of plugin.renderers?.[kind] ?? []) {
+        declarations[kind].add(type)
+      }
+    }
+  }
+  return declarations
+}
+
+function validateRendererReference(
+  declarations: RendererDeclarations,
+  filePath: string,
+  kind: RendererKind,
+  rawType: unknown,
+  issues: Issue[],
+): void {
+  if (typeof rawType !== 'string' || rawType.length === 0) return
+  if (BUILT_IN_RENDERERS[kind].has(rawType)) return
+  if (declarations[kind].has(rawType)) return
+  issues.push({
+    severity: 'error',
+    path: filePath,
+    code: 'renderer_unknown',
+    message: `Unknown ${kind} renderer type "${rawType}".`,
+    suggestion: `Use a built-in renderer or declare "${rawType}" under plugins[].renderers.${kind}.`,
+  })
+}
+
 function loadDataMaps(gameDir: string, config: GameConfig, issues: Issue[]): DataMaps {
   const maps: DataMaps = {
     characters: new Map(),
@@ -225,6 +269,7 @@ function loadDataMaps(gameDir: string, config: GameConfig, issues: Issue[]): Dat
   }
 
   const dataConfig = config.data ?? {}
+  const rendererDeclarations = declaredRenderers(config)
   const dirs = {
     characters: dataConfig.characters,
     scenes: dataConfig.scenes,
@@ -251,7 +296,7 @@ function loadDataMaps(gameDir: string, config: GameConfig, issues: Issue[]): Dat
       const data = parseFrontmatter(filePath, issues)
       if (!data) continue
       addDataFile(maps[kind as keyof DataMaps], filePath, data, issues)
-      validateDataFile(kind as keyof DataMaps, gameDir, filePath, data, issues, maps)
+      validateDataFile(kind as keyof DataMaps, gameDir, filePath, data, issues, maps, rendererDeclarations)
     }
   }
 
@@ -265,6 +310,7 @@ function validateDataFile(
   data: Record<string, unknown>,
   issues: Issue[],
   maps: DataMaps,
+  rendererDeclarations: RendererDeclarations,
 ): void {
   if (kind === 'characters') {
     const animation = asRecord(data['animation'])
@@ -272,6 +318,7 @@ function validateDataFile(
       issues.push({ severity: 'warning', path: filePath, code: 'character_no_renderer', message: 'Character has no animation or layers.' })
     }
     if (animation) {
+      validateRendererReference(rendererDeclarations, filePath, 'character', animation['type'], issues)
       checkAsset(gameDir, filePath, animation['file'], issues, 'Character animation file')
       checkAsset(gameDir, filePath, animation['atlas'], issues, 'Character atlas')
       if (animation['type'] === 'spritesheet') {
@@ -297,6 +344,7 @@ function validateDataFile(
       })
       return
     }
+    validateRendererReference(rendererDeclarations, filePath, 'background', background['type'], issues)
     checkAsset(gameDir, filePath, background['image'], issues, 'Scene background image')
     checkAsset(gameDir, filePath, background['file'] ?? background['src'], issues, 'Scene background file')
     checkAsset(gameDir, filePath, background['poster'], issues, 'Scene video poster')
@@ -398,7 +446,8 @@ function validateDataFile(
   }
 }
 
-function validateStoryReferences(gameDir: string, maps: DataMaps, issues: Issue[]): void {
+function validateStoryReferences(gameDir: string, config: GameConfig, maps: DataMaps, issues: Issue[]): void {
+  const rendererDeclarations = declaredRenderers(config)
   const storyFiles = walkFiles(join(gameDir, 'story'), '.ink')
   for (const filePath of storyFiles) {
     const lines = readFileSync(filePath, 'utf8').split(/\r?\n/)
@@ -406,7 +455,7 @@ function validateStoryReferences(gameDir: string, maps: DataMaps, issues: Issue[
       const trimmed = line.trim()
       if (trimmed.startsWith('#')) {
         const tag = TagParser.parseOne(trimmed)
-        if (tag) validateTagReference(filePath, idx + 1, tag, maps, issues)
+        if (tag) validateTagReference(filePath, idx + 1, tag, maps, issues, rendererDeclarations)
       }
       const minigameMatch = trimmed.match(/launch_minigame\("([^"]+)"\)/)
       if (minigameMatch) {
@@ -430,7 +479,12 @@ function validateTagReference(
   tag: TagCommand,
   maps: DataMaps,
   issues: Issue[],
+  rendererDeclarations: RendererDeclarations,
 ): void {
+  if (tag.type === 'transition') {
+    validateRendererReference(rendererDeclarations, `${filePath}:${line}`, 'transition', tag.id, issues)
+    return
+  }
   if (!tag.id || tag.exit) return
   const refs: Partial<Record<string, Map<string, Record<string, unknown>>>> = {
     scene: maps.scenes,
@@ -475,7 +529,7 @@ function validateTagReference(
 
 async function loadConfig(gameDir: string): Promise<GameConfig> {
   const configPath = join(gameDir, 'game.config.ts')
-  const mod = await import(pathToFileURL(configPath).href) as { default?: GameConfig }
+  const mod = await import(`${pathToFileURL(configPath).href}?t=${Date.now()}-${Math.random()}`) as { default?: GameConfig }
   if (!mod.default) throw new Error(`No default export found in ${configPath}`)
   return mod.default
 }
@@ -683,7 +737,7 @@ export async function validateGame(gameId: string): Promise<{ gameDir: string; c
   const config = await loadConfig(gameDir)
   validateConfig(gameDir, config, issues)
   const maps = loadDataMaps(gameDir, config, issues)
-  validateStoryReferences(gameDir, maps, issues)
+  validateStoryReferences(gameDir, config, maps, issues)
   assignIssueCodes(issues)
   applyDiagnosticSuppressions(gameDir, config, issues)
   return { gameDir, config, issues }

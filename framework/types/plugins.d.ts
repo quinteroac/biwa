@@ -9,6 +9,14 @@ export interface VnPluginCompatibility {
   framework?: string
 }
 
+export interface VnPluginRendererDeclarations {
+  background?: string[]
+  character?: string[]
+  transition?: string[]
+  overlay?: string[]
+  extras?: string[]
+}
+
 export interface VnPluginManifest {
   id: string
   name: string
@@ -16,6 +24,7 @@ export interface VnPluginManifest {
   type: 'plugin'
   entry?: string
   capabilities: VnPluginCapability[]
+  renderers?: VnPluginRendererDeclarations
   compatibility?: VnPluginCompatibility
 }
 

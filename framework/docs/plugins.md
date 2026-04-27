@@ -91,8 +91,20 @@ Plugins are trusted game code. They are not sandboxed.
 - duplicate plugin ids.
 - unknown capabilities.
 - missing local `entry` files.
+- renderer types used by game data or Ink transition tags but not declared by any plugin.
 
-Renderer-specific validation is planned in the renderer phase.
+## CLI Tooling
+
+Use the manager plugin commands while developing plugins:
+
+```bash
+bun manager/cli.ts plugins scaffold my-plugin
+bun manager/cli.ts plugins validate plugins/my-plugin
+bun manager/cli.ts plugins list my-game
+bun manager/cli.ts plugins validate my-game
+```
+
+`scaffold` writes `plugin.config.ts` and `index.ts`. `validate` accepts either a plugin folder/config file or a game id. `list` shows declared plugins, capabilities, renderer declarations and entry status for a game.
 
 ## Registering Renderers
 
@@ -127,7 +139,7 @@ Supported renderer kinds:
 - `overlay`
 - `extras`
 
-P1 dispatch support is active for `background`, `character` and `transition`. `overlay` and `extras` are reserved contracts for follow-up UI extension points.
+Dispatch support is active for `background`, `character` and `transition`. `overlay` and `extras` are reserved contracts for follow-up UI extension points.
 
 ## Data Dispatch
 

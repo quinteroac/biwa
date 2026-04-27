@@ -8,6 +8,7 @@ import { list }     from './commands/list.ts'
 import { doctor }   from './commands/doctor.ts'
 import { assets }   from './commands/assets.ts'
 import { preview }  from './commands/preview.ts'
+import { plugins }  from './commands/plugins.ts'
 
 const [,, command, ...args] = process.argv
 
@@ -19,6 +20,7 @@ const commands: Record<string, (...a: string[]) => Promise<void>> = {
   doctor,
   assets,
   preview,
+  plugins,
 }
 
 if (!command || !commands[command]) {
@@ -35,6 +37,7 @@ Commands:
   doctor [gameId] [--json] Validate game content pipeline
   assets <subcommand>     Generate framework asset metadata
   preview <gameId>        Serve dist/<gameId> locally
+  plugins <subcommand>    List, validate and scaffold plugins
 `)
   process.exit(command ? 1 : 0)
 }
