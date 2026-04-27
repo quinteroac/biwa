@@ -18,15 +18,14 @@ Kai mira la entrada sin moverse.
 
 El interior huele a canela y algo más antiguo.
 # character: sara, position: left, expression: neutral
-# character: kirk, position: center, expression: neutral
 
 Sara levanta la vista desde detrás del mostrador.
 
 Sara: Llevas mucho tiempo mirando desde afuera.
 
-Desde una mesa junto a la ventana, Kirk baja una taza de café como si hubiera estado esperando esa frase.
+Una taza vacía descansa en la mesa junto a la ventana, todavía tibia.
 
-Kirk: Si te sirve de consuelo, todos dudamos la primera vez.
+Sara: Si te sirve de consuelo, todos dudan la primera vez.
 
 * [Responder]
     -> chapter_01_response
@@ -36,23 +35,21 @@ Kirk: Si te sirve de consuelo, todos dudamos la primera vez.
 === chapter_01_response ===
 # character: kai, expression: surprised
 # character: sara, expression: happy
-# character: kirk, expression: happy
 
 Kai: No sabía si el lugar era real.
 
 Sara: Sigue sin serlo. Siéntate de todas formas.
 
-Kirk sonríe apenas, satisfecho de no ser el único testigo.
+La lluvia golpea el cristal como si aprobara la respuesta.
 
 -> chapter_02
 
 === chapter_01_silent ===
 # character: kai, expression: sad
-# character: kirk, expression: sad
 
 Kai no dice nada. Sara vuelve a su trabajo.
 
-Kirk observa la puerta. Por un instante, parece preocupado.
+La puerta se balancea apenas, aunque nadie ha entrado.
 
 -> chapter_02
 

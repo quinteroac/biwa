@@ -3,17 +3,19 @@ id: antagonist
 displayName: ???
 nameColor: "#f87171"
 defaultPosition: center
-scale: 1.2
+defaultExpression: neutral
+scale: 0.67
+offset:
+  y: 90
 
 animation:
-  type: spine
-  file:  characters/antagonist/antagonist.skel
-  atlas: characters/antagonist/antagonist.atlas
-  idle:  idle_breathe
+  type: spritesheet
+  file: characters/kirk/spritesheet.png
+  atlas: characters/kirk/kirk_atlas.json
   expressions:
-    neutral:   idle_neutral
-    menacing:  taunt
-    surprised: hit_react
+    neutral: neutral
+    menacing: angry
+    surprised: sad
 ---
 
 # Antagonista

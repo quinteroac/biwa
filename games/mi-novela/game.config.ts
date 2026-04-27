@@ -1,4 +1,5 @@
 // games/mi-novela/game.config.ts
+import { officialPlugins } from '../../framework/plugins/prebuilt/index.ts'
 import type { GameConfig } from '../../framework/types/game-config.d.ts'
 
 const config: GameConfig = {
@@ -33,6 +34,11 @@ const config: GameConfig = {
     sliding_puzzle:  () => import('./minigames/sliding_puzzle/SlidingPuzzle.ts'),
     tension_timer:   () => import('./minigames/tension_timer/TensionTimer.ts'),
   },
+
+  // — Plugins —
+  plugins: [
+    officialPlugins.inkWashBackground(),
+  ],
 
   // — Presentation / Theme —
   theme: {

@@ -4,7 +4,12 @@ displayName: Cafe Exterior
 description: Street-facing view of the midnight cafe, wet pavement and neon reflections.
 
 background:
-  type: static
+  type: ink-wash
+  image: scenes/cafe_exterior/night.png
+  tint: rgba(24, 18, 16, 0.26)
+  contrast: 1.12
+  saturation: 0.78
+  grainOpacity: 0.1
   variants:
     day:
       image: scenes/cafe_exterior/day.png
