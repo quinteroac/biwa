@@ -46,6 +46,8 @@ Use the official catalog to discover prebuilt plugins:
 bun manager/cli.ts plugins official
 ```
 
+See `framework/docs/prebuilt-plugins.md` for the full catalog, status policy and per-plugin options.
+
 ## Manifest Fields
 
 | Field | Required | Description |

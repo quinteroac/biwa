@@ -103,6 +103,10 @@ describe('plugins command helpers', () => {
 
   it('lists official prebuilt plugins', async () => {
     await expect(plugins('official')).resolves.toBeUndefined()
+    await expect(plugins('official', '--category', 'renderer')).resolves.toBeUndefined()
+    await expect(plugins('official', '--status', 'experimental')).resolves.toBeUndefined()
+    await expect(plugins('official', '--category', 'player')).resolves.toBeUndefined()
+    await expect(plugins('official', '--category', 'unknown')).rejects.toThrow('Invalid official plugin category')
   })
 
   it('doctor accepts custom renderers only when declared by a plugin', async () => {

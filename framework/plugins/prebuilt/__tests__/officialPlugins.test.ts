@@ -10,6 +10,30 @@ describe('official prebuilt plugins', () => {
     expect(officialPluginCatalog.map(plugin => plugin.id)).toContain('official-ink-wash-background')
   })
 
+  it('keeps catalog metadata complete and unique', () => {
+    const ids = new Set<string>()
+    for (const plugin of officialPluginCatalog) {
+      expect(ids.has(plugin.id)).toBe(false)
+      ids.add(plugin.id)
+      expect(plugin.name.length).toBeGreaterThan(0)
+      expect(plugin.description.length).toBeGreaterThan(0)
+      expect(['renderer', 'player', 'devtools', 'asset']).toContain(plugin.category)
+      expect(['stable', 'experimental', 'planned']).toContain(plugin.status)
+      expect(plugin.capabilities.length).toBeGreaterThan(0)
+      expect(plugin.configExample).toContain('officialPlugins.')
+      expect(typeof plugin.factory).toBe('function')
+      expect(plugin.factory().id).toBe(plugin.id)
+    }
+  })
+
+  it('keeps catalog renderer metadata aligned with plugin manifests', () => {
+    for (const plugin of officialPluginCatalog) {
+      const descriptor = plugin.factory()
+      expect(descriptor.capabilities).toEqual(plugin.capabilities)
+      expect(descriptor.renderers ?? {}).toEqual(plugin.renderers ?? {})
+    }
+  })
+
   it('loads the ink wash background renderer without local entry files', async () => {
     const descriptor = officialPlugins.inkWashBackground()
     const { module } = await loadPluginDescriptor(descriptor)

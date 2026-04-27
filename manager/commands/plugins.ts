@@ -5,6 +5,7 @@ import { validatePluginManifest } from '../../framework/plugins/PluginRegistry.t
 import { officialPluginCatalog } from '../../framework/plugins/prebuilt/index.ts'
 import type { GameConfig } from '../../framework/types/game-config.d.ts'
 import type { VnPluginDescriptor, VnPluginManifest } from '../../framework/types/plugins.d.ts'
+import type { OfficialPluginCategory, OfficialPluginStatus } from '../../framework/plugins/prebuilt/index.ts'
 
 const ROOT = new URL('../../', import.meta.url).pathname.replace(/\/$/, '')
 
@@ -15,7 +16,7 @@ interface ParsedArgs {
 
 function usage(): string {
   return `Usage:
-  bun manager/cli.ts plugins official
+  bun manager/cli.ts plugins official [--category renderer|player|devtools|asset] [--status stable|experimental|planned]
   bun manager/cli.ts plugins list <gameId>
   bun manager/cli.ts plugins validate <path|gameId>
   bun manager/cli.ts plugins scaffold <pluginId> [--out <dir>] [--template feature|renderer|ui]`
@@ -87,6 +88,13 @@ function validatePluginEntry(baseDir: string, plugin: VnPluginDescriptor): strin
 function rendererSummary(plugin: VnPluginDescriptor): string {
   const renderers = plugin.renderers ?? {}
   const parts = Object.entries(renderers).flatMap(([kind, values]) =>
+    (values ?? []).map((value: string) => `${kind}:${value}`),
+  )
+  return parts.length > 0 ? parts.join(',') : '—'
+}
+
+function rendererDefinitionSummary(renderers: VnPluginDescriptor['renderers']): string {
+  const parts = Object.entries(renderers ?? {}).flatMap(([kind, values]) =>
     (values ?? []).map((value: string) => `${kind}:${value}`),
   )
   return parts.length > 0 ? parts.join(',') : '—'
@@ -269,12 +277,35 @@ export function scaffoldPlugin(pluginId: string, flags: Record<string, string | 
   return relative(ROOT, pluginDir)
 }
 
-function listOfficialPlugins(): void {
+function parseOfficialCategory(value: string | boolean | undefined): OfficialPluginCategory | null {
+  if (value === undefined) return null
+  if (value === 'renderer' || value === 'player' || value === 'devtools' || value === 'asset') return value
+  throw new Error('Invalid official plugin category. Use renderer, player, devtools or asset.')
+}
+
+function parseOfficialStatus(value: string | boolean | undefined): OfficialPluginStatus | null {
+  if (value === undefined) return null
+  if (value === 'stable' || value === 'experimental' || value === 'planned') return value
+  throw new Error('Invalid official plugin status. Use stable, experimental or planned.')
+}
+
+function listOfficialPlugins(flags: Record<string, string | boolean> = {}): void {
+  const category = parseOfficialCategory(flags['category'])
+  const status = parseOfficialStatus(flags['status'])
+  const plugins = officialPluginCatalog.filter(plugin =>
+    (!category || plugin.category === category) &&
+    (!status || plugin.status === status),
+  )
+
   console.log('\nOfficial prebuilt plugins:\n')
-  console.log(`${'ID'.padEnd(34)} ${'Name'.padEnd(28)} Description`)
-  console.log('─'.repeat(100))
-  for (const plugin of officialPluginCatalog) {
-    console.log(`${plugin.id.padEnd(34)} ${plugin.name.padEnd(28)} ${plugin.description}`)
+  if (plugins.length === 0) {
+    console.log('No official plugins match the selected filters.\n')
+    return
+  }
+  console.log(`${'ID'.padEnd(34)} ${'Category'.padEnd(10)} ${'Status'.padEnd(13)} ${'Renderers'.padEnd(28)} Description`)
+  console.log('─'.repeat(120))
+  for (const plugin of plugins) {
+    console.log(`${plugin.id.padEnd(34)} ${plugin.category.padEnd(10)} ${plugin.status.padEnd(13)} ${rendererDefinitionSummary(plugin.renderers).padEnd(28)} ${plugin.description}`)
   }
   console.log('\nImport from framework/plugins/prebuilt/index.ts and declare the factory in game.config.ts.\n')
 }
@@ -338,7 +369,7 @@ export async function plugins(...args: string[]): Promise<void> {
   const parsed = parseArgs(rest)
   if (subcommand === 'official') {
     if (parsed.positional.length > 0) throw new Error(`Unexpected plugins argument: ${parsed.positional[0]}`)
-    listOfficialPlugins()
+    listOfficialPlugins(parsed.flags)
     return
   }
 

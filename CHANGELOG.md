@@ -60,6 +60,9 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - `plugins official` CLI command for discovering framework-provided plugins.
 - `plugins scaffold --template feature|renderer|ui` with starter tests and renderer declarations.
 - Plugin authoring docs for first plugin setup, official prebuild usage, compatibility and external renderer recipes.
+- Prebuilt plugin catalog metadata for category, status, capabilities, renderers and config examples.
+- `plugins official --category` and `--status` filters.
+- Prebuilt plugin catalog docs with stability policy and `ink-wash` options.
 
 ### Changed
 
