@@ -44,6 +44,7 @@ See [framework/docs/distribution.md](framework/docs/distribution.md).
 ## Creator Docs
 
 - [First game guide](framework/docs/first-game.md)
+- [GameEngine API](framework/docs/game-engine-api.md)
 - [Ink tag guide](framework/docs/ink-tags.md)
 - [Project structure](framework/docs/project-structure.md)
 - [Customizing components](framework/docs/customizing-components.md)

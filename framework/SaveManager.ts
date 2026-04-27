@@ -4,6 +4,7 @@ type MigrationFn = (oldData: unknown) => GameSaveState
 
 interface SaveManagerOptions {
   gameId: string
+  gameVersion?: string
   slots?: number
   autoSave?: boolean
 }
@@ -12,12 +13,14 @@ export class SaveManager {
   static readonly CURRENT_VERSION = 2
 
   #gameId: string
+  #gameVersion: string | undefined
   #slots: number
   #autoSaveEnabled: boolean
   #migrations: Map<number, MigrationFn> = new Map()
 
-  constructor({ gameId, slots = 5, autoSave = true }: SaveManagerOptions) {
+  constructor({ gameId, gameVersion, slots = 5, autoSave = true }: SaveManagerOptions) {
     this.#gameId = gameId
+    this.#gameVersion = gameVersion
     this.#slots = slots
     this.#autoSaveEnabled = autoSave
   }
@@ -46,6 +49,8 @@ export class SaveManager {
   save(slot: number | 'auto', state: GameSaveState): boolean {
     const data: SaveData = {
       version: SaveManager.CURRENT_VERSION,
+      gameId: this.#gameId,
+      ...(this.#gameVersion ? { gameVersion: this.#gameVersion } : {}),
       timestamp: Date.now(),
       meta: state.meta,
       state: state.state,
@@ -74,9 +79,21 @@ export class SaveManager {
       const parsed = JSON.parse(raw) as SaveData
       const { version: storedVersion, timestamp } = parsed
 
+      if (parsed.gameId && parsed.gameId !== this.#gameId) {
+        console.warn(`[SaveManager] Save belongs to game "${parsed.gameId}", not "${this.#gameId}".`)
+        return null
+      }
+
+      if (!this.#isGameVersionCompatible(parsed.gameVersion)) {
+        console.warn(`[SaveManager] Save version "${parsed.gameVersion}" is incompatible with game version "${this.#gameVersion}".`)
+        return null
+      }
+
       if (storedVersion === SaveManager.CURRENT_VERSION) {
         return {
           version: storedVersion,
+          ...(parsed.gameId ? { gameId: parsed.gameId } : {}),
+          ...(parsed.gameVersion ? { gameVersion: parsed.gameVersion } : {}),
           timestamp,
           state: {
             meta: parsed.meta,
@@ -100,6 +117,8 @@ export class SaveManager {
 
       return {
         version: SaveManager.CURRENT_VERSION,
+        gameId: this.#gameId,
+        ...(this.#gameVersion ? { gameVersion: this.#gameVersion } : {}),
         timestamp,
         state: current as GameSaveState,
       }
@@ -161,5 +180,22 @@ export class SaveManager {
   delete(slot: number | 'auto'): void {
     console.warn('[SaveManager] delete() is deprecated — use deleteSlot() instead.')
     this.deleteSlot(slot)
+  }
+
+  get gameId(): string {
+    return this.#gameId
+  }
+
+  get gameVersion(): string | undefined {
+    return this.#gameVersion
+  }
+
+  get autoSavePreferenceKey(): string {
+    return `vn:${this.#gameId}:autoSave`
+  }
+
+  #isGameVersionCompatible(storedVersion: string | undefined): boolean {
+    if (!storedVersion || !this.#gameVersion) return true
+    return storedVersion.split('.')[0] === this.#gameVersion.split('.')[0]
   }
 }

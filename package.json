@@ -8,11 +8,12 @@
     "new": "bun manager/cli.ts new",
     "list": "bun manager/cli.ts list",
     "doctor": "bun manager/cli.ts doctor",
-    "test": "bun test",
+    "test": "bun test framework",
     "typecheck": "tsc",
     "check": "bun run test && bun run typecheck",
     "build:demo": "bun manager/cli.ts build smoke-fixture",
-    "verify": "bun run check && bun manager/cli.ts doctor smoke-fixture && bun run build:demo"
+    "e2e": "playwright test",
+    "verify": "bun run check && bun manager/cli.ts doctor smoke-fixture && bun run build:demo && bun run e2e"
   },
   "dependencies": {
     "@chenglou/pretext": "^0.0.5",
@@ -22,6 +23,7 @@
     "yoga-layout": "^3.2.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",

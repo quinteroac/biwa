@@ -22,11 +22,11 @@ export type StepResult =
 export class ScriptRunner {
   #story: Story | null = null
   #storyJson: string | null = null
-  #bus: EventBus
+  #bus: EventBus<any>
   #currentSpeaker: string | null = null
   #pendingMinigame: string | null = null
 
-  constructor(bus: EventBus) {
+  constructor(bus: EventBus<any>) {
     this.#bus = bus
   }
 

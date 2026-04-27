@@ -8,13 +8,16 @@ import type { TagCommand } from '../../framework/TagParser.ts'
 
 const ROOT = new URL('../../', import.meta.url).pathname.replace(/\/$/, '')
 
-export type Severity = 'error' | 'warning'
+export type Severity = 'error' | 'warning' | 'info'
 
 export interface Issue {
   severity: Severity
   path: string
   message: string
+  code?: string
   suggestion?: string
+  suppressed?: boolean
+  suppressionReason?: string
 }
 
 interface DataMaps {
@@ -22,6 +25,13 @@ interface DataMaps {
   scenes: Map<string, Record<string, unknown>>
   audio: Map<string, Record<string, unknown>>
   minigames: Map<string, Record<string, unknown>>
+}
+
+interface DiagnosticSuppression {
+  code?: string
+  path?: string
+  message?: string
+  reason: string
 }
 
 function detectGameId(): string | null {
@@ -106,6 +116,7 @@ function checkAsset(gameDir: string, filePath: string, ref: unknown, issues: Iss
     issues.push({
       severity: 'warning',
       path: filePath,
+      code: 'asset_missing',
       message: `${label} not found: ${ref}`,
       suggestion: `Add the file under assets/ or update the ${label.toLowerCase()} path.`,
     })
@@ -130,7 +141,7 @@ function addDataFile(
   }
   const expected = filePath.split('/').pop()!.replace(/\.md$/, '')
   if (expected !== id) {
-    issues.push({ severity: 'warning', path: filePath, message: `File name "${expected}" does not match id "${id}".` })
+    issues.push({ severity: 'warning', path: filePath, code: 'id_filename_mismatch', message: `File name "${expected}" does not match id "${id}".` })
   }
   if (map.has(id)) {
     issues.push({
@@ -197,7 +208,7 @@ function validateDataFile(
   if (kind === 'characters') {
     const animation = asRecord(data['animation'])
     if (!animation && !Array.isArray(data['layers'])) {
-      issues.push({ severity: 'warning', path: filePath, message: 'Character has no animation or layers.' })
+      issues.push({ severity: 'warning', path: filePath, code: 'character_no_renderer', message: 'Character has no animation or layers.' })
     }
     if (animation) {
       checkAsset(gameDir, filePath, animation['file'], issues, 'Character animation file')
@@ -268,6 +279,7 @@ function validateDataFile(
         issues.push({
           severity: 'warning',
           path: filePath,
+          code: 'minigame_entry_missing',
           message: `Minigame entry not found: ${entry}`,
           suggestion: 'Create the implementation file or update the minigame entry path.',
         })
@@ -348,6 +360,16 @@ async function loadConfig(gameDir: string): Promise<GameConfig> {
 function validateConfig(gameDir: string, config: GameConfig, issues: Issue[]): void {
   if (!config.id) issues.push({ severity: 'error', path: 'game.config.ts', message: 'Missing config.id.', suggestion: 'Set id to a lowercase slug, for example my-novel.' })
   if (!config.title) issues.push({ severity: 'error', path: 'game.config.ts', message: 'Missing config.title.', suggestion: 'Set title to the player-facing name of the novel.' })
+  const mode = config.distribution?.mode
+  if (mode && !['standalone', 'portal', 'static', 'embedded'].includes(mode)) {
+    issues.push({
+      severity: 'error',
+      path: 'game.config.ts',
+      code: 'invalid_distribution_mode',
+      message: `Unsupported distribution.mode "${mode}".`,
+      suggestion: 'Use one of: standalone, portal, static, embedded.',
+    })
+  }
   if (!config.story?.defaultLocale) issues.push({ severity: 'error', path: 'game.config.ts', message: 'Missing story.defaultLocale.', suggestion: 'Set story.defaultLocale to one of the keys in story.locales.' })
   const locales = config.story?.locales ?? {}
   for (const [locale, storyPath] of Object.entries(locales)) {
@@ -372,16 +394,52 @@ function validateConfig(gameDir: string, config: GameConfig, issues: Issue[]): v
   }
 }
 
+function normalisePath(path: string): string {
+  return path.replace(/\\/g, '/')
+}
+
+function matchesSuppression(issue: Issue, suppression: DiagnosticSuppression, gameDir: string): boolean {
+  const relPath = issue.path.startsWith(ROOT) ? relative(gameDir, issue.path) : issue.path
+  if (suppression.code && suppression.code !== issue.code) return false
+  if (suppression.path && !normalisePath(relPath).includes(normalisePath(suppression.path))) return false
+  if (suppression.message && !issue.message.includes(suppression.message)) return false
+  return Boolean(suppression.code || suppression.path || suppression.message)
+}
+
+function applyDiagnosticSuppressions(gameDir: string, config: GameConfig, issues: Issue[]): void {
+  const suppressions = config.diagnostics?.suppress ?? []
+  if (!Array.isArray(suppressions) || suppressions.length === 0) return
+
+  for (const issue of issues) {
+    if (issue.severity === 'error') continue
+    const match = suppressions.find(suppression => matchesSuppression(issue, suppression, gameDir))
+    if (!match) continue
+    issue.severity = 'info'
+    issue.suppressed = true
+    issue.suppressionReason = match.reason
+  }
+}
+
+export function summarizeIssues(issues: Issue[]): Record<Severity, number> & { suppressed: number } {
+  return {
+    error: issues.filter(i => i.severity === 'error').length,
+    warning: issues.filter(i => i.severity === 'warning').length,
+    info: issues.filter(i => i.severity === 'info').length,
+    suppressed: issues.filter(i => i.suppressed).length,
+  }
+}
+
 export function printIssues(gameDir: string, issues: Issue[]): void {
-  const errors = issues.filter(i => i.severity === 'error')
-  const warnings = issues.filter(i => i.severity === 'warning')
+  const summary = summarizeIssues(issues)
   for (const issue of issues) {
     const rel = issue.path.startsWith(ROOT) ? relative(gameDir, issue.path) : issue.path
-    const label = issue.severity === 'error' ? 'ERROR' : 'WARN'
-    console.log(`  [${label}] ${rel}: ${issue.message}`)
+    const label = issue.severity === 'error' ? 'ERROR' : issue.severity === 'warning' ? 'WARN' : 'INFO'
+    const code = issue.code ? ` ${issue.code}` : ''
+    console.log(`  [${label}${code}] ${rel}: ${issue.message}`)
     if (issue.suggestion) console.log(`         suggestion: ${issue.suggestion}`)
+    if (issue.suppressionReason) console.log(`         suppressed: ${issue.suppressionReason}`)
   }
-  console.log(`\nDoctor summary: ${errors.length} error(s), ${warnings.length} warning(s).`)
+  console.log(`\nDoctor summary: ${summary.error} error(s), ${summary.warning} warning(s), ${summary.info} info(s), ${summary.suppressed} suppressed.`)
 }
 
 export async function validateGame(gameId: string): Promise<{ gameDir: string; config: GameConfig; issues: Issue[] }> {
@@ -395,6 +453,7 @@ export async function validateGame(gameId: string): Promise<{ gameDir: string; c
   validateConfig(gameDir, config, issues)
   const maps = loadDataMaps(gameDir, config, issues)
   validateStoryReferences(gameDir, maps, issues)
+  applyDiagnosticSuppressions(gameDir, config, issues)
   return { gameDir, config, issues }
 }
 

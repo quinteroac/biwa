@@ -27,12 +27,20 @@ export interface GameConfig {
     slots?: number;
     autoSave?: boolean;
   };
+  diagnostics?: {
+    suppress?: Array<{
+      code?: string;
+      path?: string;
+      message?: string;
+      reason: string;
+    }>;
+  };
   endScreen?: {
     title?: string;
     message?: string;
   };
   distribution?: {
-    mode?: 'portal' | 'static' | 'embedded' | string;
+    mode?: 'standalone' | 'portal' | 'static' | 'embedded' | string;
     basePath?: string;
   };
   [key: string]: any;

@@ -192,28 +192,28 @@ describe('SaveControlsBar', () => {
 
   // US-004-AC02: toggle defaults to true when localStorage key is absent
   it('US-004-AC02: toggle is checked (true) by default when localStorage key is absent', () => {
-    delete store['vn:autoSave']
+    delete store['vn:vn-bar-test:autoSave']
     const html = render()
     expect(html).toContain('aria-checked="true"')
   })
 
   // US-004-AC02: toggle reflects false when localStorage key is 'false'
   it('US-004-AC02: toggle is unchecked (false) when localStorage key is "false"', () => {
-    store['vn:autoSave'] = 'false'
+    store['vn:vn-bar-test:autoSave'] = 'false'
     const html = render()
     expect(html).toContain('aria-checked="false"')
   })
 
   // US-004-AC02: toggle reflects true when localStorage key is 'true'
   it('US-004-AC02: toggle is checked (true) when localStorage key is "true"', () => {
-    store['vn:autoSave'] = 'true'
+    store['vn:vn-bar-test:autoSave'] = 'true'
     const html = render()
     expect(html).toContain('aria-checked="true"')
   })
 
   // US-004-AC03: auto save is triggered on engine:dialog event when enabled
   it('US-004-AC03: saves to auto slot on engine:dialog event when enabled', () => {
-    store['vn:autoSave'] = 'true'
+    store['vn:vn-autosave-test:autoSave'] = 'true'
     const bus = new EventBus()
     const sm = new SaveManager({ gameId: 'vn-autosave-test', slots: 3, autoSave: false })
     let saveCalled = false
@@ -247,17 +247,17 @@ describe('SaveControlsBar', () => {
   })
 
   // US-004-AC05: toggling updates localStorage (tested via initial read in AC02 / AC06)
-  it('US-004-AC05: localStorage key vn:autoSave is written on mount when key absent', () => {
-    delete store['vn:autoSave']
+  it('US-004-AC05: localStorage key is namespaced by game id', () => {
+    delete store['vn:vn-bar-test:autoSave']
     // SSR initialiser reads key; verify reading 'true' path works
-    store['vn:autoSave'] = 'true'
+    store['vn:vn-bar-test:autoSave'] = 'true'
     const html = render()
     expect(html).toContain('aria-checked="true"')
   })
 
   // US-004-AC06: after reload, toggle reflects last persisted state (false)
   it('US-004-AC06: toggle reflects persisted false state after simulated reload', () => {
-    store['vn:autoSave'] = 'false'
+    store['vn:vn-bar-test:autoSave'] = 'false'
     const html = render()
     expect(html).toContain('aria-checked="false"')
     expect(html).not.toContain('aria-checked="true"')
@@ -265,7 +265,7 @@ describe('SaveControlsBar', () => {
 
   // US-004-AC06: after reload, toggle reflects last persisted state (true)
   it('US-004-AC06: toggle reflects persisted true state after simulated reload', () => {
-    store['vn:autoSave'] = 'true'
+    store['vn:vn-bar-test:autoSave'] = 'true'
     const html = render()
     expect(html).toContain('aria-checked="true"')
   })

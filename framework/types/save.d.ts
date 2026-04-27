@@ -42,6 +42,8 @@ export interface GameSaveState {
 /** Full serialised structure written to localStorage. */
 export interface SaveData {
   version: number
+  gameId?: string
+  gameVersion?: string
   timestamp: number
   meta: SaveMeta
   state: Record<string, unknown>
@@ -51,6 +53,8 @@ export interface SaveData {
 /** Typed object returned by `SaveManager.load()`. */
 export interface SaveSlot {
   version: number
+  gameId?: string
+  gameVersion?: string
   timestamp: number
   /** Fully typed game payload with `meta` and `state` fields. */
   state: GameSaveState

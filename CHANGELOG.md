@@ -16,12 +16,18 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Static ESM distribution build with import map, manifest and smoke checks.
 - `smoke-fixture` game for CI-friendly validation.
 - Public docs for first game, Ink tags, customization and distribution.
+- Typed engine event map and public `GameEngine` API docs.
+- Structured diagnostics with suppressions and build-manifest output.
+- Browser E2E smoke test for the static `smoke-fixture` build.
 
 ### Changed
 
 - Build now validates content before writing output and fails on doctor errors.
 - Build compiles configured story entrypoints instead of every included `.ink` file.
 - Build cleans `dist/<gameId>` before writing new output.
+- Build rewrites production story entrypoints to compiled `.json` files.
+- Save data now records `gameId` and `gameVersion` when available.
+- Autosave preferences are namespaced by game id.
 
 ### Known Gaps
 

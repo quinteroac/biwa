@@ -85,6 +85,26 @@ const SLOT_LIST_STYLE: React.CSSProperties = {
   gap: 0,
 }
 
+const THUMB_STYLE: React.CSSProperties = {
+  width: 64,
+  height: 36,
+  objectFit: 'cover',
+  border: '1px solid rgba(255,255,255,0.12)',
+  background: 'rgba(255,255,255,0.04)',
+  flexShrink: 0,
+}
+
+const THUMB_PLACEHOLDER_STYLE: React.CSSProperties = {
+  ...THUMB_STYLE,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  color: 'rgba(255,255,255,0.18)',
+  fontSize: 10,
+  letterSpacing: '0.12em',
+  textTransform: 'uppercase',
+}
+
 const SAVE_BTN_STYLE: React.CSSProperties = {
   marginLeft: 'auto',
   flexShrink: 0,
@@ -183,6 +203,20 @@ function SlotRow({
       </div>
 
       {isOccupied ? (
+        <>
+        {info.meta.thumbnail ? (
+          <img
+            src={`./assets/${info.meta.thumbnail}`}
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            style={THUMB_STYLE}
+          />
+        ) : (
+          <div style={THUMB_PLACEHOLDER_STYLE} aria-hidden="true">
+            No Img
+          </div>
+        )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
           <span
             style={{
@@ -203,6 +237,7 @@ function SlotRow({
             {formatTimestamp(info.meta.timestamp)}
           </span>
         </div>
+        </>
       ) : (
         <span
           style={{

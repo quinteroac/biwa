@@ -3,7 +3,7 @@ import { dirname, join, relative } from 'path'
 import yaml from 'js-yaml'
 import { Compiler } from 'inkjs/compiler/Compiler.js'
 import { CompilerOptions } from 'inkjs/compiler/CompilerOptions.js'
-import { printIssues, validateGame } from './doctor.ts'
+import { printIssues, summarizeIssues, validateGame } from './doctor.ts'
 
 const ROOT = new URL('../../', import.meta.url).pathname.replace(/\/$/, '')
 
@@ -65,6 +65,87 @@ function rewriteGameFrameworkImports(code: string, outPath: string, distDir: str
   )
 }
 
+function rewriteBuiltGameConfig(outPath: string, config: Awaited<ReturnType<typeof validateGame>>['config']): void {
+  let code = readFileSync(outPath, 'utf8')
+  for (const storyPath of Object.values(config.story.locales)) {
+    code = code.replaceAll(storyPath, storyPath.replace(/\.ink$/, '.json'))
+  }
+  writeFileSync(outPath, code)
+}
+
+function rewriteVendorNamedExports(outPath: string, outName: string): void {
+  let code = readFileSync(outPath, 'utf8')
+  const exportsByBundle: Record<string, string[]> = {
+    'react.js': [
+      'act',
+      'Activity',
+      'cache',
+      'cacheSignal',
+      'captureOwnerStack',
+      'Children',
+      'cloneElement',
+      'Component',
+      'createContext',
+      'createElement',
+      'createRef',
+      'forwardRef',
+      'Fragment',
+      'isValidElement',
+      'lazy',
+      'memo',
+      'Profiler',
+      'PureComponent',
+      'startTransition',
+      'StrictMode',
+      'Suspense',
+      'unstable_useCacheRefresh',
+      'use',
+      'useActionState',
+      'useCallback',
+      'useContext',
+      'useDebugValue',
+      'useDeferredValue',
+      'useEffect',
+      'useId',
+      'useImperativeHandle',
+      'useInsertionEffect',
+      'useLayoutEffect',
+      'useMemo',
+      'useOptimistic',
+      'useReducer',
+      'useRef',
+      'useState',
+      'useSyncExternalStore',
+      'useTransition',
+      'version',
+      '__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE',
+      '__COMPILER_RUNTIME',
+    ],
+    'react-dom-client.js': ['createRoot', 'hydrateRoot', 'version'],
+    'react-jsx-runtime.js': ['Fragment', 'jsx', 'jsxs'],
+    'react-jsx-dev-runtime.js': ['Fragment', 'jsxDEV'],
+  }
+  const namedExports = exportsByBundle[outName]
+  if (!namedExports) return
+  const requireName = outName === 'react-dom-client.js'
+    ? 'require_client'
+    : outName === 'react-jsx-runtime.js'
+      ? 'require_jsx_runtime'
+      : outName === 'react-jsx-dev-runtime.js'
+        ? 'require_jsx_dev_runtime'
+        : 'require_react'
+  code = code.replace(
+    new RegExp(`export default ${requireName}\\(\\);\\s*$`),
+    [
+      `var __vn_vendor = ${requireName}();`,
+      ...namedExports.map(name => `export const ${name} = __vn_vendor.${name};`),
+      'export default __vn_vendor;',
+      '',
+    ].join('\n'),
+  )
+  writeFileSync(outPath, code)
+}
+
 async function transpileModule(filePath: string, outPath: string, distDir: string, rewriteFrameworkImports = false): Promise<void> {
   const result = await Bun.build({
     entrypoints: [filePath],
@@ -103,6 +184,23 @@ function writeDataIndexes(dataSrcDir: string, dataOutDir: string): void {
     const outDir = join(dataOutDir, relDir)
     mkdirSync(outDir, { recursive: true })
     writeFileSync(join(outDir, 'index.json'), JSON.stringify(files, null, 2))
+  }
+}
+
+function writeConfiguredEmptyDataIndexes(
+  gameDir: string,
+  dataOutDir: string,
+  config: Awaited<ReturnType<typeof validateGame>>['config'],
+): void {
+  const dataConfig = config.data ?? {}
+  for (const configuredDir of Object.values(dataConfig)) {
+    if (!configuredDir) continue
+    const relDir = relative(join(gameDir, 'data'), join(gameDir, configuredDir))
+    if (relDir.startsWith('..')) continue
+    const indexPath = join(dataOutDir, relDir, 'index.json')
+    if (existsSync(indexPath)) continue
+    mkdirSync(dirname(indexPath), { recursive: true })
+    writeFileSync(indexPath, JSON.stringify([], null, 2))
   }
 }
 
@@ -181,7 +279,28 @@ function validateStaticOutput(distDir: string, config: Awaited<ReturnType<typeof
   assertJsImportsResolve(distDir)
 }
 
-function writeBuildManifest(distDir: string, config: Awaited<ReturnType<typeof validateGame>>['config'], warnings: number): void {
+function serializeDiagnostics(gameDir: string, issues: Awaited<ReturnType<typeof validateGame>>['issues']) {
+  const summary = summarizeIssues(issues)
+  return {
+    summary,
+    issues: issues.map(issue => ({
+      severity: issue.severity,
+      ...(issue.code ? { code: issue.code } : {}),
+      path: issue.path.startsWith(gameDir) ? relative(gameDir, issue.path) : issue.path,
+      message: issue.message,
+      ...(issue.suggestion ? { suggestion: issue.suggestion } : {}),
+      ...(issue.suppressed ? { suppressed: true } : {}),
+      ...(issue.suppressionReason ? { suppressionReason: issue.suppressionReason } : {}),
+    })),
+  }
+}
+
+function writeBuildManifest(
+  distDir: string,
+  gameDir: string,
+  config: Awaited<ReturnType<typeof validateGame>>['config'],
+  issues: Awaited<ReturnType<typeof validateGame>>['issues'],
+): void {
   const frameworkSize = dirSize(join(distDir, 'framework'))
   const assetsSize = dirSize(join(distDir, 'assets'))
   const storySize = dirSize(join(distDir, 'story'))
@@ -197,7 +316,8 @@ function writeBuildManifest(distDir: string, config: Awaited<ReturnType<typeof v
       strategy: 'esm-vendor-importmap',
       entry: 'index.html',
     },
-    warnings,
+    warnings: issues.filter(issue => issue.severity === 'warning').length,
+    diagnostics: serializeDiagnostics(gameDir, issues),
     sizes: {
       framework: frameworkSize,
       assets: assetsSize,
@@ -229,7 +349,8 @@ export async function build(gameId?: string): Promise<void> {
     throw new Error(`Build blocked by ${errors.length} doctor error(s).`)
   }
   const warnings = issues.filter(issue => issue.severity === 'warning')
-  console.log(`    ✓ doctor passed (${warnings.length} warning${warnings.length === 1 ? '' : 's'})`)
+  const infos = issues.filter(issue => issue.severity === 'info')
+  console.log(`    ✓ doctor passed (${warnings.length} warning${warnings.length === 1 ? '' : 's'}, ${infos.length} info)`)
 
   rmSync(distDir, { recursive: true, force: true })
   mkdirSync(distDir, { recursive: true })
@@ -270,6 +391,7 @@ export async function build(gameId?: string): Promise<void> {
     }
   }
   writeDataIndexes(join(gameDir, 'data'), join(distDir, 'data'))
+  writeConfiguredEmptyDataIndexes(gameDir, join(distDir, 'data'), config)
 
   // 3. Copy framework static files and transpile runtime TS/TSX as ESM.
   console.log('  Copying framework...')
@@ -304,6 +426,7 @@ export async function build(gameId?: string): Promise<void> {
     const outPath = join(distDir, rel.replace(/\.tsx?$/, '.js'))
     try {
       await transpileModule(file, outPath, distDir, true)
+      if (rel === 'game.config.ts') rewriteBuiltGameConfig(outPath, config)
       console.log(`    ✓ ${rel.replace(/\.tsx?$/, '.js')}`)
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e))
@@ -323,7 +446,8 @@ export async function build(gameId?: string): Promise<void> {
   for (const { pkg, out, external } of reactBundles) {
     const result = await Bun.build({ entrypoints: [pkg], format: 'esm', outdir: vendorDir, naming: out, external })
     if (!result.success) throw new Error(`Failed to bundle vendor/${out}: ${result.logs.map(log => log.message).join('\n')}`)
-    else console.log(`    ✓ vendor/${out}`)
+    rewriteVendorNamedExports(join(vendorDir, out), out)
+    console.log(`    ✓ vendor/${out}`)
   }
 
   // 4. Copy assets
@@ -362,7 +486,7 @@ export async function build(gameId?: string): Promise<void> {
 
   console.log('  Running post-build smoke...')
   validateStaticOutput(distDir, config)
-  writeBuildManifest(distDir, config, warnings.length)
+  writeBuildManifest(distDir, gameDir, config, issues)
   console.log('    ✓ static output verified')
 
   const totalSize = dirSize(distDir)

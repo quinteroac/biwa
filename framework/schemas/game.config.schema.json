@@ -14,7 +14,7 @@
     "version": {
       "type": "string",
       "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[A-Za-z0-9.-]+)?$",
-      "description": "Semver. Invalidates saved data if the major version changes"
+      "description": "Semver. New saves store this value and major-version mismatches are rejected when save metadata is present"
     },
     "description": { "type": "string" },
     "cover": { "type": "string" },
@@ -63,10 +63,30 @@
       },
       "additionalProperties": false
     },
+    "diagnostics": {
+      "type": "object",
+      "properties": {
+        "suppress": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["reason"],
+            "properties": {
+              "code": { "type": "string" },
+              "path": { "type": "string" },
+              "message": { "type": "string" },
+              "reason": { "type": "string", "minLength": 1 }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
     "distribution": {
       "type": "object",
       "properties": {
-        "mode": { "type": "string", "enum": ["portal", "static", "embedded"] },
+        "mode": { "type": "string", "enum": ["standalone", "portal", "static", "embedded"] },
         "basePath": { "type": "string" }
       },
       "additionalProperties": false

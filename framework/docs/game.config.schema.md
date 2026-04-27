@@ -32,9 +32,9 @@ export default config
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `id` | `string` | ✅ | Unique identifier for this novel across the entire framework. Used as the localStorage namespace: `vn:{id}:saves`. Only lowercase letters, numbers, and hyphens. |
+| `id` | `string` | ✅ | Unique identifier for this novel across the entire framework. Used as the localStorage namespace prefix `vn:{id}:...`. Only lowercase letters, numbers, and hyphens. |
 | `title` | `string` | ✅ | Display name shown in the browser tab, save screens, and the portal (if applicable). |
-| `version` | `string` | ✅ | Semver string (`major.minor.patch`). The `SaveManager` invalidates existing saves when the `major` version changes. |
+| `version` | `string` | ✅ | Semver string (`major.minor.patch`). New saves record this value. The `SaveManager` rejects saves from a different major version when both versions are present. |
 | `description` | `string` | — | Short synopsis. Used in the portal listing and as LLM context when generating content. |
 | `cover` | `string` | — | Path to the cover image. Displayed in the portal and on the loading screen. Recommended size: `800×450px`. |
 
@@ -141,7 +141,7 @@ theme: {
 
 ### Saves
 
-Configures the save system for this novel. Saves are stored in `localStorage` under the key `vn:{id}:saves` — isolated from all other novels.
+Configures the save system for this novel. Saves are stored in `localStorage` under keys prefixed by `vn:{id}:save:` and preferences such as autosave use `vn:{id}:autoSave`, so games are isolated from each other.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -152,6 +152,29 @@ Configures the save system for this novel. Saves are stored in `localStorage` un
 saves: {
   slots:    5,
   autoSave: true,
+},
+```
+
+---
+
+### Diagnostics
+
+Controls intentional `doctor` suppressions. Suppressions only apply to non-error diagnostics and must include a reason so they remain visible in console output and build manifests.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `diagnostics.suppress` | `Array<object>` | — | List of warning/info suppressions. Each item can match by `code`, `path`, `message`, or any combination of them. |
+| `diagnostics.suppress[].reason` | `string` | ✅ | Human-readable reason shown by `doctor` and recorded in `manifest.json`. |
+
+```ts
+diagnostics: {
+  suppress: [
+    {
+      code: 'asset_missing',
+      path: 'data/audio/voice/',
+      reason: 'Voice acting is optional in this build.',
+    },
+  ],
 },
 ```
 
@@ -313,6 +336,7 @@ export interface GameConfig {
   minigames?:   MinigamesConfig
   theme?:       ThemeConfig
   saves?:       SavesConfig
+  diagnostics?: DiagnosticsConfig
   distribution: DistributionConfig
 }
 
@@ -342,8 +366,17 @@ export interface SavesConfig {
   autoSave?: boolean
 }
 
+export interface DiagnosticsConfig {
+  suppress?: Array<{
+    code?:    string
+    path?:    string
+    message?: string
+    reason:   string
+  }>
+}
+
 export interface DistributionConfig {
-  mode:       'standalone' | 'portal'
+  mode:       'standalone' | 'portal' | 'static' | 'embedded'
   basePath?:  string
 }
 ```

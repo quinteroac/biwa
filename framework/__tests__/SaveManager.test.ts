@@ -71,6 +71,17 @@ describe('SaveManager.save', () => {
     expect(parsed.state).toEqual({ health: 100, flag_met_hero: true })
   })
 
+  it('AC02: persisted JSON includes the game id and optional game version', () => {
+    sm = new SaveManager({ gameId: 'test-game', gameVersion: '1.2.3', slots: 3, autoSave: false })
+    sm.save(1, makeState())
+
+    const raw = localStorage.getItem('vn:test-game:save:1')!
+    const parsed = JSON.parse(raw)
+
+    expect(parsed.gameId).toBe('test-game')
+    expect(parsed.gameVersion).toBe('1.2.3')
+  })
+
   it('persists and loads visual snapshots without dropping them', () => {
     const state = makeState({
       visual: {
@@ -438,6 +449,49 @@ describe('SaveManager.load', () => {
     expect(typeof result!.timestamp).toBe('number')
     expect(result!.state.meta.displayName).toBe('Chapter 1')
     expect(result!.state.state['health']).toBe(100)
+  })
+
+  it('AC01: rejects saves from a different game id', () => {
+    const otherGameSave: SaveData = {
+      version: 2,
+      gameId: 'other-game',
+      timestamp: 1000,
+      meta: { displayName: 'Other Save', sceneName: 'scene', playtime: 5 },
+      state: {},
+    }
+    store['vn:test-game:save:1'] = JSON.stringify(otherGameSave)
+
+    expect(sm.load(1)).toBeNull()
+  })
+
+  it('AC01: rejects saves from an incompatible major game version', () => {
+    sm = new SaveManager({ gameId: 'test-game', gameVersion: '2.0.0', slots: 3, autoSave: false })
+    const oldMajorSave: SaveData = {
+      version: 2,
+      gameId: 'test-game',
+      gameVersion: '1.9.0',
+      timestamp: 1000,
+      meta: { displayName: 'Old Major', sceneName: 'scene', playtime: 5 },
+      state: {},
+    }
+    store['vn:test-game:save:1'] = JSON.stringify(oldMajorSave)
+
+    expect(sm.load(1)).toBeNull()
+  })
+
+  it('AC01: accepts saves from the same major game version', () => {
+    sm = new SaveManager({ gameId: 'test-game', gameVersion: '1.2.0', slots: 3, autoSave: false })
+    const sameMajorSave: SaveData = {
+      version: 2,
+      gameId: 'test-game',
+      gameVersion: '1.0.0',
+      timestamp: 1000,
+      meta: { displayName: 'Same Major', sceneName: 'scene', playtime: 5 },
+      state: {},
+    }
+    store['vn:test-game:save:1'] = JSON.stringify(sameMajorSave)
+
+    expect(sm.load(1)?.state.meta.displayName).toBe('Same Major')
   })
 
   // AC02 — migration is called when version is older

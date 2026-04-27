@@ -11,6 +11,7 @@ import { VoiceController } from './VoiceController.ts'
 import type { GameSaveState, SavedAudioState, SavedCharacterState, SavedVisualState } from '../types/save.d.ts'
 import type { GameConfig } from '../types/game-config.d.ts'
 import type { TagCommand } from './ScriptRunner.ts'
+import type { EngineEventMap } from '../types/events.d.ts'
 
 const STATE = Object.freeze({
   IDLE:       'IDLE',
@@ -23,7 +24,7 @@ const STATE = Object.freeze({
   ENDED:      'ENDED',
 } as const)
 
-type EngineState = typeof STATE[keyof typeof STATE]
+export type EngineState = typeof STATE[keyof typeof STATE]
 
 interface GameData {
   characters: Record<string, Record<string, unknown>>
@@ -37,7 +38,7 @@ export class GameEngine {
 
   #config: GameConfig
   #state: EngineState = STATE.IDLE
-  #bus = new EventBus()
+  #bus = new EventBus<EngineEventMap>()
   #vars = new VariableStore()
   #runner: ScriptRunner
   #saveManager!: SaveManager
@@ -80,7 +81,7 @@ export class GameEngine {
     return GameEngine.#instance
   }
 
-  get bus(): EventBus { return this.#bus }
+  get bus(): EventBus<EngineEventMap> { return this.#bus }
   get vars(): VariableStore { return this.#vars }
   get state(): EngineState { return this.#state }
   get data(): GameData { return this.#data }
@@ -156,9 +157,10 @@ export class GameEngine {
     }
 
     this.#saveManager = new SaveManager({
-      gameId:   this.#config.id,
-      slots:    this.#config.saves?.slots ?? 5,
-      autoSave: this.#config.saves?.autoSave ?? true,
+      gameId:      this.#config.id,
+      gameVersion: this.#config.version,
+      slots:       this.#config.saves?.slots ?? 5,
+      autoSave:    this.#config.saves?.autoSave ?? true,
     })
     this.#assetLoader = new AssetLoader()
 

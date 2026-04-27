@@ -21,12 +21,13 @@ Object.defineProperty(globalThis, 'localStorage', {
 
 // --- helpers -------------------------------------------------------------
 
-function makeState(overrides?: Partial<{ displayName: string; sceneName: string }>): GameSaveState {
+function makeState(overrides?: Partial<{ displayName: string; sceneName: string; thumbnail: string }>): GameSaveState {
   return {
     meta: {
       displayName: overrides?.displayName ?? 'Chapter 1',
       sceneName: overrides?.sceneName ?? 'prologue',
       playtime: 0,
+      ...(overrides?.thumbnail ? { thumbnail: overrides.thumbnail } : {}),
     },
     state: {},
   }
@@ -91,6 +92,12 @@ describe('SaveLoadMenu', () => {
     expect(html).toContain('Auto Chapter')
     expect(html).toContain('castle')
     expect(html).toContain('Auto Save')
+  })
+
+  it('AC03: renders a thumbnail image for occupied slots with thumbnail metadata', () => {
+    sm.save(1, makeState({ displayName: 'Thumb Save', sceneName: 'gallery', thumbnail: 'scenes/gallery/thumb.jpg' }))
+    const html = render({ isOpen: true, onClose: () => {}, saveManager: sm, getState: defaultGetState })
+    expect(html).toContain('src="./assets/scenes/gallery/thumb.jpg"')
   })
 
   // US-001-AC04 — empty slots show "Empty slot"

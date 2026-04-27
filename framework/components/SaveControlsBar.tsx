@@ -4,8 +4,6 @@ import type { SaveManager } from '../SaveManager.ts'
 import type { GameSaveState } from '../types/save.d.ts'
 import { quickSave } from './VnQuickSave.tsx'
 
-const AUTO_SAVE_KEY = 'vn:autoSave'
-
 /**
  * Props accepted by {@link SaveControlsBar}.
  */
@@ -51,7 +49,7 @@ export interface SaveControlsBarProps {
    * The game's `EventBus` instance. Required for auto-save to subscribe to
    * `engine:dialog` events. When omitted, auto-save subscription is skipped.
    */
-  eventBus?: EventBus
+  eventBus?: EventBus<any>
 }
 
 const TOGGLE_LABEL_STYLE: React.CSSProperties = {
@@ -161,10 +159,11 @@ const TOAST_STYLE: React.CSSProperties = {
  */
 export function SaveControlsBar({ saveManager, getState, onOpenMenu, showQuickSave = true, showSlotMenu = true, showAutoSave = true, eventBus }: SaveControlsBarProps): React.ReactElement {
   const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const autoSaveKey = saveManager.autoSavePreferenceKey
 
   const [autoSaveEnabled, setAutoSaveEnabled] = useState<boolean>(() => {
     try {
-      const stored = localStorage.getItem(AUTO_SAVE_KEY)
+      const stored = localStorage.getItem(autoSaveKey)
       return stored === null ? true : stored === 'true'
     } catch {
       return true
@@ -207,7 +206,7 @@ export function SaveControlsBar({ saveManager, getState, onOpenMenu, showQuickSa
     const next = !autoSaveEnabled
     setAutoSaveEnabled(next)
     try {
-      localStorage.setItem(AUTO_SAVE_KEY, String(next))
+      localStorage.setItem(autoSaveKey, String(next))
     } catch {
       console.warn('[SaveControlsBar] Could not persist autoSave preference')
     }

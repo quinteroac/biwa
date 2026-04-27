@@ -7,10 +7,10 @@ import type { TagCommand } from '../TagParser.ts'
  */
 export class AmbienceController {
   #audio: HTMLAudioElement | null = null
-  #bus: EventBus
+  #bus: EventBus<any>
   #unsubscribe: () => void
 
-  constructor(bus: EventBus) {
+  constructor(bus: EventBus<any>) {
     this.#bus = bus
     this.#unsubscribe = this.#bus.on<TagCommand>('engine:ambience', cmd => this.#handle(cmd))
   }

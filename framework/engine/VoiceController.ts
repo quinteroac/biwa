@@ -8,10 +8,10 @@ import type { TagCommand } from '../TagParser.ts'
  */
 export class VoiceController {
   #audio: HTMLAudioElement | null = null
-  #bus: EventBus
+  #bus: EventBus<any>
   #unsubscribe: () => void
 
-  constructor(bus: EventBus) {
+  constructor(bus: EventBus<any>) {
     this.#bus = bus
     this.#unsubscribe = this.#bus.on<TagCommand>('engine:voice', cmd => this.#handle(cmd))
   }

@@ -1,0 +1,75 @@
+import type { TagCommand } from '../TagParser.ts'
+import type { EngineState } from '../engine/GameEngine.ts'
+
+export interface EngineDialogEvent {
+  text: string
+  speaker?: string
+  nameColor: string | null
+  canContinue: boolean
+  advanceMode: 'none' | 'choices'
+}
+
+export interface EngineChoice {
+  text: string
+  index: number
+}
+
+export interface EngineChoicesEvent {
+  choices: EngineChoice[]
+}
+
+export interface EngineSceneEvent extends TagCommand {
+  type: 'scene'
+  data?: Record<string, unknown>
+}
+
+export interface EngineCharacterEvent extends TagCommand {
+  type: 'character'
+}
+
+export interface EngineAudioEvent extends TagCommand {
+  type: 'bgm' | 'sfx' | 'ambience' | 'voice'
+}
+
+export interface EngineTransitionEvent {
+  config: Record<string, unknown>
+  done: () => void
+}
+
+export interface EngineMinigameStartEvent {
+  id: string
+  tag: Record<string, unknown>
+}
+
+export interface EngineMinigameEndEvent {
+  id: string
+  result: unknown
+  error?: string
+}
+
+export interface EndScreenEvent {
+  title?: string
+  message?: string
+}
+
+export interface EngineEventMap {
+  'engine:state': EngineState
+  'engine:dialog': EngineDialogEvent
+  'engine:choices': EngineChoicesEvent
+  'engine:scene': EngineSceneEvent
+  'engine:character': EngineCharacterEvent
+  'engine:bgm': EngineAudioEvent
+  'engine:sfx': EngineAudioEvent
+  'engine:ambience': EngineAudioEvent
+  'engine:voice': EngineAudioEvent
+  'engine:transition': EngineTransitionEvent
+  'engine:minigame:start': EngineMinigameStartEvent
+  'engine:minigame:end': EngineMinigameEndEvent
+  'engine:end': Record<string, never>
+  end_screen: EndScreenEvent
+}
+
+export interface WildcardEvent<TEvents extends Record<string, unknown> = EngineEventMap> {
+  event: keyof TEvents & string
+  payload: TEvents[keyof TEvents]
+}
