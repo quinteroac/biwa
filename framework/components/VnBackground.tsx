@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { defaultRendererRegistry } from '../renderers/RendererRegistry.ts'
 
 type BackgroundFit = 'cover' | 'contain' | 'fill'
 
@@ -29,7 +30,7 @@ export interface VnBackgroundProps {
   scene: { id: string; data: SceneData['data']; variant?: string } | null
 }
 
-function resolveAsset(path: string | undefined): string | null {
+export function resolveBackgroundAsset(path: string | undefined): string | null {
   if (!path) return null
   if (path.startsWith('http') || path.startsWith('/')) return path
   return `./assets/${path}`
@@ -72,18 +73,21 @@ function renderUnsupportedBackground(el: HTMLDivElement, type: string): void {
 
 export function VnBackground({ scene }: VnBackgroundProps) {
   const bgRef = useRef<HTMLDivElement>(null)
+  const bg = scene?.data?.background
+  const externalRenderer = bg ? defaultRendererRegistry.get('background', bg.type) : undefined
 
   useEffect(() => {
     const el = bgRef.current
     if (!el) return
 
     el.innerHTML = ''
-    const bg = scene?.data?.background
 
     if (!bg) {
       el.style.background = '#111'
       return
     }
+
+    if (externalRenderer) return
 
     if (bg.type === 'static') {
       const selected = selectBackgroundVariant(bg, scene?.variant)
@@ -96,7 +100,7 @@ export function VnBackground({ scene }: VnBackgroundProps) {
         `background-position:${selected.position ?? bg.position ?? 'center'}`,
         'background-repeat:no-repeat',
       ].join(';')
-      div.style.backgroundImage = img ? `url("${resolveAsset(img)}")` : 'none'
+      div.style.backgroundImage = img ? `url("${resolveBackgroundAsset(img)}")` : 'none'
       el.appendChild(div)
     } else if (bg.type === 'parallax') {
       const selected = selectBackgroundVariant(bg, scene?.variant)
@@ -112,7 +116,7 @@ export function VnBackground({ scene }: VnBackgroundProps) {
           'background-repeat:no-repeat',
           'will-change:transform',
         ].join(';')
-        div.style.backgroundImage = `url("${resolveAsset(layer.image)}")`
+        div.style.backgroundImage = `url("${resolveBackgroundAsset(layer.image)}")`
         el.appendChild(div)
         layerEls.push({ el: div, depth: layer.depth ?? 1 })
       }
@@ -128,8 +132,8 @@ export function VnBackground({ scene }: VnBackgroundProps) {
       return () => window.removeEventListener('mousemove', handler)
     } else if (bg.type === 'video') {
       const video = document.createElement('video')
-      video.src = resolveAsset(bg.src ?? bg.file) ?? ''
-      const poster = resolveAsset(bg.poster)
+      video.src = resolveBackgroundAsset(bg.src ?? bg.file) ?? ''
+      const poster = resolveBackgroundAsset(bg.poster)
       if (poster) video.poster = poster
       video.autoplay = true
       video.loop = true
@@ -141,7 +145,18 @@ export function VnBackground({ scene }: VnBackgroundProps) {
     } else {
       renderUnsupportedBackground(el, bg.type)
     }
-  }, [scene])
+  }, [scene, bg, externalRenderer])
+
+  if (bg && externalRenderer) {
+    const ExternalBackground = externalRenderer.component
+    return (
+      <ExternalBackground
+        scene={scene}
+        background={bg as unknown as Record<string, unknown>}
+        resolveAsset={resolveBackgroundAsset}
+      />
+    )
+  }
 
   return (
     <div

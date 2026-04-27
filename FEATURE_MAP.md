@@ -18,53 +18,6 @@ El framework ya tiene una base tecnica estable para runtime, UI de jugador, dato
 
 ## Pendientes
 
-### P0 - Contrato Base De Plugins
-
-Objetivo: definir la unidad minima de plugin que el framework puede descubrir, validar y cargar sin acoplarse a una novela concreta.
-
-Estado: completado. El detalle vive en `CHANGELOG.md` y `framework/docs/plugins.md`.
-
-Alcance cerrado:
-
-- Definir `vn-plugin.json` o `plugin.config.ts` con `id`, `name`, `version`, `type`, `entry`, `capabilities` y `compatibility`.
-- Tipar `VnPluginManifest`, `VnPluginModule`, `VnPluginContext` y errores publicos.
-- Crear `PluginRegistry` en framework para registrar plugins por id.
-- Resolver plugins desde `game.config.ts` sin ejecutar codigo no declarado.
-- Agregar lifecycle minimo: `setup(context)`, `dispose()`.
-- Exponer contexto limitado: `engine`, `eventBus`, `assetBase`, `gameId`, `logger`.
-- Tests de manifest valido/invalido, registro duplicado y lifecycle.
-
-Criterios de salida:
-
-- Un juego puede declarar plugins en config.
-- El framework valida manifiestos antes de cargar entrypoints.
-- Plugins duplicados o incompatibles fallan con diagnosticos claros.
-- `bun run verify` sigue pasando con fixture sin plugins.
-
-### P1 - Renderers Externos
-
-Objetivo: permitir que plugins registren renderers visuales reemplazables sin tocar `VnStage`.
-
-Alcance:
-
-- Crear contratos para:
-  - `backgroundRenderer`
-  - `characterRenderer`
-  - `transitionRenderer`
-  - `overlayRenderer`
-  - `extrasRenderer`
-- Crear `RendererRegistry` con lookup por `type`.
-- Hacer que `VnBackground`, `VnCharacter` y `VnTransition` consulten el registry antes de caer a renderers internos.
-- Definir props estables para cada renderer externo.
-- Soportar fallback explicito si un renderer no existe o falla.
-- Tests SSR/unitarios para dispatch, fallback y errores.
-
-Criterios de salida:
-
-- Un plugin puede registrar un renderer `background.type = custom-id`.
-- Un renderer externo puede renderizar sin modificar componentes core.
-- Si falta el renderer, `doctor` y runtime muestran una causa accionable.
-
 ### P2 - Tooling CLI Y Doctor
 
 Objetivo: que desarrollar plugins sea un flujo soportado por la suite de manager.

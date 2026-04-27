@@ -77,6 +77,7 @@ export default plugin
 - `gameId`
 - `engine`
 - `eventBus`
+- `rendererRegistry`
 - `assetBase`
 - `logger`
 
@@ -92,3 +93,64 @@ Plugins are trusted game code. They are not sandboxed.
 - missing local `entry` files.
 
 Renderer-specific validation is planned in the renderer phase.
+
+## Registering Renderers
+
+Plugins with the `renderer` capability can register external visual renderers during `setup()`.
+
+```tsx
+import type { VnPluginModule } from '../../../framework/types/plugins.d.ts'
+
+const plugin: VnPluginModule = {
+  setup({ rendererRegistry }) {
+    rendererRegistry.register('background', 'ink-wash', ({ background, resolveAsset }) => (
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundImage: `url("${resolveAsset(String(background.image))}")`,
+          backgroundSize: 'cover',
+        }}
+      />
+    ))
+  },
+}
+
+export default plugin
+```
+
+Supported renderer kinds:
+
+- `background`
+- `character`
+- `transition`
+- `overlay`
+- `extras`
+
+P1 dispatch support is active for `background`, `character` and `transition`. `overlay` and `extras` are reserved contracts for follow-up UI extension points.
+
+## Data Dispatch
+
+Background renderers are selected from scene data:
+
+```yaml
+background:
+  type: ink-wash
+  image: scenes/opening/ink.png
+```
+
+Character renderers are selected from character animation data:
+
+```yaml
+animation:
+  type: spine
+  file: characters/kai/kai.skel
+```
+
+Transition renderers are selected from Ink transition tags:
+
+```ink
+# transition: iris, duration: 0.8
+```
+
+If no external renderer exists, the framework keeps using its built-in renderer or fallback message.

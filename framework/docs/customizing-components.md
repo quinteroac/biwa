@@ -129,6 +129,12 @@ Any component under `framework/components/` is a candidate. The most common repl
 
 For components that `VnStage` renders internally, prefer `stageComponents` before writing a full replacement stage.
 
+## Renderer Plugins
+
+For reusable visual systems, prefer a plugin renderer over replacing the whole component. Plugins can register renderers for background, character and transition `type` values while keeping `VnStage` and the default UI shell intact.
+
+See `framework/docs/plugins.md` for the renderer registry contract.
+
 ---
 
 ## Reusing engine logic without any React layer

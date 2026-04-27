@@ -1,5 +1,6 @@
 import type { EventBus } from '../engine/EventBus.ts'
 import type { GameEngine } from '../engine/GameEngine.ts'
+import type { RendererRegistry } from '../renderers/RendererRegistry.ts'
 import type { EngineEventMap } from './events.d.ts'
 
 export type VnPluginCapability = 'renderer' | 'stage' | 'overlay' | 'engine-event' | 'asset-loader'
@@ -28,6 +29,7 @@ export interface VnPluginContext {
   gameId: string
   engine: GameEngine
   eventBus: EventBus<EngineEventMap>
+  rendererRegistry: RendererRegistry
   assetBase: string
   logger: VnPluginLogger
 }

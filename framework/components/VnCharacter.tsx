@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { getAsepriteFrameItems, getAsepriteFrameTags } from '../engine/AsepriteAtlas.ts'
+import { defaultRendererRegistry } from '../renderers/RendererRegistry.ts'
 import type { AsepriteAtlas } from '../engine/AsepriteAtlas.ts'
 
 interface CharacterLayer {
@@ -134,6 +135,7 @@ export function VnCharacter({ id, charData, position, expression, exiting, onExi
 
   const anim   = charData?.animation
   const layers = charData?.layers
+  const externalRenderer = anim ? defaultRendererRegistry.get('character', anim.type) : undefined
 
   let spriteSrc: string | null = null
   if (anim?.type === 'sprites' && anim.sprites) {
@@ -178,7 +180,22 @@ export function VnCharacter({ id, charData, position, expression, exiting, onExi
       transition: 'opacity 0.4s ease, transform 0.4s ease',
       ...posStyle,
     }}>
-      {anim?.type === 'spritesheet' && anim.file && anim.atlas && anim.expressions && (
+      {anim && externalRenderer && (() => {
+        const ExternalCharacter = externalRenderer.component
+        return (
+          <ExternalCharacter
+            id={id}
+            charData={charData as Record<string, unknown> | null}
+            animation={anim as unknown as Record<string, unknown>}
+            position={position}
+            expression={expression}
+            exiting={exiting}
+            assetBase="./assets/"
+            onExited={onExited}
+          />
+        )
+      })()}
+      {!externalRenderer && anim?.type === 'spritesheet' && anim.file && anim.atlas && anim.expressions && (
         <SpritesheetRenderer
           file={anim.file}
           atlas={anim.atlas}
@@ -186,14 +203,14 @@ export function VnCharacter({ id, charData, position, expression, exiting, onExi
           expressions={anim.expressions}
         />
       )}
-      {spriteSrc && (
+      {!externalRenderer && spriteSrc && (
         <img
           src={spriteSrc}
           alt={`${charData?.displayName ?? id} - ${expression}`}
           style={{ display: 'block', width: '100%', height: 'auto', userSelect: 'none' }}
         />
       )}
-      {unsupportedAnimationType && (
+      {!externalRenderer && unsupportedAnimationType && (
         <div
           data-testid="vn-character-renderer-fallback"
           style={{
@@ -212,7 +229,7 @@ export function VnCharacter({ id, charData, position, expression, exiting, onExi
           Unsupported character renderer: {anim.type}
         </div>
       )}
-      {layers && layers.length > 0 && (() => {
+      {!externalRenderer && layers && layers.length > 0 && (() => {
         const layerImgs = layers.flatMap(layer => {
           const sprites = layer.animation?.sprites
           if (!sprites) return []

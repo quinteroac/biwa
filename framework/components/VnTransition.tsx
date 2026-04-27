@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { defaultRendererRegistry } from '../renderers/RendererRegistry.ts'
 
 export interface TransitionConfig {
   type?: 'fade' | 'fade-color' | 'slide' | 'wipe' | 'cut'
@@ -14,12 +15,20 @@ export interface VnTransitionProps {
 
 export function VnTransition({ config, onDone }: VnTransitionProps) {
   const overlayRef = useRef<HTMLDivElement>(null)
+  const transitionType = config.type ?? 'fade'
+  const externalRenderer = defaultRendererRegistry.get('transition', transitionType)
 
   useEffect(() => {
     const ov = overlayRef.current
+    if (externalRenderer) return
     if (!config || !ov) return
     void runTransition(ov, config).then(onDone)
-  }, [config])  // eslint-disable-line react-hooks/exhaustive-deps
+  }, [config, externalRenderer])  // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (externalRenderer) {
+    const ExternalTransition = externalRenderer.component
+    return <ExternalTransition config={config as unknown as Record<string, unknown>} onDone={onDone} />
+  }
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 100, pointerEvents: 'none' }}>

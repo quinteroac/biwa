@@ -49,6 +49,7 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Plugin manifest types, registry, runtime lifecycle and `GameEngine` plugin loading.
 - `game.config.ts` plugin declarations with schema and doctor validation.
 - Plugin contract documentation.
+- `RendererRegistry` with external renderer dispatch for backgrounds, characters and transitions.
 
 ### Changed
 
@@ -70,3 +71,4 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Save controls and player reading controls share the same bottom bar styling.
 - `VnStage` exposes gallery and music-room access when player extras are configured.
 - `VnStage` now groups settings, gallery and music room under a top-right gear menu beside audio controls.
+- Built-in visual components now consult external renderer registrations before showing unsupported renderer fallbacks.

@@ -1,5 +1,6 @@
 import type { EventBus } from '../engine/EventBus.ts'
 import type { GameEngine } from '../engine/GameEngine.ts'
+import { defaultRendererRegistry } from '../renderers/RendererRegistry.ts'
 import type { EngineEventMap } from '../types/events.d.ts'
 import type {
   VnPluginContext,
@@ -104,6 +105,7 @@ export function createPluginContext(engine: GameEngine, bus: EventBus<EngineEven
     gameId: engine.id,
     engine,
     eventBus: bus,
+    rendererRegistry: defaultRendererRegistry,
     assetBase,
     logger: {
       info: (message, ...args) => console.info(`[plugin] ${message}`, ...args),
