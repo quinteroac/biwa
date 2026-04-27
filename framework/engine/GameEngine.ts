@@ -10,6 +10,7 @@ import { AmbienceController } from './AmbienceController.ts'
 import { VoiceController } from './VoiceController.ts'
 import { PlayerUnlocks } from '../player/PlayerUnlocks.ts'
 import { PluginRegistry, createPluginContext, loadPluginDescriptor } from '../plugins/PluginRegistry.ts'
+import { TagRegistry } from '../plugins/TagRegistry.ts'
 import type { BacklogEntry, GameSaveState, SavedAudioState, SavedCharacterState, SavedVisualState } from '../types/save.d.ts'
 import type { GameConfig } from '../types/game-config.d.ts'
 import type { TagCommand } from './ScriptRunner.ts'
@@ -52,6 +53,7 @@ export class GameEngine {
   #assetLoader!: AssetLoader
   #minigameRegistry = new MinigameRegistry()
   #pluginRegistry = new PluginRegistry()
+  #tagRegistry = new TagRegistry()
   #bgm: BgmController
   #sfx: SfxController
   #ambience: AmbienceController
@@ -113,6 +115,7 @@ export class GameEngine {
   /** Expose the internal SaveManager instance for UI components. */
   get saveManager(): SaveManager { return this.#saveManager }
   get plugins(): PluginRegistry { return this.#pluginRegistry }
+  get tags(): TagRegistry { return this.#tagRegistry }
 
   /** Return a serialisable snapshot compatible with `SaveManager.save()` */
   getState(): GameSaveState {
@@ -256,7 +259,7 @@ export class GameEngine {
       const { manifest, module } = await loadPluginDescriptor(descriptor)
       this.#pluginRegistry.register(manifest, module)
     }
-    await this.#pluginRegistry.setupAll(createPluginContext(this, this.#bus))
+    await this.#pluginRegistry.setupAll(createPluginContext(this, this.#bus, './assets/', this.#tagRegistry))
   }
 
   async dispose(): Promise<void> {
@@ -422,6 +425,12 @@ export class GameEngine {
           break
         case 'speaker':
           break
+        case 'volume':
+          break
+        default:
+          if (!await this.#tagRegistry.dispatch(tag, { engine: this, eventBus: this.#bus })) {
+            this.#bus.emit('engine:tag:unknown', { tag })
+          }
       }
     }
   }

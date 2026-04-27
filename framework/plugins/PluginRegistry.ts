@@ -1,7 +1,9 @@
 import type { EventBus } from '../engine/EventBus.ts'
 import type { GameEngine } from '../engine/GameEngine.ts'
 import { defaultRendererRegistry } from '../renderers/RendererRegistry.ts'
+import { CORE_TAGS, defaultTagRegistry } from './TagRegistry.ts'
 import type { EngineEventMap } from '../types/events.d.ts'
+import type { TagRegistry } from './TagRegistry.ts'
 import type {
   VnPluginContext,
   VnPluginDescriptor,
@@ -11,7 +13,7 @@ import type {
 } from '../types/plugins.d.ts'
 
 const PLUGIN_ID_RE = /^[a-z0-9][a-z0-9-]*$/
-const KNOWN_CAPABILITIES = new Set(['renderer', 'stage', 'overlay', 'engine-event', 'asset-loader'])
+const KNOWN_CAPABILITIES = new Set(['renderer', 'stage', 'overlay', 'engine-event', 'asset-loader', 'ink-tag'])
 const RESERVED_PLUGIN_IDS = new Set(['framework', 'core', 'engine', 'stage', 'renderer', 'renderers', 'vn'])
 
 export const VN_PLUGIN_API_VERSION = 'vn-plugin-api-v1'
@@ -107,6 +109,9 @@ export function validatePluginManifest(manifest: VnPluginManifest): void {
   if (manifest.renderers !== undefined && !manifest.capabilities.includes('renderer')) {
     throw new PluginValidationError(`Plugin "${manifest.id}" declares renderers without the "renderer" capability.`)
   }
+  if (manifest.tags !== undefined && !manifest.capabilities.includes('ink-tag')) {
+    throw new PluginValidationError(`Plugin "${manifest.id}" declares tags without the "ink-tag" capability.`)
+  }
   if (manifest.renderers) {
     for (const [kind, values] of Object.entries(manifest.renderers)) {
       if (!['background', 'character', 'transition', 'overlay', 'extras'].includes(kind)) {
@@ -117,18 +122,34 @@ export function validatePluginManifest(manifest: VnPluginManifest): void {
       }
     }
   }
+  if (manifest.tags) {
+    for (const tag of manifest.tags) {
+      if (typeof tag !== 'string' || tag.length === 0) {
+        throw new PluginValidationError(`Plugin "${manifest.id}" tag declarations must be non-empty strings.`)
+      }
+      if (CORE_TAGS.has(tag)) {
+        throw new PluginValidationError(`Plugin "${manifest.id}" cannot declare reserved core tag "${tag}".`)
+      }
+    }
+  }
   const pluginApi = manifest.compatibility?.pluginApi
   if (pluginApi !== undefined && pluginApi !== VN_PLUGIN_API_VERSION) {
     throw new PluginValidationError(`Plugin "${manifest.id}" requires unsupported plugin API "${pluginApi}". Current API is "${VN_PLUGIN_API_VERSION}".`)
   }
 }
 
-export function createPluginContext(engine: GameEngine, bus: EventBus<EngineEventMap>, assetBase = './assets/'): VnPluginContext {
+export function createPluginContext(
+  engine: GameEngine,
+  bus: EventBus<EngineEventMap>,
+  assetBase = './assets/',
+  tags: TagRegistry = defaultTagRegistry,
+): VnPluginContext {
   return {
     gameId: engine.id,
     engine,
     eventBus: bus,
     rendererRegistry: defaultRendererRegistry,
+    tags,
     assetBase,
     logger: {
       info: (message, ...args) => console.info(`[plugin] ${message}`, ...args),

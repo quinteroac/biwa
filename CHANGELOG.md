@@ -63,6 +63,9 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Prebuilt plugin catalog metadata for category, status, capabilities, renderers and config examples.
 - `plugins official --category` and `--status` filters.
 - Prebuilt plugin catalog docs with stability policy and `ink-wash` options.
+- `TagRegistry` for plugin-declared Ink tags with runtime dispatch and core tag collision protection.
+- Plugin manifest `tags` declarations and `ink-tag` capability.
+- Doctor validation for unknown Ink tags against core tags and declared plugin tags.
 
 ### Changed
 
@@ -85,3 +88,4 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - `VnStage` exposes gallery and music-room access when player extras are configured.
 - `VnStage` now groups settings, gallery and music room under a top-right gear menu beside audio controls.
 - Built-in visual components now consult external renderer registrations before showing unsupported renderer fallbacks.
+- Build manifests now include plugin-declared Ink tags.

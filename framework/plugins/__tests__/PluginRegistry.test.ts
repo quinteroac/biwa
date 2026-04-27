@@ -25,6 +25,23 @@ describe('PluginRegistry', () => {
     })).toThrow('unsupported plugin API')
   })
 
+  it('validates plugin tag declarations', () => {
+    expect(() => validatePluginManifest({
+      ...manifest,
+      capabilities: ['ink-tag'],
+      tags: ['effect'],
+    })).not.toThrow()
+    expect(() => validatePluginManifest({
+      ...manifest,
+      tags: ['effect'],
+    })).toThrow('without the "ink-tag" capability')
+    expect(() => validatePluginManifest({
+      ...manifest,
+      capabilities: ['ink-tag'],
+      tags: ['scene'],
+    })).toThrow('reserved core tag')
+  })
+
   it('registers plugins once and rejects duplicate ids', () => {
     const registry = new PluginRegistry()
     registry.register(manifest, {})

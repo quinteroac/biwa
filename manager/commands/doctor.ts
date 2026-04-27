@@ -5,6 +5,7 @@ import yaml from 'js-yaml'
 import { TagParser } from '../../framework/TagParser.ts'
 import { validateAsepriteAtlas } from '../../framework/engine/AsepriteAtlas.ts'
 import { validatePluginManifest } from '../../framework/plugins/PluginRegistry.ts'
+import { CORE_TAGS } from '../../framework/plugins/TagRegistry.ts'
 import { validateJsonSchema } from '../schemaValidator.ts'
 import type { GameConfig } from '../../framework/types/game-config.d.ts'
 import type { TagCommand } from '../../framework/TagParser.ts'
@@ -63,6 +64,7 @@ interface DiagnosticSuppression {
 
 type RendererKind = 'background' | 'character' | 'transition'
 type RendererDeclarations = Record<RendererKind, Set<string>>
+type TagDeclarations = Set<string>
 
 const BUILT_IN_RENDERERS: Record<RendererKind, Set<string>> = {
   background: new Set(['static', 'parallax', 'video']),
@@ -233,6 +235,16 @@ function declaredRenderers(config: GameConfig): RendererDeclarations {
       for (const type of plugin.renderers?.[kind] ?? []) {
         declarations[kind].add(type)
       }
+    }
+  }
+  return declarations
+}
+
+function declaredPluginTags(config: GameConfig): TagDeclarations {
+  const declarations = new Set<string>()
+  for (const plugin of config.plugins ?? []) {
+    for (const tag of plugin.tags ?? []) {
+      declarations.add(tag)
     }
   }
   return declarations
@@ -448,6 +460,7 @@ function validateDataFile(
 
 function validateStoryReferences(gameDir: string, config: GameConfig, maps: DataMaps, issues: Issue[]): void {
   const rendererDeclarations = declaredRenderers(config)
+  const tagDeclarations = declaredPluginTags(config)
   const storyFiles = walkFiles(join(gameDir, 'story'), '.ink')
   for (const filePath of storyFiles) {
     const lines = readFileSync(filePath, 'utf8').split(/\r?\n/)
@@ -455,7 +468,7 @@ function validateStoryReferences(gameDir: string, config: GameConfig, maps: Data
       const trimmed = line.trim()
       if (trimmed.startsWith('#')) {
         const tag = TagParser.parseOne(trimmed)
-        if (tag) validateTagReference(filePath, idx + 1, tag, maps, issues, rendererDeclarations)
+        if (tag) validateTagReference(filePath, idx + 1, tag, maps, issues, rendererDeclarations, tagDeclarations)
       }
       const minigameMatch = trimmed.match(/launch_minigame\("([^"]+)"\)/)
       if (minigameMatch) {
@@ -480,7 +493,19 @@ function validateTagReference(
   maps: DataMaps,
   issues: Issue[],
   rendererDeclarations: RendererDeclarations,
+  tagDeclarations: TagDeclarations,
 ): void {
+  if (!CORE_TAGS.has(tag.type) && !tagDeclarations.has(tag.type)) {
+    issues.push({
+      severity: 'error',
+      path: `${filePath}:${line}`,
+      code: 'tag_unknown',
+      message: `Unknown Ink tag "${tag.type}".`,
+      suggestion: `Use a core tag or declare "${tag.type}" under plugins[].tags.`,
+    })
+    return
+  }
+  if (tagDeclarations.has(tag.type) && !CORE_TAGS.has(tag.type)) return
   if (tag.type === 'transition') {
     validateRendererReference(rendererDeclarations, `${filePath}:${line}`, 'transition', tag.id, issues)
     return

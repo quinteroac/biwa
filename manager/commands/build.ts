@@ -343,6 +343,7 @@ function writeBuildManifest(
     entry: plugin.entry ? plugin.entry.replace(/\.tsx?$/, '.js') : null,
     capabilities: plugin.capabilities,
     renderers: plugin.renderers ?? {},
+    tags: plugin.tags ?? [],
     compatibility: plugin.compatibility ?? {},
   }))
   const manifest = {

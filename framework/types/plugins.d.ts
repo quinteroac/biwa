@@ -1,9 +1,10 @@
 import type { EventBus } from '../engine/EventBus.ts'
 import type { GameEngine } from '../engine/GameEngine.ts'
 import type { RendererRegistry } from '../renderers/RendererRegistry.ts'
+import type { TagRegistry } from '../plugins/TagRegistry.ts'
 import type { EngineEventMap } from './events.d.ts'
 
-export type VnPluginCapability = 'renderer' | 'stage' | 'overlay' | 'engine-event' | 'asset-loader'
+export type VnPluginCapability = 'renderer' | 'stage' | 'overlay' | 'engine-event' | 'asset-loader' | 'ink-tag'
 
 export interface VnPluginCompatibility {
   framework?: string
@@ -26,6 +27,7 @@ export interface VnPluginManifest {
   entry?: string
   capabilities: VnPluginCapability[]
   renderers?: VnPluginRendererDeclarations
+  tags?: string[]
   compatibility?: VnPluginCompatibility
 }
 
@@ -40,6 +42,7 @@ export interface VnPluginContext {
   engine: GameEngine
   eventBus: EventBus<EngineEventMap>
   rendererRegistry: RendererRegistry
+  tags: TagRegistry
   assetBase: string
   logger: VnPluginLogger
 }

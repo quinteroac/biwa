@@ -68,6 +68,7 @@ Supported capabilities:
 - `overlay`
 - `engine-event`
 - `asset-loader`
+- `ink-tag`
 
 ## Module Contract
 
@@ -100,6 +101,7 @@ export default plugin
 - `engine`
 - `eventBus`
 - `rendererRegistry`
+- `tags`
 - `assetBase`
 - `logger`
 
@@ -142,6 +144,7 @@ Production builds record this policy in `manifest.json`:
 - unsupported `compatibility.pluginApi` values.
 - remote or out-of-game plugin entries.
 - renderer types used by game data or Ink transition tags but not declared by any plugin.
+- Ink tags that are neither core tags nor declared under `plugins[].tags`.
 
 ## CLI Tooling
 
@@ -257,6 +260,53 @@ Transition renderers are selected from Ink transition tags:
 ```
 
 If no external renderer exists, the framework keeps using its built-in renderer or fallback message.
+
+## Registering Ink Tags
+
+Plugins with the `ink-tag` capability can declare and handle custom Ink tags.
+
+Declare tags in `game.config.ts`:
+
+```ts
+plugins: [
+  {
+    id: 'screen-effects',
+    name: 'Screen Effects',
+    version: '0.1.0',
+    type: 'plugin',
+    capabilities: ['ink-tag'],
+    tags: ['effect'],
+    loader: () => import('./plugins/screen-effects/index.ts'),
+  },
+]
+```
+
+Register handlers during setup:
+
+```ts
+import type { VnPluginModule } from '../../../framework/types/plugins.d.ts'
+
+const plugin: VnPluginModule = {
+  setup({ tags, logger }) {
+    tags.register('effect', (tag) => {
+      logger.info(`Effect requested: ${tag.id ?? 'unknown'}`)
+    }, {
+      pluginId: 'screen-effects',
+      description: 'Runs screen effect commands from Ink.',
+    })
+  },
+}
+
+export default plugin
+```
+
+Ink usage:
+
+```ink
+# effect: shake, intensity: 0.4, duration: 0.3
+```
+
+Custom tags cannot override core framework tags such as `scene`, `character`, `bgm`, `transition`, `save` or `unlock`.
 
 ## Official Ink Wash Background
 

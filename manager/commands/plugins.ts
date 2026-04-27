@@ -93,6 +93,10 @@ function rendererSummary(plugin: VnPluginDescriptor): string {
   return parts.length > 0 ? parts.join(',') : '—'
 }
 
+function tagSummary(plugin: VnPluginDescriptor): string {
+  return plugin.tags && plugin.tags.length > 0 ? plugin.tags.join(',') : '—'
+}
+
 function rendererDefinitionSummary(renderers: VnPluginDescriptor['renderers']): string {
   const parts = Object.entries(renderers ?? {}).flatMap(([kind, values]) =>
     (values ?? []).map((value: string) => `${kind}:${value}`),
@@ -319,8 +323,8 @@ async function listPlugins(gameId: string): Promise<void> {
   }
 
   console.log(`\nPlugins for ${gameId}:\n`)
-  console.log(`${'ID'.padEnd(22)} ${'Version'.padEnd(10)} ${'Capabilities'.padEnd(28)} ${'Renderers'.padEnd(28)} Status`)
-  console.log('─'.repeat(100))
+  console.log(`${'ID'.padEnd(22)} ${'Version'.padEnd(10)} ${'Capabilities'.padEnd(28)} ${'Renderers'.padEnd(28)} ${'Tags'.padEnd(18)} Status`)
+  console.log('─'.repeat(122))
   for (const plugin of plugins) {
     let status = 'ok'
     try {
@@ -328,7 +332,7 @@ async function listPlugins(gameId: string): Promise<void> {
     } catch (e) {
       status = e instanceof Error ? e.message : String(e)
     }
-    console.log(`${plugin.id.padEnd(22)} ${plugin.version.padEnd(10)} ${plugin.capabilities.join(',').padEnd(28)} ${rendererSummary(plugin).padEnd(28)} ${status}`)
+    console.log(`${plugin.id.padEnd(22)} ${plugin.version.padEnd(10)} ${plugin.capabilities.join(',').padEnd(28)} ${rendererSummary(plugin).padEnd(28)} ${tagSummary(plugin).padEnd(18)} ${status}`)
   }
   console.log('')
 }

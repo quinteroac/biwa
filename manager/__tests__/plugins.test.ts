@@ -181,4 +181,27 @@ export default config
     expect(codes).toContain('plugin_manifest_invalid')
     expect(codes).toContain('plugin_entry_remote')
   })
+
+  it('doctor validates plugin-declared Ink tags', async () => {
+    const invalidGameId = 'plugin-tag-doctor-invalid'
+    writeMinimalGame(invalidGameId)
+    writeFileSync(join(gameDir(invalidGameId), 'story/en/main.ink'), '# effect: shake\nHello.\n')
+
+    const invalid = await validateGame(invalidGameId)
+    expect(invalid.issues.map(issue => issue.code)).toContain('tag_unknown')
+
+    const validGameId = 'plugin-tag-doctor-valid'
+    writeMinimalGame(validGameId, `plugins: [{
+    id: 'screen-effects',
+    name: 'Screen Effects',
+    version: '1.0.0',
+    type: 'plugin',
+    capabilities: ['ink-tag'],
+    tags: ['effect'],
+  }],`)
+    writeFileSync(join(gameDir(validGameId), 'story/en/main.ink'), '# effect: shake\nHello.\n')
+
+    const valid = await validateGame(validGameId)
+    expect(valid.issues.map(issue => issue.code)).not.toContain('tag_unknown')
+  })
 })

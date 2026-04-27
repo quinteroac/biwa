@@ -20,41 +20,7 @@ El framework ya tiene una base tecnica estable para runtime, UI de jugador, dato
 
 ## Pendientes
 
-### P0 - Tag Registry Para Plugins
-
-Objetivo: permitir que plugins declarados agreguen comandos Ink propios sin modificar el `TagParser` core.
-
-Alcance:
-
-- `TagRegistry` del framework:
-  - registro de tags por nombre.
-  - handler runtime por plugin.
-  - metadata para doctor/build.
-  - colisiones prohibidas con tags core y tags ya registrados.
-- API en `PluginContext`:
-  - `context.tags.register('effect', handler)`.
-  - acceso controlado al engine/eventBus desde handlers.
-  - soporte para handlers sync/async.
-- Integracion con engine:
-  - tags core siguen funcionando como hoy.
-  - tags desconocidos se consultan en `TagRegistry`.
-  - errores de handler se reportan con contexto de tag.
-- Integracion con `doctor`:
-  - valida tags Ink contra tags core + tags declarados por plugins.
-  - diagnostico para tag desconocido con sugerencia de declarar plugin.
-  - build manifest lista tags provistos por plugins.
-- Contrato recomendado:
-  - tags genericos por dominio, por ejemplo `# effect: shake, intensity: 0.4`.
-  - evitar que cada plugin reserve muchos tags globales.
-
-Criterios de salida:
-
-- Un plugin puede registrar un tag Ink y reaccionar durante runtime.
-- `doctor` reconoce tags registrados por plugins declarados.
-- No se permite sobrescribir tags core.
-- Tests cubren registro, colision, dispatch y validacion.
-
-### P1 - Renderers Visuales Oficiales
+### P0 - Renderers Visuales Oficiales
 
 Objetivo: cubrir los renderers visuales mas utiles para una VN sin dependencias externas pesadas.
 
@@ -80,7 +46,7 @@ Criterios de salida:
 - Docs muestran ejemplos YAML/Markdown para cada renderer.
 - `bun run verify` pasa.
 
-### P2 - Plugins De Efectos Visuales
+### P1 - Plugins De Efectos Visuales
 
 Objetivo: ofrecer efectos narrativos reutilizables sin que cada juego implemente overlays, timers y limpieza manualmente.
 
@@ -118,7 +84,7 @@ Criterios de salida:
 - Los efectos funcionan como plugins oficiales opt-in.
 - `doctor` valida tipos de efectos desconocidos cuando el plugin no esta declarado.
 
-### P3 - Plugins De Experiencia De Jugador
+### P2 - Plugins De Experiencia De Jugador
 
 Objetivo: mover features comunes de VN hacia plugins oficiales opt-in cuando no deban vivir obligatoriamente en el core.
 
@@ -142,7 +108,7 @@ Criterios de salida:
 - Las features siguen disponibles para juegos simples, pero quedan activables como plugins oficiales cuando sea razonable.
 - No se rompen los overrides actuales de `VnStage`.
 
-### P4 - Devtools Y Diagnostico En Runtime
+### P3 - Devtools Y Diagnostico En Runtime
 
 Objetivo: ofrecer herramientas oficiales para autores mientras desarrollan.
 
@@ -164,7 +130,7 @@ Criterios de salida:
 - Un autor puede depurar una escena sin abrir internals del engine.
 - `doctor` o build advierte si devtools se empaqueta accidentalmente.
 
-### P5 - Assets Y Generacion Asistida
+### P4 - Assets Y Generacion Asistida
 
 Objetivo: conectar el flujo de assets que ya existe con plugins oficiales de render.
 
@@ -185,7 +151,7 @@ Criterios de salida:
 - El formato ComfyUI/GameAssetsMaker queda como contrato documentado del framework.
 - El motor, doctor y plugin oficial aceptan el mismo formato.
 
-### P6 - Packaging Futuro
+### P5 - Packaging Futuro
 
 Objetivo: preparar publicacion sin implementarla antes de cerrar versionado.
 
