@@ -3,6 +3,7 @@ import { dirname, join, relative } from 'path'
 import yaml from 'js-yaml'
 import { Compiler } from 'inkjs/compiler/Compiler.js'
 import { CompilerOptions } from 'inkjs/compiler/CompilerOptions.js'
+import { printIssues, validateGame } from './doctor.ts'
 
 const ROOT = new URL('../../', import.meta.url).pathname.replace(/\/$/, '')
 
@@ -80,23 +81,33 @@ export async function build(gameId?: string): Promise<void> {
 
   console.log(`\n🔨 Building "${gameId}" → dist/${gameId}/\n`)
 
+  console.log('  Validating content...')
+  const { config, issues } = await validateGame(gameId)
+  const errors = issues.filter(issue => issue.severity === 'error')
+  if (errors.length > 0) {
+    printIssues(gameDir, issues)
+    throw new Error(`Build blocked by ${errors.length} doctor error(s).`)
+  }
+  const warnings = issues.filter(issue => issue.severity === 'warning')
+  console.log(`    ✓ doctor passed (${warnings.length} warning${warnings.length === 1 ? '' : 's'})`)
+
   mkdirSync(distDir, { recursive: true })
 
-  // 1. Compile all .ink files
-  console.log('  Compiling ink files...')
-  const inkFiles = walkFiles(join(gameDir, 'story'), ['.ink'])
-    .filter(f => !f.endsWith('.inc'))
-  for (const inkFile of inkFiles) {
+  // 1. Compile configured story entrypoints. Included Ink files are compiled through these roots.
+  console.log('  Compiling story entrypoints...')
+  const storyEntries = Object.entries(config.story.locales)
+  for (const [locale, storyPath] of storyEntries) {
+    const inkFile = join(gameDir, storyPath)
     const rel = relative(join(gameDir, 'story'), inkFile)
     const outPath = join(distDir, 'story', rel.replace('.ink', '.json'))
     mkdirSync(join(outPath, '..'), { recursive: true })
     try {
       const json = await compileInk(inkFile)
       writeFileSync(outPath, json)
-      console.log(`    ✓ ${rel}`)
+      console.log(`    ✓ ${locale}: ${rel}`)
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e))
-      console.warn(`    ✗ ${rel}: ${err.message}`)
+      throw new Error(`Failed to compile ${rel}:\n${err.message}`)
     }
   }
 
@@ -114,7 +125,7 @@ export async function build(gameId?: string): Promise<void> {
       console.log(`    ✓ ${rel}`)
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e))
-      console.warn(`    ✗ ${rel}: ${err.message}`)
+      throw new Error(`Failed to convert data/${rel}:\n${err.message}`)
     }
   }
   writeDataIndexes(join(gameDir, 'data'), join(distDir, 'data'))
@@ -138,7 +149,7 @@ export async function build(gameId?: string): Promise<void> {
   ]
   for (const { pkg, out, external } of reactBundles) {
     const result = await Bun.build({ entrypoints: [pkg], format: 'esm', outdir: vendorDir, naming: out, external })
-    if (!result.success) console.warn(`  Failed to bundle ${out}`)
+    if (!result.success) throw new Error(`Failed to bundle vendor/${out}: ${result.logs.map(log => log.message).join('\n')}`)
     else console.log(`    ✓ vendor/${out}`)
   }
 
@@ -167,7 +178,7 @@ export async function build(gameId?: string): Promise<void> {
         }
       } catch (e) {
         const err = e instanceof Error ? e : new Error(String(e))
-        console.warn(`    ✗ ${rel}: ${err.message}`)
+          throw new Error(`Failed to transpile framework/${rel}:\n${err.message}`)
       }
     }
   } else {

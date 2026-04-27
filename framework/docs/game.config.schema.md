@@ -1,23 +1,27 @@
-# `game.config.js` — Schema Reference
+# `game.config.ts` — Schema Reference
 
-`game.config.js` is the single file a developer creates to register a new visual novel within the framework. It tells the engine everything it needs to know about a specific game — where to find the story, data, assets, minigames, and how to present and distribute it.
+`game.config.ts` is the single file a developer creates to register a new visual novel within the framework. It tells the engine everything it needs to know about a specific game — where to find the story, data, assets, minigames, and how to present and distribute it.
 
 It lives at the root of each game folder:
 
 ```
 games/
   my-novel/
-    game.config.js   ← you are here
+    game.config.ts   ← you are here
     story/
     data/
     assets/
     minigames/
 ```
 
-The file must have a default export of a plain object:
+The file must have a default export of a `GameConfig` object:
 
-```js
-export default { ... }
+```ts
+import type { GameConfig } from '../../framework/types/game-config.d.ts'
+
+const config: GameConfig = { ... }
+
+export default config
 ```
 
 ---
@@ -34,7 +38,7 @@ export default { ... }
 | `description` | `string` | — | Short synopsis. Used in the portal listing and as LLM context when generating content. |
 | `cover` | `string` | — | Path to the cover image. Displayed in the portal and on the loading screen. Recommended size: `800×450px`. |
 
-```js
+```ts
 id:          'midnight-cafe',
 title:       'The Midnight Café',
 version:     '1.0.0',
@@ -53,7 +57,7 @@ Configures the Ink narrative and i18n support.
 | `story.defaultLocale` | `string` | ✅ | The base locale. Used when the player's detected language is not in `story.locales`. Example: `"es"`, `"en"`. |
 | `story.locales` | `Record<string, string>` | ✅ | Map of `locale → path to the entry .ink file`. Each locale points to its own story tree. At least one entry matching `defaultLocale` is required. |
 
-```js
+```ts
 story: {
   defaultLocale: 'es',
   locales: {
@@ -79,7 +83,7 @@ Paths to the folders containing the game's `.md` data files. The `DataLoader` sc
 | `data.audio` | `string` | ✅ | Root path for audio data. The loader expects `bgm/` and `sfx/` subfolders inside. |
 | `data.minigames` | `string` | — | Path to the folder containing `minigames/*.md` files. Omit if the novel has no minigames. |
 
-```js
+```ts
 data: {
   characters: './data/characters/',
   scenes:     './data/scenes/',
@@ -98,14 +102,14 @@ Maps minigame IDs to their implementation modules. Uses dynamic `import()` so ea
 |-------|------|----------|-------------|
 | `minigames` | `Record<string, () => Promise<module>>` | — | Map of `minigameId → lazy import function`. The key must match the `id` field in the corresponding `data/minigames/*.md` file. |
 
-```js
+```ts
 minigames: {
-  match3:  () => import('./minigames/match3/Match3Game.js'),
-  puzzle:  () => import('./minigames/puzzle/PuzzleGame.js'),
+  match3:  () => import('./minigames/match3/Match3Game.ts'),
+  puzzle:  () => import('./minigames/puzzle/PuzzleGame.ts'),
 },
 ```
 
-> Each imported module must export a class that extends `framework/minigames/MinigameBase.js`.
+> Each imported module must export a class that extends `framework/minigames/MinigameBase.ts`.
 
 ---
 
@@ -120,7 +124,7 @@ Visual customization for this novel. All fields are optional — the framework p
 | `theme.accent` | `string` | — | Color used for choices, highlights, and interactive elements. Default: `white`. |
 | `theme.cssVars` | `Record<string, string>` | — | Escape hatch. Arbitrary CSS custom properties injected into `:root`. Use for any visual detail not covered by the fields above. |
 
-```js
+```ts
 theme: {
   font:      '"Georgia", serif',
   dialogBg:  'rgba(10, 10, 20, 0.85)',
@@ -144,7 +148,7 @@ Configures the save system for this novel. Saves are stored in `localStorage` un
 | `saves.slots` | `number` | — | Number of manual save slots available to the player. Default: `3`. |
 | `saves.autoSave` | `boolean` | — | Whether the engine automatically saves when the scene changes. Default: `true`. |
 
-```js
+```ts
 saves: {
   slots:    5,
   autoSave: true,
@@ -162,7 +166,7 @@ Controls how the novel is deployed and accessed.
 | `distribution.mode` | `"standalone"` \| `"portal"` | ✅ | `"standalone"` — the novel is its own website. `"portal"` — the novel lives inside a shared multi-novel site. |
 | `distribution.basePath` | `string` | — | Required in `"portal"` mode. The URL prefix for all asset and route resolution. Example: `"/novels/midnight-cafe"`. |
 
-```js
+```ts
 // Standalone — its own site
 distribution: {
   mode: 'standalone',
@@ -181,7 +185,7 @@ distribution: {
 
 ### Minimal — standalone, single language, no minigames
 
-```js
+```ts
 export default {
   id:      'silent-hours',
   title:   'Silent Hours',
@@ -210,7 +214,7 @@ export default {
 
 ### Complete — portal, multilingual, minigames, full theme
 
-```js
+```ts
 export default {
 
   // — Identity —
@@ -240,7 +244,7 @@ export default {
 
   // — Minigames (lazy loaded) —
   minigames: {
-    match3: () => import('./minigames/match3/Match3Game.js'),
+    match3: () => import('./minigames/match3/Match3Game.ts'),
   },
 
   // — Theme —
@@ -285,8 +289,8 @@ At startup, `GameEngine.init(config)` processes the config in this order:
 7. **Mounts components** — attaches Web Components to the DOM stage.
 
 ```js
-// framework/engine/GameEngine.js
-import config from '../../games/my-novel/game.config.js'
+// framework/engine/GameEngine.ts
+import config from '../../games/my-novel/game.config.ts'
 
 await GameEngine.init(config)
 ```
@@ -344,7 +348,7 @@ export interface DistributionConfig {
 }
 ```
 
-Add this to your `game.config.js` for full autocompletion in VS Code:
+Add this to your `game.config.ts` for full autocompletion in VS Code:
 
 ```js
 /** @type {import('../../framework/types').GameConfig} */

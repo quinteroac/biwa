@@ -8,12 +8,13 @@ import type { TagCommand } from '../../framework/TagParser.ts'
 
 const ROOT = new URL('../../', import.meta.url).pathname.replace(/\/$/, '')
 
-type Severity = 'error' | 'warning'
+export type Severity = 'error' | 'warning'
 
-interface Issue {
+export interface Issue {
   severity: Severity
   path: string
   message: string
+  suggestion?: string
 }
 
 interface DataMaps {
@@ -53,19 +54,34 @@ function parseFrontmatter(filePath: string, issues: Issue[]): Record<string, unk
   const text = readFileSync(filePath, 'utf8')
   const match = text.match(/^---\n([\s\S]*?)\n---/)
   if (!match) {
-    issues.push({ severity: 'error', path: filePath, message: 'Missing YAML frontmatter block.' })
+    issues.push({
+      severity: 'error',
+      path: filePath,
+      message: 'Missing YAML frontmatter block.',
+      suggestion: 'Add a frontmatter block delimited by --- at the top of the file.',
+    })
     return null
   }
   try {
     const data = yaml.load(match[1]!) as unknown
     if (typeof data !== 'object' || data === null || Array.isArray(data)) {
-      issues.push({ severity: 'error', path: filePath, message: 'Frontmatter must be an object.' })
+      issues.push({
+        severity: 'error',
+        path: filePath,
+        message: 'Frontmatter must be an object.',
+        suggestion: 'Use key/value YAML, for example: id: example',
+      })
       return null
     }
     return data as Record<string, unknown>
   } catch (e) {
     const err = e instanceof Error ? e : new Error(String(e))
-    issues.push({ severity: 'error', path: filePath, message: `Invalid YAML frontmatter: ${err.message}` })
+    issues.push({
+      severity: 'error',
+      path: filePath,
+      message: `Invalid YAML frontmatter: ${err.message}`,
+      suggestion: 'Check indentation, quotes and list syntax in the YAML block.',
+    })
     return null
   }
 }
@@ -91,6 +107,7 @@ function checkAsset(gameDir: string, filePath: string, ref: unknown, issues: Iss
       severity: 'warning',
       path: filePath,
       message: `${label} not found: ${ref}`,
+      suggestion: `Add the file under assets/ or update the ${label.toLowerCase()} path.`,
     })
   }
 }
@@ -103,7 +120,12 @@ function addDataFile(
 ): void {
   const id = data['id']
   if (typeof id !== 'string' || id.length === 0) {
-    issues.push({ severity: 'error', path: filePath, message: 'Missing required string field: id.' })
+    issues.push({
+      severity: 'error',
+      path: filePath,
+      message: 'Missing required string field: id.',
+      suggestion: `Add id: ${expectedIdFromPath(filePath)} to the frontmatter.`,
+    })
     return
   }
   const expected = filePath.split('/').pop()!.replace(/\.md$/, '')
@@ -111,10 +133,19 @@ function addDataFile(
     issues.push({ severity: 'warning', path: filePath, message: `File name "${expected}" does not match id "${id}".` })
   }
   if (map.has(id)) {
-    issues.push({ severity: 'error', path: filePath, message: `Duplicate id: ${id}.` })
+    issues.push({
+      severity: 'error',
+      path: filePath,
+      message: `Duplicate id: ${id}.`,
+      suggestion: 'Rename one file/id pair so every content id is unique.',
+    })
     return
   }
   map.set(id, data)
+}
+
+function expectedIdFromPath(filePath: string): string {
+  return filePath.split('/').pop()!.replace(/\.md$/, '')
 }
 
 function loadDataMaps(gameDir: string, config: GameConfig, issues: Issue[]): DataMaps {
@@ -137,7 +168,12 @@ function loadDataMaps(gameDir: string, config: GameConfig, issues: Issue[]): Dat
     if (!configuredDir) continue
     const dir = join(gameDir, configuredDir)
     if (!existsSync(dir)) {
-      issues.push({ severity: 'error', path: dir, message: `Configured ${kind} directory does not exist.` })
+      issues.push({
+        severity: 'error',
+        path: dir,
+        message: `Configured ${kind} directory does not exist.`,
+        suggestion: `Create the directory or update data.${kind} in game.config.ts.`,
+      })
       continue
     }
     for (const filePath of walkFiles(dir, '.md')) {
@@ -178,7 +214,12 @@ function validateDataFile(
   if (kind === 'scenes') {
     const background = asRecord(data['background'])
     if (!background) {
-      issues.push({ severity: 'error', path: filePath, message: 'Scene missing required background object.' })
+      issues.push({
+        severity: 'error',
+        path: filePath,
+        message: 'Scene missing required background object.',
+        suggestion: 'Add background: { type: static, image: ... } or another supported background renderer.',
+      })
       return
     }
     checkAsset(gameDir, filePath, background['image'], issues, 'Scene background image')
@@ -214,16 +255,31 @@ function validateDataFile(
 
   if (kind === 'minigames') {
     if (typeof data['entry'] !== 'string') {
-      issues.push({ severity: 'error', path: filePath, message: 'Minigame missing required string field: entry.' })
+      issues.push({
+        severity: 'error',
+        path: filePath,
+        message: 'Minigame missing required string field: entry.',
+        suggestion: 'Set entry to the minigame implementation path, for example minigames/puzzle/Puzzle.ts.',
+      })
     } else {
       const entry = data['entry']
       const sourceEntry = entry.endsWith('.js') ? entry.replace(/\.js$/, '.ts') : entry
       if (!existsSync(join(gameDir, sourceEntry)) && !existsSync(join(gameDir, entry))) {
-        issues.push({ severity: 'warning', path: filePath, message: `Minigame entry not found: ${entry}` })
+        issues.push({
+          severity: 'warning',
+          path: filePath,
+          message: `Minigame entry not found: ${entry}`,
+          suggestion: 'Create the implementation file or update the minigame entry path.',
+        })
       }
     }
     if (!asRecord(data['results'])) {
-      issues.push({ severity: 'error', path: filePath, message: 'Minigame missing required results object.' })
+      issues.push({
+        severity: 'error',
+        path: filePath,
+        message: 'Minigame missing required results object.',
+        suggestion: 'Declare expected result fields under results: so creators know what Ink receives.',
+      })
     }
   }
 }
@@ -242,7 +298,12 @@ function validateStoryReferences(gameDir: string, maps: DataMaps, issues: Issue[
       if (minigameMatch) {
         const id = minigameMatch[1]!
         if (!maps.minigames.has(id)) {
-          issues.push({ severity: 'error', path: `${filePath}:${idx + 1}`, message: `Unknown minigame id "${id}".` })
+          issues.push({
+            severity: 'error',
+            path: `${filePath}:${idx + 1}`,
+            message: `Unknown minigame id "${id}".`,
+            suggestion: `Create data/minigames/${id}.md or change the launch_minigame argument.`,
+          })
         }
       }
     }
@@ -268,7 +329,12 @@ function validateTagReference(
   }
   const map = refs[tag.type]
   if (map && !map.has(tag.id)) {
-    issues.push({ severity: 'error', path: `${filePath}:${line}`, message: `Unknown ${tag.type} id "${tag.id}".` })
+    issues.push({
+      severity: 'error',
+      path: `${filePath}:${line}`,
+      message: `Unknown ${tag.type} id "${tag.id}".`,
+      suggestion: `Create a matching data file with id: ${tag.id}, or update the Ink tag.`,
+    })
   }
 }
 
@@ -280,31 +346,56 @@ async function loadConfig(gameDir: string): Promise<GameConfig> {
 }
 
 function validateConfig(gameDir: string, config: GameConfig, issues: Issue[]): void {
-  if (!config.id) issues.push({ severity: 'error', path: 'game.config.ts', message: 'Missing config.id.' })
-  if (!config.title) issues.push({ severity: 'error', path: 'game.config.ts', message: 'Missing config.title.' })
-  if (!config.story?.defaultLocale) issues.push({ severity: 'error', path: 'game.config.ts', message: 'Missing story.defaultLocale.' })
+  if (!config.id) issues.push({ severity: 'error', path: 'game.config.ts', message: 'Missing config.id.', suggestion: 'Set id to a lowercase slug, for example my-novel.' })
+  if (!config.title) issues.push({ severity: 'error', path: 'game.config.ts', message: 'Missing config.title.', suggestion: 'Set title to the player-facing name of the novel.' })
+  if (!config.story?.defaultLocale) issues.push({ severity: 'error', path: 'game.config.ts', message: 'Missing story.defaultLocale.', suggestion: 'Set story.defaultLocale to one of the keys in story.locales.' })
   const locales = config.story?.locales ?? {}
   for (const [locale, storyPath] of Object.entries(locales)) {
     const fullPath = join(gameDir, storyPath)
     if (!existsSync(fullPath)) {
-      issues.push({ severity: 'error', path: 'game.config.ts', message: `Story path for locale "${locale}" does not exist: ${storyPath}` })
+      issues.push({
+        severity: 'error',
+        path: 'game.config.ts',
+        message: `Story path for locale "${locale}" does not exist: ${storyPath}`,
+        suggestion: `Create ${storyPath} or update story.locales.${locale}.`,
+      })
     }
   }
   const defaultStory = locales[config.story?.defaultLocale ?? '']
   if (!defaultStory) {
-    issues.push({ severity: 'error', path: 'game.config.ts', message: `No story path for default locale "${config.story?.defaultLocale}".` })
+    issues.push({
+      severity: 'error',
+      path: 'game.config.ts',
+      message: `No story path for default locale "${config.story?.defaultLocale}".`,
+      suggestion: 'Make story.defaultLocale match one key in story.locales.',
+    })
   }
 }
 
-function printIssues(gameDir: string, issues: Issue[]): void {
+export function printIssues(gameDir: string, issues: Issue[]): void {
   const errors = issues.filter(i => i.severity === 'error')
   const warnings = issues.filter(i => i.severity === 'warning')
   for (const issue of issues) {
     const rel = issue.path.startsWith(ROOT) ? relative(gameDir, issue.path) : issue.path
     const label = issue.severity === 'error' ? 'ERROR' : 'WARN'
     console.log(`  [${label}] ${rel}: ${issue.message}`)
+    if (issue.suggestion) console.log(`         suggestion: ${issue.suggestion}`)
   }
   console.log(`\nDoctor summary: ${errors.length} error(s), ${warnings.length} warning(s).`)
+}
+
+export async function validateGame(gameId: string): Promise<{ gameDir: string; config: GameConfig; issues: Issue[] }> {
+  const gameDir = join(ROOT, 'games', gameId)
+  const issues: Issue[] = []
+  if (!existsSync(gameDir)) {
+    throw new Error(`Game "${gameId}" does not exist at games/${gameId}/`)
+  }
+
+  const config = await loadConfig(gameDir)
+  validateConfig(gameDir, config, issues)
+  const maps = loadDataMaps(gameDir, config, issues)
+  validateStoryReferences(gameDir, maps, issues)
+  return { gameDir, config, issues }
 }
 
 export async function doctor(gameId?: string): Promise<void> {
@@ -316,18 +407,8 @@ export async function doctor(gameId?: string): Promise<void> {
     }
   }
 
-  const gameDir = join(ROOT, 'games', gameId)
-  const issues: Issue[] = []
-  if (!existsSync(gameDir)) {
-    console.error(`Game "${gameId}" does not exist at games/${gameId}/`)
-    process.exit(1)
-  }
-
   console.log(`\nVisual Novel Doctor: ${gameId}\n`)
-  const config = await loadConfig(gameDir)
-  validateConfig(gameDir, config, issues)
-  const maps = loadDataMaps(gameDir, config, issues)
-  validateStoryReferences(gameDir, maps, issues)
+  const { gameDir, issues } = await validateGame(gameId)
   printIssues(gameDir, issues)
 
   if (issues.some(issue => issue.severity === 'error')) {

@@ -14,10 +14,10 @@ The implementation lives separately in `minigames/{id}/`:
 ```
 minigames/
   match3/
-    Match3Game.js    ← extends MinigameBase
+    Match3Game.ts    ← extends MinigameBase
     config.json      ← optional default config (overridden by .md)
   sliding_puzzle/
-    SlidingPuzzle.js
+    SlidingPuzzle.ts
 ```
 
 ---
@@ -29,9 +29,9 @@ A minigame is defined by two things that work together:
 | File | Who touches it | Purpose |
 |------|---------------|---------|
 | `data/minigames/{id}.md` | Developer (once) | Declares config, result variables, difficulty, Ink contract |
-| `minigames/{id}/{Class}.js` | Developer | Implements the actual game logic using Pixi.js |
+| `minigames/{id}/{Class}.ts` | Developer | Implements the actual game logic using Pixi.js |
 
-The `.md` file is what the engine reads. The `.js` file is what runs. They are linked by `id`.
+The `.md` file is what the engine reads. The `.ts` file is what runs in dev and is bundled/transpiled for production. They are linked by `id`.
 
 ---
 
@@ -41,16 +41,16 @@ The `.md` file is what the engine reads. The `.js` file is what runs. They are l
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `id` | `string` | ✅ | Unique identifier. Must match the key in `game.config.js` minigames map and the Ink external function name: `~ launch_minigame("{id}")`. Only lowercase letters, numbers, and hyphens. |
+| `id` | `string` | ✅ | Unique identifier. Must match the key in `game.config.ts` minigames map and the Ink external function name: `~ launch_minigame("{id}")`. Only lowercase letters, numbers, and hyphens. |
 | `displayName` | `string` | ✅ | Human-readable name. Shown in loading screens and debug panels. |
 | `description` | `string` | — | One-line description of the mechanic. Used as LLM context. |
-| `entry` | `string` | ✅ | Path to the JS file exporting the class that extends `MinigameBase`. Must match the lazy import in `game.config.js`. |
+| `entry` | `string` | ✅ | Path to the TS file exporting the class that extends `MinigameBase`. Must match the lazy import in `game.config.ts`. |
 
 ```yaml
 id:          match3
 displayName: Match-3
 description: Swap and match colored tiles to score points before time runs out.
-entry:       minigames/match3/Match3Game.js
+entry:       minigames/match3/Match3Game.ts
 ```
 
 ---
@@ -231,7 +231,7 @@ Everything after the closing `---` is free Markdown. Ignored at runtime. Use it 
 id:          match3
 displayName: Match-3
 description: Swap and match colored tiles to score points before time runs out.
-entry:       minigames/match3/Match3Game.js
+entry:       minigames/match3/Match3Game.ts
 
 integration: overlay
 
@@ -470,8 +470,8 @@ base config (.md) → difficulty preset → per-invocation override
 
 Every minigame class must extend `MinigameBase` and implement these methods:
 
-```js
-// framework/minigames/MinigameBase.js
+```ts
+// framework/minigames/MinigameBase.ts
 export class MinigameBase {
 
   /**
@@ -530,7 +530,7 @@ The engine runs these checks at startup via `SchemaValidator`.
 - `id` must match `/^[a-z0-9-]+$/`
 - `id` must be unique across all files in `data/minigames/`
 - `id` must match the filename (`match3.md` → `id: match3`)
-- `id` must have a corresponding key in `game.config.js` minigames map
+- `id` must have a corresponding key in `game.config.ts` minigames map
 - `entry` must point to an existing file
 - `integration` must be one of `fullscreen`, `overlay`, `reactive`
 - `results` must have at least one entry

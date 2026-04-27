@@ -162,6 +162,19 @@ function isTranspilable(pathname: string): boolean {
   return pathname.endsWith('.tsx') || pathname.endsWith('.ts') || pathname.endsWith('.jsx')
 }
 
+function diagnosticResponse(title: string, detail: string, suggestion: string, contentType = 'text/plain; charset=utf-8'): Response {
+  return new Response([
+    title,
+    '',
+    detail,
+    '',
+    `Suggestion: ${suggestion}`,
+  ].join('\n'), {
+    status: 500,
+    headers: { 'Content-Type': contentType },
+  })
+}
+
 export async function dev(gameId?: string): Promise<void> {
   if (!gameId) {
     gameId = detectGameId() ?? undefined
@@ -181,6 +194,8 @@ export async function dev(gameId?: string): Promise<void> {
   console.log(`\n🎭 Visual Novel Dev Server`)
   console.log(`   Game: ${gameId}`)
   console.log(`   URL:  http://localhost:${port}\n`)
+  console.log('   Watching story/data/assets through on-demand recompilation.')
+  console.log(`   Validate content with: bun manager/cli.ts doctor ${gameId}\n`)
 
   Bun.serve({
     port,
@@ -202,7 +217,12 @@ export async function dev(gameId?: string): Promise<void> {
         } catch (e) {
           const err = e instanceof Error ? e : new Error(String(e))
           console.error('[transpile]', err.message)
-          return new Response(`// Transpile error: ${err.message}`, { status: 500 })
+          return diagnosticResponse(
+            'Transpile error',
+            err.message,
+            'Check the TypeScript import path and exported names in the file shown above.',
+            'application/javascript; charset=utf-8',
+          )
         }
       }
 
@@ -229,7 +249,11 @@ export async function dev(gameId?: string): Promise<void> {
         } catch (e) {
           const err = e instanceof Error ? e : new Error(String(e))
           console.error('[ink compile]', err.message)
-          return new Response(`Ink compile error: ${err.message}`, { status: 500 })
+          return diagnosticResponse(
+            'Ink compile error',
+            err.message,
+            'Fix the referenced .ink file, then refresh. Includes are resolved relative to the entry file.',
+          )
         }
       }
 
@@ -255,8 +279,15 @@ export async function dev(gameId?: string): Promise<void> {
           return new Response(JSON.stringify(data), {
             headers: { 'Content-Type': 'application/json' },
           })
-        } catch {
-          return new Response('{}', { headers: { 'Content-Type': 'application/json' } })
+        } catch (e) {
+          const err = e instanceof Error ? e : new Error(String(e))
+          console.error('[data]', `${pathname}: ${err.message}`)
+          return diagnosticResponse(
+            'Data file error',
+            `${pathname}: ${err.message}`,
+            'Create the matching .md file under data/ or update the id referenced in Ink.',
+            'application/json; charset=utf-8',
+          )
         }
       }
 

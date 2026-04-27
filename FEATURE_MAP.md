@@ -327,6 +327,25 @@ Objetivo: que crear una novela sea directo y con errores comprensibles.
 - Errores comunes tienen mensajes accionables.
 - La documentacion coincide con el template generado.
 
+### Estado fase 6
+
+- `new` valida `gameId`, usa instrucciones CLI actuales y genera un starter completo con `game.config.ts`, historia, escena default y asset SVG.
+- El proyecto generado por `new` pasa `doctor` y `build` sin errores ni warnings.
+- `doctor` ahora expone `validateGame()` reutilizable y agrega sugerencias accionables por issue.
+- `build` ejecuta validacion de contenido antes de producir salida y falla si `doctor` encuentra errores.
+- `build` compila solo los story entrypoints declarados en `game.config.ts`, dejando que Ink resuelva `INCLUDE` sin intentar compilar chapters sueltos como entradas independientes.
+- `dev` muestra diagnosticos con sugerencias para errores de transpile, Ink y data, y comunica que recompila story/data/assets bajo demanda.
+- Documentacion actualizada de `game.config.ts`, estructura de proyecto y minijuegos TypeScript.
+- Agregadas guias `framework/docs/first-game.md` e `framework/docs/ink-tags.md`.
+- Smoke temporal: `new phase6-smoke`, `doctor phase6-smoke` y `build phase6-smoke` pasaron; el proyecto temporal fue eliminado.
+- Verificacion final: `bun run check`, `doctor mi-novela` y `build mi-novela` pasan.
+
+### Pendientes fase 6
+
+- Watch mode formal con eventos de consola por archivo cambiado; el dev server ya recompila bajo demanda, pero no tiene watcher visible por archivo.
+- Falta una suite automatizada dedicada para CLI `new/doctor/build`; hoy se verifico con smoke manual.
+- Los warnings de assets del demo siguen vivos como deuda de contenido, no de tooling.
+
 ## Fase 7: Customizacion y extension
 
 Objetivo: permitir juegos distintos sin modificar `framework/`.

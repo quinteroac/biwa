@@ -273,7 +273,7 @@ background:
 
 ### Transitions
 
-Defines how the engine animates into and out of this scene. Both `in` and `out` are optional — if omitted, the engine uses the global default from `game.config.js`.
+Defines how the engine animates into and out of this scene. Both `in` and `out` are optional — if omitted, the engine uses the global default from `game.config.ts`.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|

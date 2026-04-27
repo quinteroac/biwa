@@ -1,6 +1,6 @@
 # Visual Novel Project Structure
 
-This document describes the folder structure of a single visual novel built on the framework. Every novel follows the same layout — this consistency is what allows the framework to load data without per-novel configuration beyond `game.config.js`.
+This document describes the folder structure of a single visual novel built on the framework. Every novel follows the same layout — this consistency is what allows the framework to load data without per-novel configuration beyond `game.config.ts`.
 
 ---
 
@@ -9,7 +9,7 @@ This document describes the folder structure of a single visual novel built on t
 ```
 games/my-novel/
 │
-├── game.config.js
+├── game.config.ts
 ├── index.html
 │
 ├── story/
@@ -93,20 +93,20 @@ games/my-novel/
 │
 └── minigames/
     └── match3/
-        └── Match3Game.js
+        └── Match3Game.ts
 ```
 
 ---
 
 ## File by file
 
-### `game.config.js`
+### `game.config.ts`
 
 The entry point for the framework. Declares the novel's identity, story locales, data folder paths, minigame registrations, theme, save settings, and distribution mode.
 
 Configured once per novel. The framework reads it at startup and uses it to locate everything else.
 
-→ See [game.config.schema.md](../docs/schemas/game.config.schema.md)
+→ See [game.config.schema.md](./game.config.schema.md)
 
 ---
 
@@ -125,11 +125,14 @@ Minimal by design — the framework handles everything after mount:
   <link rel="stylesheet" href="../../framework/styles/base.css">
 </head>
 <body>
-  <vn-stage></vn-stage>
+  <div id="root"></div>
   <script type="module">
-    import config from './game.config.js'
-    import { GameEngine } from '../../framework/engine/GameEngine.js'
-    await GameEngine.init(config)
+    import config from './game.config.ts'
+    import { GameEngine } from '../../framework/engine/GameEngine.ts'
+    import { mountVnApp } from '../../framework/components/VnApp.tsx'
+
+    const engine = await GameEngine.init(config)
+    mountVnApp(engine, document.getElementById('root'))
   </script>
 </body>
 </html>
@@ -139,7 +142,7 @@ Minimal by design — the framework handles everything after mount:
 
 ### `story/`
 
-All Ink scripts, organized by locale. Each locale subfolder matches a key in `game.config.js → story.locales`.
+All Ink scripts, organized by locale. Each locale subfolder matches a key in `game.config.ts → story.locales`.
 
 ```
 story/
@@ -183,7 +186,7 @@ Kai appears at the entrance.
 
 **Format:** `.ink`
 
-→ See [Ink tag reference](../docs/ink-tags.md)
+→ See [Ink tag reference](./ink-tags.md)
 
 ---
 
@@ -209,7 +212,7 @@ data/characters/
 └── sara.md
 ```
 
-→ See [characters.schema.md](../docs/schemas/characters.schema.md)
+→ See [characters.schema.md](./characters.schema.md)
 
 ---
 
@@ -225,7 +228,7 @@ data/scenes/
 └── kai_apartment.md
 ```
 
-→ See [scenes.schema.md](../docs/schemas/scenes.schema.md)
+→ See [scenes.schema.md](./scenes.schema.md)
 
 ---
 
@@ -252,7 +255,7 @@ data/audio/
 
 Voice files mirror the character folder structure declared in each character's `voice.folder` field.
 
-→ See [audio.schema.md](../docs/schemas/audio.schema.md)
+→ See [audio.schema.md](./audio.schema.md)
 
 ---
 
@@ -260,14 +263,14 @@ Voice files mirror the character folder structure declared in each character's `
 
 One `.md` per minigame type. Declares base config, difficulty presets, result variables written to Ink, integration mode, and audio.
 
-A novel with no minigames simply omits this folder and leaves `data.minigames` out of `game.config.js`.
+A novel with no minigames simply omits this folder and leaves `data.minigames` out of `game.config.ts`.
 
 ```
 data/minigames/
 └── match3.md
 ```
 
-→ See [minigames.schema.md](../docs/schemas/minigames.schema.md)
+→ See [minigames.schema.md](./minigames.schema.md)
 
 ---
 
@@ -305,18 +308,18 @@ One subfolder per minigame. Each contains the JS implementation that extends `Mi
 ```
 minigames/
 └── match3/
-    └── Match3Game.js
+    └── Match3Game.ts
 ```
 
-`Match3Game.js`:
-- Extends `framework/minigames/MinigameBase.js`
+`Match3Game.ts`:
+- Extends `framework/minigames/MinigameBase.ts`
 - Uses Pixi.js for rendering
 - Is lazy-loaded — only downloaded when Ink calls `~ launch_minigame("match3")`
 - Returns a result object whose keys match the `results` declared in `data/minigames/match3.md`
 
 A novel with no minigames omits this folder entirely.
 
-→ See [minigames.schema.md](../docs/schemas/minigames.schema.md)
+→ See [minigames.schema.md](./minigames.schema.md)
 
 ---
 
