@@ -121,6 +121,17 @@ describe('VolumeController', () => {
     expect(stub.volume).toBeCloseTo(0.1)
   })
 
+  it('AC04: updating source base volume preserves master and channel mixing', () => {
+    controller.setVolume('master', 0.5)
+    controller.setVolume('ambience', 0.4)
+    const stub = makeAudioStub('rain.mp3')
+    controller.registerSource('ambience', stub as unknown as HTMLAudioElement, 1)
+
+    controller.setSourceVolume('ambience', stub as unknown as HTMLAudioElement, 0.25)
+
+    expect(stub.volume).toBeCloseTo(0.05)
+  })
+
   it('AC04: setting channel volume updates all registered sources', () => {
     const stub1 = makeAudioStub('a.mp3')
     const stub2 = makeAudioStub('b.mp3')

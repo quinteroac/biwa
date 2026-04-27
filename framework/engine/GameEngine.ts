@@ -397,15 +397,15 @@ export class GameEngine {
 
     if (visual.audio.bgm) {
       this.#currentAudio.bgm = visual.audio.bgm
-      this.#bus.emit('engine:bgm', visual.audio.bgm)
+      this.#bus.emit('engine:bgm', { ...visual.audio.bgm, restored: true })
     }
     if (visual.audio.ambience) {
       this.#currentAudio.ambience = visual.audio.ambience
-      this.#bus.emit('engine:ambience', visual.audio.ambience)
+      this.#bus.emit('engine:ambience', { ...visual.audio.ambience, restored: true })
     }
     if (visual.audio.voice) {
       this.#currentAudio.voice = visual.audio.voice
-      this.#bus.emit('engine:voice', visual.audio.voice)
+      this.#bus.emit('engine:voice', { ...visual.audio.voice, restored: true })
     }
   }
 

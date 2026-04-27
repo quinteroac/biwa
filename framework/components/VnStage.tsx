@@ -9,6 +9,7 @@ import { VnVolumeControl } from './VnVolumeControl.tsx'
 import { SaveControlsBar } from './SaveControlsBar.tsx'
 import { getStageAdvanceAction, isAcceptedAdvanceKey } from './VnStageAdvance.ts'
 import { AudioManager } from '../engine/AudioManager.ts'
+import type { AudioPlaybackData } from '../engine/AudioManager.ts'
 import type { GameEngine } from '../engine/GameEngine.ts'
 import type { GameSaveState } from '../types/save.d.ts'
 import type { DialogOptions, VnDialogHandle } from './VnDialog.tsx'
@@ -157,10 +158,10 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
         setTransition({ config, done })
       }),
 
-      bus.on<{ id: string } & Record<string, unknown>>('engine:bgm',      ({ id, ...data }) => audio.playBgm(id, data as { file?: string; volume?: number })),
-      bus.on<{ id: string } & Record<string, unknown>>('engine:sfx',      ({ id, ...data }) => audio.playSfx(id, data as { file?: string; volume?: number })),
-      bus.on<{ id: string } & Record<string, unknown>>('engine:ambience', ({ id, ...data }) => audio.playAmbience(id, data as { file?: string; volume?: number })),
-      bus.on<{ id: string } & Record<string, unknown>>('engine:voice',    ({ id, ...data }) => audio.playVoice(id, data as { file?: string; volume?: number })),
+      bus.on<{ id: string } & Record<string, unknown>>('engine:bgm',      ({ id, ...data }) => audio.playBgm(id, data as AudioPlaybackData)),
+      bus.on<{ id: string } & Record<string, unknown>>('engine:sfx',      ({ id, ...data }) => audio.playSfx(id, data as AudioPlaybackData)),
+      bus.on<{ id: string } & Record<string, unknown>>('engine:ambience', ({ id, ...data }) => audio.playAmbience(id, data as AudioPlaybackData)),
+      bus.on<{ id: string } & Record<string, unknown>>('engine:voice',    ({ id, ...data }) => audio.playVoice(id, data as AudioPlaybackData)),
     ]
 
     if (resumeFrom) {

@@ -26,6 +26,8 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - CI workflow that runs the repository quality gate on pushes and pull requests.
 - `assets` CLI subcommands for Aseprite-compatible character and animation atlas JSON.
 - `aseprite-atlas-v1` parser helpers and runtime fallback from frame names to expression tags.
+- Subprocess CLI regression suite covering `new`, `doctor --json`, `build`, `list` and atlas generation.
+- Fade-in, fade-out and crossfade support for persistent BGM and ambience playback.
 
 ### Changed
 
@@ -38,3 +40,5 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - `VnStage` delegates concrete audio playback to the engine `AudioManager`.
 - `FEATURE_MAP.md` is now pending-work only; completed roadmap history is tracked here.
 - `doctor` validates character spritesheet atlas JSON when present.
+- Save-state audio restore marks persistent audio as restored so runtime playback skips unnecessary fades.
+- Audio docs now distinguish implemented single-file playback from reserved adaptive/intro-loop metadata.

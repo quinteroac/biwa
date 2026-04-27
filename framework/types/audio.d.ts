@@ -18,6 +18,8 @@ export interface AudioBase {
   // Playback controls
   loop?: boolean | string; // `true`/`false` or a path when using intro+loop pattern
   volume?: number; // 0.0 - 1.0
+  fade?: number; // seconds, shorthand for both fadeIn/fadeOut when triggered from Ink
+  duration?: number; // seconds, alias for fade
   fadeIn?: number; // seconds
   fadeOut?: number; // seconds
 

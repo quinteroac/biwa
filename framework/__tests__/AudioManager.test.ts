@@ -34,6 +34,10 @@ function installAudioMock(): () => AudioStub[] {
   return () => instances
 }
 
+function wait(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
 describe('AudioManager', () => {
   let manager: AudioManager
   let volume: VolumeController
@@ -92,6 +96,41 @@ describe('AudioManager', () => {
     expect(first.src).toBe('')
     expect(second.src).toBe('./assets/audio/ambience/wind.ogg')
     expect(second.play).toHaveBeenCalledTimes(1)
+  })
+
+  it('fades BGM in through the source base volume', async () => {
+    volume.setVolume('master', 0.5)
+    volume.setVolume('bgm', 0.5)
+    manager.playBgm('theme', { volume: 0.8, fadeIn: 0.01 })
+    const audio = getInstances()[0]!
+
+    expect(audio.volume).toBeCloseTo(0)
+    await wait(70)
+    expect(audio.volume).toBeCloseTo(0.2)
+  })
+
+  it('crossfades BGM replacement and releases the previous source after fade out', async () => {
+    manager.playBgm('theme', { volume: 0.8 })
+    const first = getInstances()[0]!
+
+    manager.playBgm('tension', { volume: 0.6, fadeIn: 0.01, fadeOut: 0.01 })
+    const second = getInstances()[1]!
+
+    expect(first.pause).not.toHaveBeenCalled()
+    expect(first.src).toBe('./assets/audio/bgm/theme.ogg')
+    expect(second.volume).toBeCloseTo(0)
+
+    await wait(70)
+    expect(first.pause).toHaveBeenCalledTimes(1)
+    expect(first.src).toBe('')
+    expect(second.volume).toBeCloseTo(0.6)
+  })
+
+  it('restores persistent BGM without applying fade in', () => {
+    manager.playBgm('theme', { volume: 0.75, fadeIn: 1, restored: true })
+    const audio = getInstances()[0]!
+
+    expect(audio.volume).toBeCloseTo(0.75)
   })
 
   it('registers one-shot SFX and removes it on end', () => {

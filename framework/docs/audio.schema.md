@@ -40,16 +40,26 @@ Each category has its own volume slider in the player's settings. The engine mix
 
 ---
 
+## Runtime support
+
+The current runtime plays single-file tracks for `bgm`, `ambience`, `sfx` and `voice`.
+
+- `bgm` and `ambience` are persistent channels. They support fade-in, fade-out, replacement/crossfade, and save restore without an extra transition.
+- `sfx` and `voice` are one-shot channels. `sfx` is not persisted in saves; `voice` can be restored from save state but does not fade.
+- Adaptive layers and intro+loop metadata are reserved by the schema, but they are not mixed by the runtime yet.
+
+---
+
 ## Adaptive audio
 
-All four categories support **adaptive audio** — a track is not a single file but a set of named layers that the engine mixes dynamically. Layers are played simultaneously at different volumes. The Ink script controls which layers are active and at what intensity.
+The schema reserves **adaptive audio** metadata for future layered playback. A track is not a single file but a set of named layers that a future runtime mixer can control dynamically.
 
 This enables:
 - BGM that builds tension by fading in a percussion layer mid-scene
 - Ambience that blends rain + wind + thunder independently
 - Voice lines where a character sounds distant or filtered based on story state
 
-A track without layers degrades gracefully to a single-file track — adaptive audio is opt-in.
+For now, use `file` for runtime playback. Layers are documented here so content files can keep a forward-compatible shape.
 
 ---
 
@@ -68,7 +78,7 @@ A track without layers degrades gracefully to a single-file track — adaptive a
 
 ### Files
 
-A track can be defined as a **single file** or as **adaptive layers**. These are mutually exclusive.
+A runtime track should define a **single file**. Adaptive `layers` are accepted as forward-compatible metadata, but they are not played by the current runtime.
 
 #### Single file
 
@@ -112,8 +122,10 @@ Controls how the track behaves during playback.
 |-------|------|----------|-------------|
 | `loop` | `boolean` | — | Whether the track loops. Default: `true` for `bgm` and `ambience`, `false` for `sfx` and `voice`. |
 | `volume` | `number` | — | Base volume for this track, `0.0–1.0`. Multiplied by the channel volume from player settings. Default: `1.0`. |
-| `fadeIn` | `number` | — | Fade-in duration in seconds when the track starts. Default: `0`. |
-| `fadeOut` | `number` | — | Fade-out duration in seconds when the track stops. Default: `0`. |
+| `fadeIn` | `number` | — | Fade-in duration in seconds when BGM or ambience starts. Default: `0`. |
+| `fadeOut` | `number` | — | Fade-out duration in seconds when BGM or ambience stops or is replaced. Default: `0`. |
+| `fade` | `number` | — | Ink/runtime shorthand in seconds when one duration should apply to the current fade operation. |
+| `duration` | `number` | — | Alias for `fade`, useful when sharing transition-style tag options. |
 
 ```yaml
 loop:    true
@@ -126,7 +138,7 @@ fadeOut: 2.0
 
 ### Intro + loop (BGM only)
 
-Optional. When defined, the engine plays `intro` once and then loops `loop` indefinitely. Both fields must be present together. Ignored for `sfx`, `ambience`, and `voice`.
+Reserved. When this is implemented, the engine will play `intro` once and then loop `loop` indefinitely. Both fields must be present together. Ignored for `sfx`, `ambience`, and `voice`.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
@@ -497,7 +509,7 @@ Final volume = `track.volume × channel.volume × master.volume`
 
 ## Validation rules
 
-The engine runs these checks at startup via `SchemaValidator`.
+`doctor` validates these rules where runtime metadata is currently inspected.
 
 - `id` must match `/^[a-z0-9-]+$/`
 - `id` must be unique within its category folder

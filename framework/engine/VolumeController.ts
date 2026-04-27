@@ -68,8 +68,18 @@ export class VolumeController {
   registerSource(channel: AudioChannel, source: HTMLAudioElement, baseVolume = 1): void {
     this.#validateChannel(channel)
     this.#sources.get(channel)!.add(source)
-    this.#baseVolumes.set(source, this.#normalize(baseVolume))
-    source.volume = this.#normalize(this.#normalize(baseVolume) * this.#getEffectiveVolume(channel))
+    this.setSourceVolume(channel, source, baseVolume)
+  }
+
+  /**
+   * Updates one registered source's own volume before channel mixing.
+   * Useful for fades while preserving master and channel volume controls.
+   */
+  setSourceVolume(channel: AudioChannel, source: HTMLAudioElement, baseVolume: number): void {
+    this.#validateChannel(channel)
+    const normalized = this.#normalize(baseVolume)
+    this.#baseVolumes.set(source, normalized)
+    source.volume = this.#normalize(normalized * this.#getEffectiveVolume(channel))
   }
 
   /**
@@ -80,6 +90,7 @@ export class VolumeController {
   unregisterSource(channel: AudioChannel, source: HTMLAudioElement): void {
     this.#validateChannel(channel)
     this.#sources.get(channel)!.delete(source)
+    this.#baseVolumes.delete(source)
   }
 
   /** Returns a copy of all channel volumes. */

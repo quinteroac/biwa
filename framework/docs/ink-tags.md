@@ -32,10 +32,12 @@ If `position` or `expression` is omitted, the engine uses the character data def
 # ambience: city_morning
 # voice: kai_ch01_001
 # sfx: door_open
-# bgm: stop
+# bgm: tension, fadeIn: 1.5, fadeOut: 1
+# ambience: stop, fade: 0.75
 ```
 
 `bgm`, `ambience` and `voice` are persisted in save snapshots. `sfx` is momentary and is not restored when loading.
+`bgm` and `ambience` accept `fadeIn`, `fadeOut`, `fade` or `duration` in seconds.
 
 ## Transitions
 
