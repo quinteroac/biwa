@@ -66,6 +66,10 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - `TagRegistry` for plugin-declared Ink tags with runtime dispatch and core tag collision protection.
 - Plugin manifest `tags` declarations and `ink-tag` capability.
 - Doctor validation for unknown Ink tags against core tags and declared plugin tags.
+- Official `screenEffects` and `atmosphereEffects` prebuilt plugins driven by Ink tags.
+- `VnEffectsLayer` for stacked temporary and persistent visual effects.
+- Official player experience prebuilt profiles: `backlogEnhancer`, `galleryUnlocks`, `musicRoom` and `preferencesPanel`.
+- Enhanced backlog overlay with search, speaker filtering and voice replay for voiced lines.
 
 ### Changed
 
@@ -89,3 +93,4 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - `VnStage` now groups settings, gallery and music room under a top-right gear menu beside audio controls.
 - Built-in visual components now consult external renderer registrations before showing unsupported renderer fallbacks.
 - Build manifests now include plugin-declared Ink tags.
+- `smoke-fixture` now exercises the official screen effects plugin in browser smoke coverage.

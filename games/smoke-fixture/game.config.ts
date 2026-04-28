@@ -1,3 +1,4 @@
+import { officialPlugins } from '../../framework/plugins/prebuilt/index.ts'
 import type { GameConfig } from '../../framework/types/game-config.d.ts'
 
 const config: GameConfig = {
@@ -21,18 +22,21 @@ const config: GameConfig = {
 
   minigames: {},
 
-  plugins: [{
-    id: 'smoke-logger',
-    name: 'Smoke Logger',
-    version: '0.1.0',
-    type: 'plugin',
-    entry: './plugins/smoke-logger/index.ts',
-    capabilities: ['engine-event'],
-    compatibility: {
-      pluginApi: 'vn-plugin-api-v1',
+  plugins: [
+    officialPlugins.screenEffects(),
+    {
+      id: 'smoke-logger',
+      name: 'Smoke Logger',
+      version: '0.1.0',
+      type: 'plugin',
+      entry: './plugins/smoke-logger/index.ts',
+      capabilities: ['engine-event'],
+      compatibility: {
+        pluginApi: 'vn-plugin-api-v1',
+      },
+      loader: () => import('./plugins/smoke-logger/index.ts'),
     },
-    loader: () => import('./plugins/smoke-logger/index.ts'),
-  }],
+  ],
 
   theme: {
     font: '"Georgia", serif',

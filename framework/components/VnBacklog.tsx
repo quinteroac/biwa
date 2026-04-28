@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react'
 import type { BacklogEntry } from '../types/save.d.ts'
 
 export interface VnBacklogProps {
@@ -5,9 +6,28 @@ export interface VnBacklogProps {
   entries: BacklogEntry[]
   onClose: () => void
   onClear?: () => void
+  onReplayVoice?: (voice: Record<string, unknown>) => void
 }
 
-export function VnBacklog({ isOpen, entries, onClose, onClear }: VnBacklogProps) {
+export function VnBacklog({ isOpen, entries, onClose, onClear, onReplayVoice }: VnBacklogProps) {
+  const [query, setQuery] = useState('')
+  const [speaker, setSpeaker] = useState('all')
+  const speakers = useMemo(() => {
+    const names = new Set<string>()
+    for (const entry of entries) {
+      if (entry.speaker) names.add(entry.speaker)
+    }
+    return Array.from(names).sort((a, b) => a.localeCompare(b))
+  }, [entries])
+  const filteredEntries = useMemo(() => {
+    const needle = query.trim().toLowerCase()
+    return entries.filter(entry => {
+      if (speaker !== 'all' && entry.speaker !== speaker) return false
+      if (!needle) return true
+      return entry.text.toLowerCase().includes(needle) || entry.speaker?.toLowerCase().includes(needle)
+    })
+  }, [entries, query, speaker])
+
   if (!isOpen) return null
 
   return (
@@ -53,26 +73,52 @@ export function VnBacklog({ isOpen, entries, onClose, onClear }: VnBacklogProps)
           <button type="button" onClick={onClose} style={buttonStyle}>Close</button>
         </header>
 
+        <div style={filterBarStyle}>
+          <input
+            type="search"
+            aria-label="Search backlog"
+            placeholder="Search"
+            value={query}
+            onChange={event => setQuery(event.currentTarget.value)}
+            style={inputStyle}
+          />
+          <select
+            aria-label="Filter backlog speaker"
+            value={speaker}
+            onChange={event => setSpeaker(event.currentTarget.value)}
+            style={selectStyle}
+          >
+            <option value="all">All speakers</option>
+            {speakers.map(name => <option key={name} value={name}>{name}</option>)}
+          </select>
+        </div>
+
         <div style={{ overflowY: 'auto', padding: '8px 20px 20px' }}>
           {entries.length === 0 ? (
             <p style={{ color: 'rgba(229,226,225,0.62)' }}>No dialog history yet.</p>
-          ) : entries.map(entry => (
+          ) : filteredEntries.length === 0 ? (
+            <p style={{ color: 'rgba(229,226,225,0.62)' }}>No backlog lines match the current filter.</p>
+          ) : filteredEntries.map(entry => (
             <article key={entry.index} style={{
               padding: '14px 0',
               borderBottom: '1px solid rgba(255,255,255,0.08)',
             }}>
-              {entry.speaker && (
-                <div style={{
-                  color: entry.nameColor ?? '#ffffff',
-                  fontSize: 11,
-                  fontWeight: 600,
-                  letterSpacing: '0.14em',
-                  textTransform: 'uppercase',
-                  marginBottom: 6,
-                }}>
-                  {entry.speaker}
-                </div>
-              )}
+              <div style={entryHeaderStyle}>
+                {entry.speaker && (
+                  <div style={{
+                    color: entry.nameColor ?? '#ffffff',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    letterSpacing: '0.14em',
+                    textTransform: 'uppercase',
+                  }}>
+                    {entry.speaker}
+                  </div>
+                )}
+                {entry.voice && onReplayVoice && (
+                  <button type="button" onClick={() => onReplayVoice(entry.voice!)} style={replayButtonStyle}>Replay</button>
+                )}
+              </div>
               <div style={{ fontSize: 16, lineHeight: 1.7 }}>{entry.text}</div>
             </article>
           ))}
@@ -80,6 +126,51 @@ export function VnBacklog({ isOpen, entries, onClose, onClear }: VnBacklogProps)
       </section>
     </div>
   )
+}
+
+const filterBarStyle = {
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr) minmax(150px, 220px)',
+  gap: 10,
+  padding: '14px 20px 8px',
+  borderBottom: '1px solid rgba(255,255,255,0.08)',
+} as const
+
+const inputStyle = {
+  height: 34,
+  padding: '0 11px',
+  background: 'rgba(255,255,255,0.06)',
+  border: '1px solid rgba(255,255,255,0.16)',
+  color: '#e5e2e1',
+  font: 'inherit',
+  fontSize: 13,
+} as const
+
+const selectStyle = {
+  ...inputStyle,
+  cursor: 'pointer',
+} as const
+
+const entryHeaderStyle = {
+  minHeight: 20,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 12,
+  marginBottom: 6,
+} as const
+
+const replayButtonStyle = {
+  height: 24,
+  padding: '0 9px',
+  background: 'rgba(255,255,255,0.06)',
+  border: '1px solid rgba(255,255,255,0.16)',
+  color: 'rgba(229,226,225,0.72)',
+  font: 'inherit',
+  fontSize: 10,
+  letterSpacing: '0.1em',
+  textTransform: 'uppercase' as const,
+  cursor: 'pointer',
 }
 
 const buttonStyle = {

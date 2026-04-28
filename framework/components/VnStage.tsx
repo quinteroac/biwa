@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { VnBackground } from './VnBackground.tsx'
 import { VnCharacter } from './VnCharacter.tsx'
 import { VnDialog } from './VnDialog.tsx'
@@ -10,6 +10,7 @@ import { VnBacklog } from './VnBacklog.tsx'
 import { VnSettings } from './VnSettings.tsx'
 import { VnGallery } from './VnGallery.tsx'
 import { VnMusicRoom } from './VnMusicRoom.tsx'
+import { effectDurationMs, VnEffectsLayer } from './VnEffectsLayer.tsx'
 import { SaveControlsBar } from './SaveControlsBar.tsx'
 import { getStageAdvanceAction } from './VnStageAdvance.ts'
 import { getAutoDelayMs, getAutoModeAction, getSkipModeAction } from './VnPlayerModes.ts'
@@ -24,6 +25,8 @@ import type { StepChoice } from '../engine/ScriptRunner.ts'
 import type { PlayerInputMap } from './VnInputMap.ts'
 import type { PlayerPreferencesPatch, PlayerPreferencesState } from '../player/PlayerPreferences.ts'
 import type { GalleryItem, MusicRoomTrack, PlayerUnlockState, ReplayScene } from '../types/extras.d.ts'
+import type { EngineEffectEvent } from '../types/events.d.ts'
+import type { VnEffectState } from './VnEffectsLayer.tsx'
 
 export interface CharacterState {
   id: string
@@ -50,6 +53,15 @@ const GLOBAL_CSS = `
   @keyframes vn-bounce {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-6px); }
+  }
+
+  @keyframes vn-stage-shake {
+    0%, 100% { transform: translate3d(0, 0, 0); }
+    12% { transform: translate3d(var(--vn-stage-shake-distance), calc(var(--vn-stage-shake-distance) * -0.45), 0); }
+    24% { transform: translate3d(calc(var(--vn-stage-shake-distance) * -0.9), calc(var(--vn-stage-shake-distance) * 0.35), 0); }
+    38% { transform: translate3d(calc(var(--vn-stage-shake-distance) * 0.75), calc(var(--vn-stage-shake-distance) * 0.25), 0); }
+    52% { transform: translate3d(calc(var(--vn-stage-shake-distance) * -0.55), calc(var(--vn-stage-shake-distance) * -0.35), 0); }
+    70% { transform: translate3d(calc(var(--vn-stage-shake-distance) * 0.35), calc(var(--vn-stage-shake-distance) * 0.18), 0); }
   }
 `
 
@@ -93,6 +105,70 @@ function getEngineMusicTracks(engine: GameEngine): MusicRoomTrack[] {
 
 function getEngineReplayScenes(engine: GameEngine): ReplayScene[] {
   return getPlayerFeatureEngine(engine).getReplayScenes?.() ?? []
+}
+
+function recordValue(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null
+}
+
+function stringValue(value: unknown): string | undefined {
+  return typeof value === 'string' && value.length > 0 ? value : undefined
+}
+
+function boolValue(value: unknown): boolean {
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'string') return ['true', 'yes', '1'].includes(value.toLowerCase())
+  return false
+}
+
+function numberValue(value: unknown, fallback: number): number {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (typeof value === 'string' && value.trim().length > 0) {
+    const parsed = Number(value)
+    if (Number.isFinite(parsed)) return parsed
+  }
+  return fallback
+}
+
+function normalizeEffect(raw: Record<string, unknown>, key: string, forcedType?: string): VnEffectState | null {
+  const type = forcedType ?? stringValue(raw['type']) ?? stringValue(raw['id'])
+  if (!type) return null
+  return {
+    key,
+    type,
+    persistent: boolValue(raw['persistent']),
+    params: raw,
+  }
+}
+
+function sceneEffects(sceneId: string, sceneData: Record<string, unknown>): VnEffectState[] {
+  const raw = sceneData['effects']
+  if (!Array.isArray(raw)) return []
+  return raw.flatMap((item, index) => {
+    const record = recordValue(item)
+    if (!record) return []
+    const effect = normalizeEffect({ ...record, persistent: true }, `scene:${sceneId}:${index}`)
+    return effect ? [effect] : []
+  })
+}
+
+function getActiveShake(effects: VnEffectState[]): VnEffectState | null {
+  for (let index = effects.length - 1; index >= 0; index -= 1) {
+    const effect = effects[index]
+    if (effect?.type === 'shake') return effect
+  }
+  return null
+}
+
+function getStageShakeStyle(effect: VnEffectState | null, reduceMotion: boolean): CSSProperties {
+  if (!effect || reduceMotion) return {}
+  const intensity = Math.max(0, Math.min(1, numberValue(effect.params['intensity'], 0.5)))
+  const duration = effectDurationMs(effect.params)
+  const distance = Math.max(4, Math.round(26 * intensity))
+  return {
+    animation: `vn-stage-shake ${duration}ms ease-in-out forwards`,
+    ['--vn-stage-shake-distance' as string]: `${distance}px`,
+  } as CSSProperties
 }
 
 /**
@@ -151,6 +227,7 @@ export interface VnStageComponents {
   Settings?: typeof VnSettings
   Gallery?: typeof VnGallery
   MusicRoom?: typeof VnMusicRoom
+  EffectsLayer?: typeof VnEffectsLayer
 }
 
 export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, showAutoSave = true, resumeFrom, inputMap, components = {} }: VnStageProps) {
@@ -166,6 +243,7 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
   const SettingsComponent = components.Settings ?? VnSettings
   const GalleryComponent = components.Gallery ?? VnGallery
   const MusicRoomComponent = components.MusicRoom ?? VnMusicRoom
+  const EffectsLayerComponent = components.EffectsLayer ?? VnEffectsLayer
   const engineStorageId = getEngineStorageId(engine)
   const preferencesStore = useMemo(() => new PlayerPreferences(engineStorageId), [engineStorageId])
   const resolvedInputMap = useMemo(() => mergePlayerInputMap(inputMap), [inputMap])
@@ -184,8 +262,10 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
   const [backlog, setBacklog]       = useState<BacklogEntry[]>(() => getEngineBacklog(engine))
   const [choices, setChoices]       = useState<StepChoice[] | null>(null)
   const [transition, setTransition] = useState<TransitionState | null>(null)
+  const [effects, setEffects] = useState<VnEffectState[]>([])
   const dialogRef = useRef<VnDialogHandle>(null)
   const audioRef  = useRef(new AudioManager())
+  const effectTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
   const updatePreferences = useCallback((patch: PlayerPreferencesPatch) => {
     setPreferences(prev => {
@@ -210,6 +290,7 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
     const unsubs = [
       bus.on<{ id: string; data: Record<string, unknown>; variant?: string }>('engine:scene', ({ id, data, variant }) => {
         setScene({ id, data, ...(variant !== undefined ? { variant } : {}) })
+        setEffects(sceneEffects(id, data))
         const ambSfx = (data?.['ambient'] as Record<string, unknown> | undefined)?.['sfx'] as string | undefined
         if (ambSfx) audio.playAmbience(ambSfx, null)
       }),
@@ -258,6 +339,18 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
         setTransition({ config, done })
       }),
 
+      bus.on<EngineEffectEvent>('engine:effect', ({ id, effect }) => {
+        const key = `tag:${Date.now()}:${Math.random()}`
+        const normalized = normalizeEffect(effect, key, id)
+        if (!normalized) return
+        setEffects(prev => [...prev, normalized])
+        if (normalized.persistent) return
+        const timer = setTimeout(() => {
+          setEffects(prev => prev.filter(item => item.key !== key))
+        }, effectDurationMs(effect))
+        effectTimersRef.current.push(timer)
+      }),
+
       bus.on<{ id: string } & Record<string, unknown>>('engine:bgm',      ({ id, ...data }) => audio.playBgm(id, data as AudioPlaybackData)),
       bus.on<{ id: string } & Record<string, unknown>>('engine:sfx',      ({ id, ...data }) => audio.playSfx(id, data as AudioPlaybackData)),
       bus.on<{ id: string } & Record<string, unknown>>('engine:ambience', ({ id, ...data }) => audio.playAmbience(id, data as AudioPlaybackData)),
@@ -272,6 +365,8 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
 
     return () => {
       audio.stopAll()
+      effectTimersRef.current.forEach(timer => clearTimeout(timer))
+      effectTimersRef.current = []
       unsubs.forEach(fn => fn())
     }
   }, [engine, resumeFrom])
@@ -464,6 +559,10 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
     </div>
   )
 
+  const activeShake = getActiveShake(effects)
+  const visualEffects = effects.filter(effect => effect.type !== 'shake')
+  const visualShakeStyle = getStageShakeStyle(activeShake, preferences.reduceMotion)
+
   return (
     <>
       <style>{GLOBAL_CSS}</style>
@@ -475,20 +574,32 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
           fontFamily: 'var(--vn-font, "Manrope", sans-serif)',
         }}
       >
-        <BackgroundComponent scene={scene as Parameters<typeof VnBackground>[0]['scene']} />
+        <div
+          data-testid="vn-stage-visuals"
+          style={{
+            position: 'absolute',
+            inset: '-3%',
+            pointerEvents: 'none',
+            ...visualShakeStyle,
+          }}
+        >
+          <BackgroundComponent scene={scene as Parameters<typeof VnBackground>[0]['scene']} />
 
-        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-          {[...characters.values()].map(char => (
-            <CharacterComponent
-              key={char.id}
-              id={char.id}
-              charData={char.charData as Parameters<typeof VnCharacter>[0]['charData']}
-              position={char.position}
-              expression={char.expression}
-              exiting={char.exiting}
-              onExited={handleCharacterExited}
-            />
-          ))}
+          <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+            {[...characters.values()].map(char => (
+              <CharacterComponent
+                key={char.id}
+                id={char.id}
+                charData={char.charData as Parameters<typeof VnCharacter>[0]['charData']}
+                position={char.position}
+                expression={char.expression}
+                exiting={char.exiting}
+                onExited={handleCharacterExited}
+              />
+            ))}
+          </div>
+
+          <EffectsLayerComponent effects={visualEffects} reduceMotion={preferences.reduceMotion} />
         </div>
 
         <SaveMenuComponent
@@ -597,6 +708,7 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
           entries={backlog}
           onClose={() => setBacklogOpen(false)}
           onClear={() => clearEngineBacklog(engine)}
+          onReplayVoice={(voice) => engine.bus.emit('engine:voice', { ...voice, replay: true })}
         />
 
         <SettingsComponent

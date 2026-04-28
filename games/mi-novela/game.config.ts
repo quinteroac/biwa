@@ -38,6 +38,8 @@ const config: GameConfig = {
   // — Plugins —
   plugins: [
     officialPlugins.inkWashBackground(),
+    officialPlugins.screenEffects(),
+    officialPlugins.atmosphereEffects(),
   ],
 
   // — Presentation / Theme —

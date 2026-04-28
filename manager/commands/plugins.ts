@@ -16,7 +16,7 @@ interface ParsedArgs {
 
 function usage(): string {
   return `Usage:
-  bun manager/cli.ts plugins official [--category renderer|player|devtools|asset] [--status stable|experimental|planned]
+  bun manager/cli.ts plugins official [--category renderer|effects|player|devtools|asset] [--status stable|experimental|planned]
   bun manager/cli.ts plugins list <gameId>
   bun manager/cli.ts plugins validate <path|gameId>
   bun manager/cli.ts plugins scaffold <pluginId> [--out <dir>] [--template feature|renderer|ui]`
@@ -102,6 +102,10 @@ function rendererDefinitionSummary(renderers: VnPluginDescriptor['renderers']): 
     (values ?? []).map((value: string) => `${kind}:${value}`),
   )
   return parts.length > 0 ? parts.join(',') : '—'
+}
+
+function tagDefinitionSummary(tags: string[] | undefined): string {
+  return tags && tags.length > 0 ? tags.join(',') : '—'
 }
 
 type PluginTemplate = 'feature' | 'renderer' | 'ui'
@@ -283,8 +287,8 @@ export function scaffoldPlugin(pluginId: string, flags: Record<string, string | 
 
 function parseOfficialCategory(value: string | boolean | undefined): OfficialPluginCategory | null {
   if (value === undefined) return null
-  if (value === 'renderer' || value === 'player' || value === 'devtools' || value === 'asset') return value
-  throw new Error('Invalid official plugin category. Use renderer, player, devtools or asset.')
+  if (value === 'renderer' || value === 'effects' || value === 'player' || value === 'devtools' || value === 'asset') return value
+  throw new Error('Invalid official plugin category. Use renderer, effects, player, devtools or asset.')
 }
 
 function parseOfficialStatus(value: string | boolean | undefined): OfficialPluginStatus | null {
@@ -306,10 +310,10 @@ function listOfficialPlugins(flags: Record<string, string | boolean> = {}): void
     console.log('No official plugins match the selected filters.\n')
     return
   }
-  console.log(`${'ID'.padEnd(34)} ${'Category'.padEnd(10)} ${'Status'.padEnd(13)} ${'Renderers'.padEnd(28)} Description`)
+  console.log(`${'ID'.padEnd(34)} ${'Category'.padEnd(10)} ${'Status'.padEnd(13)} ${'Renderers'.padEnd(24)} ${'Tags'.padEnd(16)} Description`)
   console.log('─'.repeat(120))
   for (const plugin of plugins) {
-    console.log(`${plugin.id.padEnd(34)} ${plugin.category.padEnd(10)} ${plugin.status.padEnd(13)} ${rendererDefinitionSummary(plugin.renderers).padEnd(28)} ${plugin.description}`)
+    console.log(`${plugin.id.padEnd(34)} ${plugin.category.padEnd(10)} ${plugin.status.padEnd(13)} ${rendererDefinitionSummary(plugin.renderers).padEnd(24)} ${tagDefinitionSummary(plugin.tags).padEnd(16)} ${plugin.description}`)
   }
   console.log('\nImport from framework/plugins/prebuilt/index.ts and declare the factory in game.config.ts.\n')
 }

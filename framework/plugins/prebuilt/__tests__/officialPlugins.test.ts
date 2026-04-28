@@ -3,11 +3,13 @@ import { EventBus } from '../../../engine/EventBus.ts'
 import { createPluginContext, loadPluginDescriptor } from '../../PluginRegistry.ts'
 import { officialPluginCatalog, officialPlugins } from '../index.ts'
 import { RendererRegistry } from '../../../renderers/RendererRegistry.ts'
+import { TagRegistry } from '../../TagRegistry.ts'
 import type { GameEngine } from '../../../engine/GameEngine.ts'
 
 describe('official prebuilt plugins', () => {
   it('exposes a catalog of explicit plugin factories', () => {
     expect(officialPluginCatalog.map(plugin => plugin.id)).toContain('official-ink-wash-background')
+    expect(officialPluginCatalog.map(plugin => plugin.id)).toContain('official-backlog-enhancer')
   })
 
   it('keeps catalog metadata complete and unique', () => {
@@ -17,7 +19,7 @@ describe('official prebuilt plugins', () => {
       ids.add(plugin.id)
       expect(plugin.name.length).toBeGreaterThan(0)
       expect(plugin.description.length).toBeGreaterThan(0)
-      expect(['renderer', 'player', 'devtools', 'asset']).toContain(plugin.category)
+      expect(['renderer', 'effects', 'player', 'devtools', 'asset']).toContain(plugin.category)
       expect(['stable', 'experimental', 'planned']).toContain(plugin.status)
       expect(plugin.capabilities.length).toBeGreaterThan(0)
       expect(plugin.configExample).toContain('officialPlugins.')
@@ -31,6 +33,7 @@ describe('official prebuilt plugins', () => {
       const descriptor = plugin.factory()
       expect(descriptor.capabilities).toEqual(plugin.capabilities)
       expect(descriptor.renderers ?? {}).toEqual(plugin.renderers ?? {})
+      expect(descriptor.tags ?? []).toEqual(plugin.tags ?? [])
     }
   })
 
@@ -47,5 +50,36 @@ describe('official prebuilt plugins', () => {
 
     expect(context.rendererRegistry.has('background', 'ink-wash')).toBe(true)
     expect(context.rendererRegistry.get('background', 'ink-wash')?.pluginId).toBe('official-ink-wash-background')
+  })
+
+  it('loads effect plugins and registers their Ink tags', async () => {
+    const engine = { id: 'prebuilt-game' } as GameEngine
+    const screen = await loadPluginDescriptor(officialPlugins.screenEffects())
+    const atmosphere = await loadPluginDescriptor(officialPlugins.atmosphereEffects())
+    const context = {
+      ...createPluginContext(engine, new EventBus()),
+      tags: new TagRegistry(),
+    }
+
+    await screen.module.setup?.(context)
+    await atmosphere.module.setup?.(context)
+
+    expect(context.tags.has('effect')).toBe(true)
+    expect(context.tags.has('atmosphere')).toBe(true)
+  })
+
+  it('loads player experience plugins as opt-in overlays', async () => {
+    const descriptors = [
+      officialPlugins.backlogEnhancer(),
+      officialPlugins.galleryUnlocks(),
+      officialPlugins.musicRoom(),
+      officialPlugins.preferencesPanel(),
+    ]
+
+    for (const descriptor of descriptors) {
+      const { manifest, module } = await loadPluginDescriptor(descriptor)
+      expect(manifest.capabilities).toEqual(['overlay', 'engine-event'])
+      expect(typeof module.setup).toBe('function')
+    }
   })
 })

@@ -20,95 +20,7 @@ El framework ya tiene una base tecnica estable para runtime, UI de jugador, dato
 
 ## Pendientes
 
-### P0 - Renderers Visuales Oficiales
-
-Objetivo: cubrir los renderers visuales mas utiles para una VN sin dependencias externas pesadas.
-
-Alcance:
-
-- Mejorar `officialPlugins.inkWashBackground()`:
-  - soporte completo de variantes.
-  - overlays configurables.
-  - docs con schema informal de opciones.
-- Nuevo `officialPlugins.layeredBackground()`:
-  - capas estaticas.
-  - parallax opcional.
-  - tint/blur por capa.
-- Nuevo `officialPlugins.spriteCharacter()`:
-  - renderer de character explicitamente documentado para atlas Aseprite.
-  - controles de scale, anchor, offset y fps.
-- Nuevo `officialPlugins.simpleTransitions()`:
-  - fade, fade-color, slide, iris o wipe como renderer externo oficial.
-
-Criterios de salida:
-
-- `smoke-fixture` cubre al menos un plugin visual oficial.
-- Docs muestran ejemplos YAML/Markdown para cada renderer.
-- `bun run verify` pasa.
-
-### P1 - Plugins De Efectos Visuales
-
-Objetivo: ofrecer efectos narrativos reutilizables sin que cada juego implemente overlays, timers y limpieza manualmente.
-
-Alcance:
-
-- Contrato de efectos sobre `TagRegistry`:
-  - efectos disparados por Ink: `# effect: shake, intensity: 0.4, duration: 0.3`.
-  - efectos persistentes por escena: `effects:` en scene data.
-  - stacking: multiples efectos simultaneos con orden estable.
-  - limpieza automatica por duracion, cambio de escena o fin de efecto.
-- `officialPlugins.screenEffects()`:
-  - shake.
-  - flash.
-  - vignette.
-  - blur/desaturate.
-  - pulse/heartbeat.
-- `officialPlugins.atmosphereEffects()`:
-  - rain overlay.
-  - snow.
-  - fog.
-  - dust/light particles simples.
-- Docs con recetas:
-  - susto/golpe.
-  - memoria/sueno.
-  - lluvia persistente en escena.
-  - peligro/tension.
-- Tests de runtime:
-  - efecto temporal se monta y desmonta.
-  - efecto persistente se restaura al cambiar escena.
-  - multiples efectos no bloquean el avance del dialogo.
-
-Criterios de salida:
-
-- Un autor puede declarar efectos desde Ink y scene data sin tocar React.
-- Los efectos funcionan como plugins oficiales opt-in.
-- `doctor` valida tipos de efectos desconocidos cuando el plugin no esta declarado.
-
-### P2 - Plugins De Experiencia De Jugador
-
-Objetivo: mover features comunes de VN hacia plugins oficiales opt-in cuando no deban vivir obligatoriamente en el core.
-
-Alcance:
-
-- `officialPlugins.backlogEnhancer()`:
-  - busqueda simple.
-  - filtros por speaker.
-  - replay de linea cuando exista voice.
-- `officialPlugins.galleryUnlocks()`:
-  - UI de gallery basada en extras existentes.
-  - contratos para thumbnails/locked state.
-- `officialPlugins.musicRoom()`:
-  - UI de music room basada en extras existentes.
-  - preview, loop y metadata.
-- `officialPlugins.preferencesPanel()`:
-  - panel extendido para accesibilidad y preferencias.
-
-Criterios de salida:
-
-- Las features siguen disponibles para juegos simples, pero quedan activables como plugins oficiales cuando sea razonable.
-- No se rompen los overrides actuales de `VnStage`.
-
-### P3 - Devtools Y Diagnostico En Runtime
+### P1 - Devtools Y Diagnostico En Runtime
 
 Objetivo: ofrecer herramientas oficiales para autores mientras desarrollan.
 
@@ -130,7 +42,7 @@ Criterios de salida:
 - Un autor puede depurar una escena sin abrir internals del engine.
 - `doctor` o build advierte si devtools se empaqueta accidentalmente.
 
-### P4 - Assets Y Generacion Asistida
+### P2 - Assets Y Generacion Asistida
 
 Objetivo: conectar el flujo de assets que ya existe con plugins oficiales de render.
 
@@ -151,7 +63,7 @@ Criterios de salida:
 - El formato ComfyUI/GameAssetsMaker queda como contrato documentado del framework.
 - El motor, doctor y plugin oficial aceptan el mismo formato.
 
-### P5 - Packaging Futuro
+### P3 - Packaging Futuro
 
 Objetivo: preparar publicacion sin implementarla antes de cerrar versionado.
 

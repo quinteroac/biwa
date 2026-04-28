@@ -62,6 +62,7 @@ export class GameEngine {
   #currentSceneVariant: string | null = null
   #currentCharacters = new Map<string, SavedCharacterState>()
   #currentAudio: SavedAudioState = {}
+  #currentVoiceForDialog: Record<string, unknown> | null = null
   #backlog: BacklogEntry[] = []
   #seenDialogKeys = new Set<string>()
   #backlogIndex = 0
@@ -462,13 +463,16 @@ export class GameEngine {
     const key = this.#dialogSeenKey(text, speaker)
     const seenBefore = this.#seenDialogKeys.has(key)
     this.#seenDialogKeys.add(key)
+    const voice = this.#currentVoiceForDialog ? { ...this.#currentVoiceForDialog } : null
     const entry: BacklogEntry = {
       index: ++this.#backlogIndex,
       text,
       ...(speaker ? { speaker } : {}),
       ...(nameColor ? { nameColor } : {}),
+      ...(voice ? { voice } : {}),
       timestamp: Date.now(),
     }
+    this.#currentVoiceForDialog = null
     this.#backlog.push(entry)
     this.#bus.emit('engine:backlog', { entries: this.getBacklog() })
     this.#persistSeenDialogKeys()
@@ -479,8 +483,10 @@ export class GameEngine {
     const payload = this.#withAudioData(tag)
     if (payload.id === 'stop') {
       delete this.#currentAudio[channel]
+      if (channel === 'voice') this.#currentVoiceForDialog = null
     } else {
       this.#currentAudio[channel] = payload
+      if (channel === 'voice') this.#currentVoiceForDialog = { ...payload }
     }
     this.#bus.emit(`engine:${channel}`, payload)
   }

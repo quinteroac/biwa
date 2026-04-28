@@ -46,6 +46,7 @@ Kai mira el café buscando una salida. No hay ninguna.
 # character: kai, exit
 
 En el reflejo del cristal aparece una figura que no debería estar ahí.
+# effect: shake, intensity: 0.85, duration: 0.75
 # character: antagonist, position: center, expression: neutral
 
 -> chapter_02_antagonist_arrives
@@ -53,6 +54,7 @@ En el reflejo del cristal aparece una figura que no debería estar ahí.
 === chapter_02_antagonist_arrives ===
 # scene: cafe_interior
 # bgm: battle_theme
+# effect: shake, intensity: 0.75, duration: 0.65
 # character: antagonist, position: center, expression: menacing
 # character: sara, position: left, expression: neutral
 # character: kai, position: right, expression: neutral

@@ -61,6 +61,11 @@ export interface EngineUnknownTagEvent {
   tag: TagCommand
 }
 
+export interface EngineEffectEvent {
+  id?: string
+  effect: Record<string, unknown>
+}
+
 export interface EndScreenEvent {
   title?: string
   message?: string
@@ -82,6 +87,7 @@ export interface EngineEventMap {
   'engine:minigame:end': EngineMinigameEndEvent
   'engine:unlocks': EngineUnlocksEvent
   'engine:tag:unknown': EngineUnknownTagEvent
+  'engine:effect': EngineEffectEvent
   'engine:end': Record<string, never>
   end_screen: EndScreenEvent
 }

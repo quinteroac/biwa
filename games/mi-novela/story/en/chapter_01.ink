@@ -1,5 +1,6 @@
 === chapter_01 ===
 # scene: cafe_exterior
+# atmosphere: rain, opacity: 0.28, speed: 8, persistent: true
 # bgm: morning_theme
 
 Rain falls on the cobblestones outside a café that shouldn't exist.

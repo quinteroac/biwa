@@ -23,6 +23,19 @@ The stage emits and listens to `engine:backlog` updates. Save snapshots include 
 
 `VnStage` shows the default `VnBacklog` overlay through the `Log` button or the `B` key. Hosts can replace it through `components.Backlog`.
 
+The default backlog overlay includes:
+
+- text search.
+- speaker filtering.
+- voice replay for entries that captured a preceding `# voice` tag.
+
+```ink
+# voice: kai_ch01_001
+Kai: This voiced line is replayable from the backlog.
+```
+
+The official prebuilt profile for this feature is `officialPlugins.backlogEnhancer()`. Simple games can keep using the built-in overlay without declaring the plugin.
+
 ## Auto Mode
 
 Auto mode advances completed dialog lines after a delay based on text length. It waits for text reveal to finish and pauses while choices, transitions, save/load, audio controls or backlog overlays are active.
@@ -69,6 +82,8 @@ The stored preferences include:
 
 The default `Settings` button opens `VnSettings`, where these values can be edited or reset. Hosts can replace the panel through `components.Settings`.
 
+The official prebuilt profile for this feature is `officialPlugins.preferencesPanel()`.
+
 ## Input Map
 
 `VnStage` accepts an `inputMap` prop for keyboard overrides. Any omitted action keeps the framework default.
@@ -112,3 +127,5 @@ Autosave remains visually distinguished as the `Auto Save` slot.
 ## Player Extras
 
 `VnStage` also exposes default `Gallery` and `Music` entries from the top-right gear menu for unlocked extras. See `framework/docs/player-extras.md` for the data schema, Ink tags and component override contracts.
+
+The official prebuilt profiles for these overlays are `officialPlugins.galleryUnlocks()` and `officialPlugins.musicRoom()`.

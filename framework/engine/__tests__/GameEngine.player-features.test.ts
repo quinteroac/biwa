@@ -112,4 +112,18 @@ describe('GameEngine player features', () => {
     engine.restoreState(state)
     expect(engine.getBacklog().map(entry => entry.text)).toEqual(['Saved line.'])
   })
+
+  it('stores the preceding voice tag on the next backlog entry', async () => {
+    const engine = await createEngine('# voice: kai_ch01_001, volume: 0.8\nKai: Voiced line.\nSara: Silent line.\n')
+
+    engine.start()
+    await waitUntil(() => engine.getBacklog().length === 1)
+    engine.advance()
+    await waitUntil(() => engine.getBacklog().length === 2)
+
+    const [voiced, silent] = engine.getBacklog()
+    expect(voiced?.voice?.id).toBe('kai_ch01_001')
+    expect(voiced?.voice?.volume).toBe('0.8')
+    expect(silent?.voice).toBeUndefined()
+  })
 })

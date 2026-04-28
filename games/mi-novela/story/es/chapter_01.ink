@@ -1,5 +1,6 @@
 === chapter_01 ===
 # scene: cafe_exterior
+# atmosphere: rain, opacity: 0.28, speed: 8, persistent: true
 # bgm: morning_theme
 
 La lluvia cae sobre los adoquines frente al café que no debería existir.

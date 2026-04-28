@@ -19,12 +19,20 @@ Use the CLI to inspect the same catalog used by the docs:
 ```bash
 bun manager/cli.ts plugins official
 bun manager/cli.ts plugins official --category renderer
+bun manager/cli.ts plugins official --category effects
+bun manager/cli.ts plugins official --category player
 bun manager/cli.ts plugins official --status experimental
 ```
 
-| ID | Factory | Category | Status | Capabilities | Renderers |
-|----|---------|----------|--------|--------------|-----------|
-| `official-ink-wash-background` | `officialPlugins.inkWashBackground()` | `renderer` | `experimental` | `renderer` | `background:ink-wash` |
+| ID | Factory | Category | Status | Capabilities | Renderers | Tags |
+|----|---------|----------|--------|--------------|-----------|------|
+| `official-ink-wash-background` | `officialPlugins.inkWashBackground()` | `renderer` | `experimental` | `renderer` | `background:ink-wash` | — |
+| `official-screen-effects` | `officialPlugins.screenEffects()` | `effects` | `experimental` | `ink-tag` | — | `effect` |
+| `official-atmosphere-effects` | `officialPlugins.atmosphereEffects()` | `effects` | `experimental` | `ink-tag` | — | `atmosphere` |
+| `official-backlog-enhancer` | `officialPlugins.backlogEnhancer()` | `player` | `experimental` | `overlay`, `engine-event` | — | — |
+| `official-gallery-unlocks` | `officialPlugins.galleryUnlocks()` | `player` | `experimental` | `overlay`, `engine-event` | — | — |
+| `official-music-room` | `officialPlugins.musicRoom()` | `player` | `experimental` | `overlay`, `engine-event` | — | — |
+| `official-preferences-panel` | `officialPlugins.preferencesPanel()` | `player` | `experimental` | `overlay`, `engine-event` | — | — |
 
 ## Stability Policy
 
@@ -39,6 +47,7 @@ The current plugin API is `vn-plugin-api-v1`. Official plugins must declare that
 ## Categories
 
 - `renderer`: visual renderers for backgrounds, characters, transitions, overlays or extras.
+- `effects`: visual effect plugins driven by Ink tags or scene data.
 - `player`: player-facing VN features such as backlog, gallery, music room or preferences.
 - `devtools`: authoring and runtime inspection tools.
 - `asset`: helpers tied to asset formats or generation workflows.
@@ -82,6 +91,133 @@ Supported options:
 | `variants` | `object` | Scene variant overrides for the same options. |
 | `defaultVariant` | `string` | Variant selected when no scene variant is active. |
 
+## Screen Effects
+
+`officialPlugins.screenEffects()` declares and handles the `effect` Ink tag.
+
+```ts
+plugins: [
+  officialPlugins.screenEffects(),
+]
+```
+
+Ink examples:
+
+```ink
+# effect: shake, intensity: 0.4, duration: 0.3
+# effect: flash, color: white, duration: 0.15
+# effect: vignette, strength: 0.5, persistent: true
+# effect: blur, amount: 4, duration: 0.5
+# effect: heartbeat, intensity: 0.6, duration: 0.8
+```
+
+Supported effect ids:
+
+- `shake`
+- `flash`
+- `vignette`
+- `blur`
+- `desaturate`
+- `pulse`
+- `heartbeat`
+
+## Atmosphere Effects
+
+`officialPlugins.atmosphereEffects()` declares and handles the `atmosphere` Ink tag.
+
+```ts
+plugins: [
+  officialPlugins.atmosphereEffects(),
+]
+```
+
+Ink examples:
+
+```ink
+# atmosphere: rain, opacity: 0.28, speed: 8, persistent: true
+# atmosphere: fog, opacity: 0.35, persistent: true
+# atmosphere: snow, opacity: 0.24, speed: 12
+```
+
+Scene data can also declare persistent effects. These are rendered by the stage effects layer:
+
+```yaml
+effects:
+  - type: rain
+    opacity: 0.25
+  - type: vignette
+    strength: 0.4
+```
+
+Supported atmosphere ids:
+
+- `rain`
+- `snow`
+- `fog`
+- `dust`
+
+## Player Experience Plugins
+
+Player plugins declare opt-in profiles for VN features that are common enough to reuse across games. The default `VnStage` still ships with baseline player UI so simple games do not need plugin configuration, but these official factories make the feature set explicit for games that want a documented plugin manifest.
+
+```ts
+plugins: [
+  officialPlugins.backlogEnhancer(),
+  officialPlugins.galleryUnlocks(),
+  officialPlugins.musicRoom(),
+  officialPlugins.preferencesPanel(),
+]
+```
+
+### Backlog Enhancer
+
+`officialPlugins.backlogEnhancer()` maps to the enhanced default backlog overlay:
+
+- text search.
+- speaker filter.
+- voice replay for lines that were preceded by a `# voice` tag.
+
+Ink:
+
+```ink
+# voice: kai_ch01_001
+Kai: This line can be replayed from the backlog.
+```
+
+The engine stores that voice payload on the next backlog entry and `VnStage` re-emits it through `engine:voice` when the player clicks `Replay`.
+
+### Gallery Unlocks
+
+`officialPlugins.galleryUnlocks()` documents the official gallery profile backed by `data.gallery` and the existing unlock tags.
+
+```ink
+# unlock_gallery: cg_001
+```
+
+Gallery item thumbnails, full images and locked states use the contracts in `framework/docs/player-extras.md`.
+
+### Music Room
+
+`officialPlugins.musicRoom()` documents the official music/replay profile backed by `data.music`, regular audio data fallback and `data.replay`.
+
+```ink
+# unlock_music: main_theme
+# unlock_replay: chapter_01
+```
+
+Unlocked tracks can be previewed and looped in the default music room overlay.
+
+### Preferences Panel
+
+`officialPlugins.preferencesPanel()` documents the official preferences profile for:
+
+- text speed.
+- auto delay.
+- text scale.
+- read-only skip.
+- high contrast.
+- reduced motion.
+
 ## Catalog Maintenance
 
 Every official plugin entry must include:
@@ -93,6 +229,7 @@ Every official plugin entry must include:
 - public `description`.
 - declared `capabilities`.
 - declared `renderers` when applicable.
+- declared `tags` when applicable.
 - `configExample`.
 - a `factory` that returns a manifest matching the catalog metadata.
 
