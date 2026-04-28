@@ -146,6 +146,21 @@ function readAtlasSummary(gameId: string, path: string, data: Record<string, unk
     frameCount: frameItems.length,
     frameNames: frameItems.map(item => item.name),
     tags,
+    frames: frameItems.map(item => ({
+      key: item.key,
+      name: item.name,
+      x: item.x,
+      y: item.y,
+      w: item.w,
+      h: item.h,
+      duration: item.frame.duration,
+    })),
+    frameTags: frameTags.map(tag => ({
+      name: tag.name,
+      from: tag.from,
+      to: tag.to,
+      direction: tag.direction,
+    })),
     sheetSize: {
       w: parsed.meta?.size?.w ?? 0,
       h: parsed.meta?.size?.h ?? 0,
@@ -305,6 +320,21 @@ export async function generateCharacterAtlas(
     frameCount: result.frameCount,
     frameNames: names,
     tags: [],
+    frames: names.map((name, index) => ({
+      key: `${name}.png`,
+      name,
+      x: index * 512,
+      y: 0,
+      w: 512,
+      h: 512,
+      duration: 100,
+    })),
+    frameTags: names.map((name, index) => ({
+      name,
+      from: index,
+      to: index,
+      direction: 'forward',
+    })),
     sheetSize: { w: Math.max(1, names.length) * 512, h: 512 },
     previewFrame: { name: names[0] ?? 'neutral', x: 0, y: 0, w: 512, h: 512 },
   }

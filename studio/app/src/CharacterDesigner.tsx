@@ -2,10 +2,14 @@ import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchCharacter, fetchCharacters, generateCharacterAtlas, saveCharacter } from './api.ts'
-import type { StudioCharacterDraft, StudioProjectSummary } from '../../shared/types.ts'
+import type { StudioCharacterDraft, StudioCharacterItem, StudioProjectSummary } from '../../shared/types.ts'
 
 const positionOptions = ['left', 'center', 'right']
 const NEW_CHARACTER_PATH = '__new_character__.md'
+const characterTabs = ['Character Sheet', 'Spritesheet', 'Sprites', 'Animations'] as const
+
+type CharacterTab = typeof characterTabs[number]
+type StudioCharacter = NonNullable<Awaited<ReturnType<typeof fetchCharacter>>['character']>
 
 function newCharacterDraft(): StudioCharacterDraft {
   return {
@@ -39,7 +43,7 @@ function characterPathForDraft(draft: StudioCharacterDraft, activePath: string |
   return `${id}.md`
 }
 
-function draftFromCharacter(character: NonNullable<Awaited<ReturnType<typeof fetchCharacter>>['character']>): StudioCharacterDraft {
+function draftFromCharacter(character: StudioCharacter): StudioCharacterDraft {
   return {
     id: character.id,
     displayName: character.displayName,
@@ -93,7 +97,7 @@ function setAnimationField(draft: StudioCharacterDraft, key: string, value: stri
   }
 }
 
-function atlasPreviewStyle(character: NonNullable<Awaited<ReturnType<typeof fetchCharacter>>['character']>, draft: StudioCharacterDraft): CSSProperties | null {
+function atlasPreviewStyle(character: StudioCharacter, draft: StudioCharacterDraft): CSSProperties | null {
   const frame = character.atlas?.previewFrame
   const sheet = character.atlas?.sheetSize
   if (!character.previewUrl || !frame || !sheet || sheet.w <= 0 || sheet.h <= 0) return null
@@ -109,6 +113,34 @@ function atlasPreviewStyle(character: NonNullable<Awaited<ReturnType<typeof fetc
   }
 }
 
+function spriteFrameStyle(character: StudioCharacter, frame: NonNullable<StudioCharacter['atlas']>['frames'][number], maxWidth: number, maxHeight: number): CSSProperties {
+  const sheet = character.atlas?.sheetSize
+  if (!character.previewUrl || !sheet || sheet.w <= 0 || sheet.h <= 0) return {}
+  const scale = Math.min(1, maxWidth / frame.w, maxHeight / frame.h)
+  return {
+    width: `${Math.max(1, frame.w * scale)}px`,
+    height: `${Math.max(1, frame.h * scale)}px`,
+    backgroundImage: `url("${character.previewUrl}")`,
+    backgroundRepeat: 'no-repeat',
+    backgroundSize: `${sheet.w * scale}px ${sheet.h * scale}px`,
+    backgroundPosition: `-${frame.x * scale}px -${frame.y * scale}px`,
+  }
+}
+
+function animationFrames(character: StudioCharacter, tagName: string): NonNullable<StudioCharacter['atlas']>['frames'] {
+  const atlas = character.atlas
+  if (!atlas) return []
+  const frames = atlas.frames ?? []
+  const tags = atlas.frameTags ?? []
+  const tag = tags.find(item => item.name === tagName)
+  if (!tag) return frames.slice(0, 8)
+  return frames.slice(tag.from, tag.to + 1)
+}
+
+function characterGroup(character: Pick<StudioCharacterItem, 'role'>): string {
+  return character.role || 'Supporting'
+}
+
 export function CharacterDesigner(props: {
   project: StudioProjectSummary
   onRunDoctor: () => void
@@ -117,6 +149,8 @@ export function CharacterDesigner(props: {
   const queryClient = useQueryClient()
   const [selectedPath, setSelectedPath] = useState<string | null>(null)
   const [draft, setDraft] = useState<StudioCharacterDraft | null>(null)
+  const [activeTab, setActiveTab] = useState<CharacterTab>('Spritesheet')
+  const [selectedAnimation, setSelectedAnimation] = useState<string | null>(null)
   const charactersQuery = useQuery({
     queryKey: ['studio-characters', props.project.id],
     queryFn: () => fetchCharacters(props.project.id),
@@ -132,6 +166,10 @@ export function CharacterDesigner(props: {
   const activeCharacter = characterQuery.data?.character
   const expressionPreview = useMemo(() => draft?.expressions ?? [], [draft])
   const previewStyle = activeCharacter && draft ? atlasPreviewStyle(activeCharacter, draft) : null
+  const atlasFrames = activeCharacter?.atlas?.frames ?? []
+  const atlasTags = activeCharacter?.atlas?.frameTags ?? []
+  const activeAnimationName = selectedAnimation ?? atlasTags[0]?.name ?? activeCharacter?.defaultExpression ?? 'Idle'
+  const activeAnimationFrames = activeCharacter ? animationFrames(activeCharacter, activeAnimationName) : []
   const saveMutation = useMutation({
     mutationFn: () => {
       const currentDraft = draft as StudioCharacterDraft
@@ -171,23 +209,29 @@ export function CharacterDesigner(props: {
 
   return (
     <div className="character-workspace">
-      <aside className="studio-panel character-list-panel">
-        <div className="studio-panel-heading">
-          <span>Characters</span>
+      <aside className="character-list-panel">
+        <div className="character-panel-heading">
+          <strong>Characters</strong>
           <button
             className="ghost-button"
             onClick={() => {
               setSelectedPath(NEW_CHARACTER_PATH)
               setDraft(newCharacterDraft())
+              setActiveTab('Character Sheet')
             }}
             type="button"
           >
             New
           </button>
         </div>
-        <div className="scene-list">
+        <label className="character-search">
+          <span>Search characters</span>
+          <input placeholder="Search characters..." type="search" />
+        </label>
+        <div className="character-list">
           {isNewCharacter ? (
             <button className="is-active" type="button">
+              <span className="character-list-avatar">New</span>
               <span>{draft?.displayName ?? 'New Character'}</span>
               <small>unsaved</small>
             </button>
@@ -199,17 +243,23 @@ export function CharacterDesigner(props: {
               onClick={() => setSelectedPath(character.path)}
               type="button"
             >
+              <span className="character-list-avatar">
+                {character.previewUrl ? <img alt="" src={character.previewUrl} /> : character.displayName.slice(0, 2)}
+              </span>
               <span>{character.displayName}</span>
-              <small>{character.id}</small>
+              <small>{characterGroup(character)}</small>
             </button>
           ))}
         </div>
       </aside>
 
-      <section className="studio-panel character-editor-panel">
-        <div className="studio-panel-heading">
-          <span>Character Sheet</span>
-          <div className="story-actions">
+      <section className="character-editor-panel">
+        <header className="character-editor-header">
+          <div>
+            <h2>{draft?.displayName ?? activeCharacter?.displayName ?? 'Character'}</h2>
+            <p>{draft?.role || activeCharacter?.role || activeCharacter?.id || 'No role configured'}</p>
+          </div>
+          <div className="character-header-actions">
             <button className="ghost-button" disabled={props.isRunningDoctor} onClick={props.onRunDoctor} type="button">
               Doctor
             </button>
@@ -217,9 +267,17 @@ export function CharacterDesigner(props: {
               {saveMutation.isPending ? 'Saving' : 'Save Character'}
             </button>
           </div>
-        </div>
+        </header>
 
-        {draft ? (
+        <nav className="character-tabs" aria-label="Character editor tabs">
+          {characterTabs.map(tab => (
+            <button className={activeTab === tab ? 'is-active' : ''} key={tab} onClick={() => setActiveTab(tab)} type="button">
+              {tab}
+            </button>
+          ))}
+        </nav>
+
+        {draft && activeTab === 'Character Sheet' ? (
           <div className="scene-form">
             <div className="scene-form-grid">
               <label>
@@ -335,14 +393,105 @@ export function CharacterDesigner(props: {
               </div>
             </div>
           </div>
+        ) : draft && activeTab === 'Spritesheet' ? (
+          <div className="character-asset-grid">
+            <section className="character-asset-panel is-sheet">
+              <div className="character-asset-heading">
+                <strong>Spritesheet Image</strong>
+                <span>{activeCharacter?.atlas?.sheetSize.w ?? 0} x {activeCharacter?.atlas?.sheetSize.h ?? 0}</span>
+              </div>
+              <div className="character-spritesheet-stage">
+                {activeCharacter?.previewUrl ? (
+                  <img alt={`${activeCharacter.displayName} spritesheet`} src={activeCharacter.previewUrl} />
+                ) : (
+                  <span>No spritesheet configured</span>
+                )}
+              </div>
+              <div className="character-asset-meta">
+                <strong>{animationFile(draft) || 'No spritesheet path'}</strong>
+                <span>{atlasFrames.length} sprites</span>
+                <span>{atlasTags.length} animations</span>
+              </div>
+            </section>
+            <section className="character-asset-panel">
+              <div className="character-asset-heading">
+                <strong>Sprites</strong>
+                <span>{atlasFrames.length} sprites</span>
+              </div>
+              <div className="character-sprite-grid is-compact">
+                {activeCharacter ? atlasFrames.slice(0, 12).map(frame => (
+                  <article className="character-sprite-card" key={frame.key}>
+                    <div className="character-sprite-thumb">
+                      <span style={spriteFrameStyle(activeCharacter, frame, 92, 130)} />
+                    </div>
+                    <small>{frame.name}</small>
+                  </article>
+                )) : null}
+              </div>
+            </section>
+          </div>
+        ) : draft && activeTab === 'Sprites' ? (
+          <section className="character-asset-panel is-full">
+            <div className="character-asset-heading">
+              <strong>Sprites</strong>
+              <span>{atlasFrames.length} sprites</span>
+            </div>
+            <div className="character-sprite-grid">
+              {activeCharacter ? atlasFrames.map(frame => (
+                <article className="character-sprite-card" key={frame.key}>
+                  <div className="character-sprite-thumb">
+                    <span style={spriteFrameStyle(activeCharacter, frame, 128, 168)} />
+                  </div>
+                  <small>{frame.name}</small>
+                </article>
+              )) : null}
+            </div>
+          </section>
+        ) : draft && activeTab === 'Animations' ? (
+          <div className="character-animation-workspace">
+            <aside className="character-animation-list">
+              <div className="character-asset-heading">
+                <strong>Animations</strong>
+                <button className="ghost-button" type="button">New Animation</button>
+              </div>
+              {(atlasTags.length ? atlasTags : expressionPreview.map((name, index) => ({ name, from: index, to: index, direction: 'forward' }))).map(tag => (
+                <button
+                  className={activeAnimationName === tag.name ? 'is-active' : ''}
+                  key={tag.name}
+                  onClick={() => setSelectedAnimation(tag.name)}
+                  type="button"
+                >
+                  <span>{tag.name}</span>
+                  <small>{tag.direction}</small>
+                </button>
+              ))}
+            </aside>
+            <section className="character-animation-strip">
+              <div className="character-asset-heading">
+                <strong>{activeAnimationName}</strong>
+                <span>{activeAnimationFrames.length} frames</span>
+              </div>
+              <div className="character-animation-frames">
+                {activeCharacter ? activeAnimationFrames.map((frame, index) => (
+                  <article className="character-animation-frame" key={`${frame.key}-${index}`}>
+                    <div className="character-sprite-thumb">
+                      <span style={spriteFrameStyle(activeCharacter, frame, 142, 190)} />
+                    </div>
+                    <small>{index + 1}</small>
+                    <span>{frame.duration}ms</span>
+                  </article>
+                )) : null}
+              </div>
+            </section>
+          </div>
         ) : (
           <p className="muted">Select a character to edit its sheet and runtime metadata.</p>
         )}
       </section>
 
-      <aside className="studio-panel character-preview-panel">
-        <div className="studio-panel-heading">
-          <span>Sprite Preview</span>
+      <aside className="character-preview-panel">
+        <div className="character-panel-heading">
+          <strong>Preview</strong>
           <small>{activeCharacter?.atlas?.frameCount ?? 0} frames</small>
         </div>
         <div className="character-preview-frame">

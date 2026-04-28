@@ -121,6 +121,21 @@ export interface StudioCharacterAtlasSummary {
   frameCount: number
   frameNames: string[]
   tags: string[]
+  frames: Array<{
+    key: string
+    name: string
+    x: number
+    y: number
+    w: number
+    h: number
+    duration: number
+  }>
+  frameTags: Array<{
+    name: string
+    from: number
+    to: number
+    direction: string
+  }>
   sheetSize: {
     w: number
     h: number
