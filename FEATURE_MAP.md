@@ -19,33 +19,6 @@ Roadmaps de referencia:
 
 ## Pendientes
 
-### P3 - Creador De Personajes Y Atlas
-
-Objetivo: crear personajes desde ficha narrativa hasta contrato de sprites/atlas compatible con el framework.
-
-Alcance:
-
-- Ficha de personaje:
-  - nombre.
-  - rol.
-  - descripcion fisica.
-  - personalidad.
-  - paleta.
-  - vestuario.
-  - expresiones.
-  - prompt base futuro.
-- Editor de metadata `data/characters`.
-- Generacion de atlas JSON Aseprite/GameAssetsMaker desde UI.
-- Preview de spritesheet/atlas.
-- Mapper expresion narrativa -> frame/tag del atlas.
-- Ajustes visuales de personaje: escala, posicion, eje Y, offset.
-
-Criterios de salida:
-
-- Se puede crear un personaje completo sin editar archivos a mano.
-- El atlas generado conserva el formato que parsea el framework.
-- La preview coincide con `VnCharacter`.
-
 ### P4 - Instalacion Y Configuracion De Plugins
 
 Objetivo: hacer que los plugins oficiales y locales sean instalables/configurables desde el Studio.

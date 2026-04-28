@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchProjects, runDoctor } from './api.ts'
+import { CharacterDesigner } from './CharacterDesigner.tsx'
 import { SceneLibrary } from './SceneLibrary.tsx'
 import { StoryEditor } from './StoryEditor.tsx'
 import type { StudioProjectSummary } from '../../shared/types.ts'
@@ -98,6 +99,7 @@ function ProjectOverview(props: {
   onRunDoctor: () => void
 }) {
   const isStory = props.activeSection === 'Story'
+  const isCharacters = props.activeSection === 'Characters'
   const isSceneLibrary = props.activeSection === 'Scenes' || props.activeSection === 'Assets'
   return (
     <main className="studio-main">
@@ -128,6 +130,12 @@ function ProjectOverview(props: {
 
       {isStory ? (
         <StoryEditor
+          isRunningDoctor={props.isRunningDoctor}
+          onRunDoctor={props.onRunDoctor}
+          project={props.project}
+        />
+      ) : isCharacters ? (
+        <CharacterDesigner
           isRunningDoctor={props.isRunningDoctor}
           onRunDoctor={props.onRunDoctor}
           project={props.project}

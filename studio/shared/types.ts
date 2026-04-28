@@ -107,3 +107,83 @@ export interface StudioScenesResponse {
 export interface StudioSceneResponse {
   scene: StudioSceneItem
 }
+
+export interface StudioCharacterOffset {
+  x?: number
+  y?: number
+}
+
+export interface StudioCharacterAtlasSummary {
+  path: string
+  frameCount: number
+  frameNames: string[]
+  tags: string[]
+  sheetSize: {
+    w: number
+    h: number
+  }
+  previewFrame: {
+    name: string
+    x: number
+    y: number
+    w: number
+    h: number
+  } | null
+}
+
+export interface StudioCharacterItem {
+  path: string
+  id: string
+  displayName: string
+  role: string
+  physicalDescription: string
+  personality: string
+  palette: string
+  outfit: string
+  prompt: string
+  nameColor: string
+  isNarrator: boolean
+  defaultPosition: string
+  defaultExpression: string
+  scale: number
+  offset: StudioCharacterOffset
+  animation: Record<string, unknown>
+  expressions: string[]
+  atlasPath: string
+  previewUrl: string | null
+  atlas: StudioCharacterAtlasSummary | null
+  body: string
+}
+
+export interface StudioCharacterDraft {
+  id: string
+  displayName: string
+  role: string
+  physicalDescription: string
+  personality: string
+  palette: string
+  outfit: string
+  prompt: string
+  nameColor: string
+  isNarrator: boolean
+  defaultPosition: string
+  defaultExpression: string
+  scale: number
+  offset: StudioCharacterOffset
+  animation: Record<string, unknown>
+  expressions: string[]
+  body?: string
+}
+
+export interface StudioCharactersResponse {
+  characters: StudioCharacterItem[]
+}
+
+export interface StudioCharacterResponse {
+  character: StudioCharacterItem
+}
+
+export interface StudioCharacterAtlasResponse {
+  atlas: StudioCharacterAtlasSummary
+  character: StudioCharacterItem
+}

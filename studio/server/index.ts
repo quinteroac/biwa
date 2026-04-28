@@ -5,6 +5,7 @@ import { getProjectDiagnostics, getProjectSummary, listProjects } from './projec
 import { listStoryFiles, readStoryFile, writeStoryFile } from './story.ts'
 import { listAssets, resolveAssetFile } from './assets.ts'
 import { listScenes, readScene, writeScene } from './scenes.ts'
+import { generateCharacterAtlas, listCharacters, readCharacter, writeCharacter } from './characters.ts'
 
 function jsonError(message: string, status = 500): Response {
   return Response.json({ error: message }, { status })
@@ -121,6 +122,49 @@ export const studioApi = new Elysia()
         throw new Error('Missing scene payload.')
       }
       return await writeScene(params.gameId, payload.path, payload.scene as Parameters<typeof writeScene>[2])
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, err.message.includes('not found') ? 404 : 400)
+    }
+  })
+  .get('/api/projects/:gameId/characters', async ({ params }) => {
+    try {
+      return { characters: await listCharacters(params.gameId) }
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, err.message.includes('does not exist') ? 404 : 400)
+    }
+  })
+  .get('/api/projects/:gameId/characters/file', async ({ params, query }) => {
+    try {
+      const path = typeof query['path'] === 'string' ? query['path'] : ''
+      return await readCharacter(params.gameId, path)
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, err.message.includes('not found') ? 404 : 400)
+    }
+  })
+  .put('/api/projects/:gameId/characters/file', async ({ body, params }) => {
+    try {
+      const payload = body as { path?: unknown; character?: unknown }
+      if (typeof payload.path !== 'string') throw new Error('Missing character file path.')
+      if (typeof payload.character !== 'object' || payload.character === null || Array.isArray(payload.character)) {
+        throw new Error('Missing character payload.')
+      }
+      return await writeCharacter(params.gameId, payload.path, payload.character as Parameters<typeof writeCharacter>[2])
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, err.message.includes('not found') ? 404 : 400)
+    }
+  })
+  .post('/api/projects/:gameId/characters/atlas', async ({ body, params }) => {
+    try {
+      const payload = body as { path?: unknown; character?: unknown }
+      if (typeof payload.path !== 'string') throw new Error('Missing character file path.')
+      if (typeof payload.character !== 'object' || payload.character === null || Array.isArray(payload.character)) {
+        throw new Error('Missing character payload.')
+      }
+      return await generateCharacterAtlas(params.gameId, payload.path, payload.character as Parameters<typeof generateCharacterAtlas>[2])
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e))
       return jsonError(err.message, err.message.includes('not found') ? 404 : 400)

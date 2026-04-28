@@ -484,9 +484,19 @@ button {
   align-items: start;
 }
 
+.character-workspace {
+  display: grid;
+  grid-template-columns: 240px minmax(560px, 1fr) 380px;
+  gap: 24px;
+  align-items: start;
+}
+
 .scene-list-panel,
 .scene-editor-panel,
-.scene-preview-panel {
+.scene-preview-panel,
+.character-list-panel,
+.character-editor-panel,
+.character-preview-panel {
   min-height: 720px;
 }
 
@@ -548,7 +558,8 @@ button {
 }
 
 .scene-form input,
-.scene-form textarea {
+.scene-form textarea,
+.scene-form select {
   width: 100%;
   min-height: 40px;
   padding: 10px 12px;
@@ -558,6 +569,10 @@ button {
   background: transparent;
   border: 1px solid var(--studio-line-soft);
   border-radius: 0;
+}
+
+.scene-form select {
+  color-scheme: dark;
 }
 
 .scene-form textarea {
@@ -645,4 +660,88 @@ button {
 .asset-row span {
   display: grid;
   place-items: center;
+}
+
+.character-fieldset {
+  display: grid;
+  gap: 16px;
+  margin-top: 10px;
+  padding-top: 18px;
+  border-top: 1px solid var(--studio-line-soft);
+}
+
+.expression-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.expression-list span {
+  min-height: 28px;
+  padding: 6px 10px;
+  color: var(--studio-soft);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: 1px solid var(--studio-line-soft);
+}
+
+.character-preview-frame {
+  display: grid;
+  place-items: end center;
+  height: 420px;
+  margin-top: 18px;
+  background:
+    linear-gradient(transparent 74%, rgba(255, 255, 255, 0.04) 74%),
+    #0e0e0e;
+  border: 1px solid var(--studio-line-soft);
+  overflow: hidden;
+}
+
+.character-preview-frame span {
+  align-self: center;
+  color: var(--studio-muted);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.character-preview-sprite,
+.character-preview-crop {
+  max-width: 90%;
+  max-height: 90%;
+  object-fit: contain;
+  transform-origin: bottom center;
+}
+
+.character-preview-crop {
+  image-rendering: auto;
+  flex: 0 0 auto;
+}
+
+.character-atlas-facts {
+  display: grid;
+  gap: 16px;
+  margin: 20px 0 0;
+}
+
+.character-atlas-facts div {
+  display: grid;
+  gap: 8px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--studio-line-soft);
+}
+
+.character-atlas-facts dt {
+  color: var(--studio-muted);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.character-atlas-facts dd {
+  margin: 0;
+  color: var(--studio-soft);
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
 }

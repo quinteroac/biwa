@@ -1,6 +1,10 @@
 import type {
   StudioDoctorResponse,
   StudioAssetsResponse,
+  StudioCharacterAtlasResponse,
+  StudioCharacterDraft,
+  StudioCharacterResponse,
+  StudioCharactersResponse,
   StudioSceneDraft,
   StudioSceneResponse,
   StudioScenesResponse,
@@ -70,5 +74,33 @@ export function saveScene(gameId: string, path: string, scene: StudioSceneDraft)
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path, scene }),
+  })
+}
+
+export function fetchCharacters(gameId: string): Promise<StudioCharactersResponse> {
+  return requestJson<StudioCharactersResponse>(`/api/projects/${gameId}/characters`)
+}
+
+export function fetchCharacter(gameId: string, path: string): Promise<StudioCharacterResponse> {
+  return requestJson<StudioCharacterResponse>(`/api/projects/${gameId}/characters/file?path=${encodeURIComponent(path)}`)
+}
+
+export function saveCharacter(gameId: string, path: string, character: StudioCharacterDraft): Promise<StudioCharacterResponse> {
+  return requestJson<StudioCharacterResponse>(`/api/projects/${gameId}/characters/file`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path, character }),
+  })
+}
+
+export function generateCharacterAtlas(
+  gameId: string,
+  path: string,
+  character: StudioCharacterDraft,
+): Promise<StudioCharacterAtlasResponse> {
+  return requestJson<StudioCharacterAtlasResponse>(`/api/projects/${gameId}/characters/atlas`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path, character }),
   })
 }
