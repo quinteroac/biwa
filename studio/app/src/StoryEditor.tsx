@@ -416,14 +416,14 @@ export function StoryEditor(props: {
             }}
             options={{
               fontFamily: '"Azeret Mono", "SFMono-Regular", Consolas, monospace',
-              fontSize: 14,
+              fontSize: 17,
               minimap: { enabled: false },
               padding: { top: 16, bottom: 16 },
               scrollBeyondLastLine: false,
               wordWrap: 'on',
               automaticLayout: true,
             }}
-            theme="vs-dark"
+            theme="vs"
             value={storyFileQuery.isLoading ? 'Loading Ink...' : draft}
           />
         </div>

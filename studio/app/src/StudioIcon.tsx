@@ -118,11 +118,11 @@ export function StudioIcon({ name, size = 22, ...props }: StudioIconProps) {
   if (name === 'app-logo') {
     return (
       <svg aria-hidden="true" height={size} viewBox="0 0 40 40" width={size} {...props}>
-        <circle cx="20" cy="20" fill="#ffffff" r="20" />
+        <circle cx="20" cy="20" fill="#F2EFE8" r="20" />
         <text
           fill="#000"
           fontFamily="Inter, system-ui, sans-serif"
-          fontSize="12"
+          fontSize="14.4"
           fontWeight="800"
           textAnchor="middle"
           x="20"

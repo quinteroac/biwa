@@ -8,12 +8,12 @@
   --studio-ring: rgba(0, 153, 255, 0.15);
   --studio-blue: #0099ff;
   --studio-blue-soft: rgba(0, 153, 255, 0.18);
-  --studio-text: #ffffff;
+  --studio-text: #F2EFE8;
   --studio-muted: #a6a6a6;
   --studio-soft: rgba(255, 255, 255, 0.72);
   --studio-frosted: rgba(255, 255, 255, 0.1);
   --studio-frosted-hover: rgba(255, 255, 255, 0.16);
-  --studio-active: #ffffff;
+  --studio-active: #F2EFE8;
   --studio-error: #ff453a;
   --studio-error-soft: rgba(255, 69, 58, 0.16);
   --studio-warning: #ffd60a;
@@ -121,8 +121,8 @@ select:focus-visible {
   place-items: center;
   width: 34px;
   height: 34px;
-  color: #ffffff;
-  font-size: 13px;
+  color: #F2EFE8;
+  font-size: 15.6px;
   font-weight: 700;
   background: transparent;
   border-radius: var(--studio-radius-pill);
@@ -132,7 +132,7 @@ select:focus-visible {
   flex: 1;
   color: var(--studio-active);
   font-family: "GT Walsheim Framer Medium", "GT Walsheim Medium", Inter, system-ui, sans-serif;
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 500;
   letter-spacing: 0;
 }
@@ -152,7 +152,7 @@ select:focus-visible {
 
 .project-selector-shell label {
   color: var(--studio-muted);
-  font-size: 12px;
+  font-size: 14.4px;
 }
 
 .project-selector-shell select {
@@ -204,7 +204,7 @@ select:focus-visible {
 .character-atlas-facts dt,
 .plugin-facts dt {
   color: var(--studio-muted);
-  font-size: 12px;
+  font-size: 14.4px;
   font-weight: 500;
   letter-spacing: 0;
   line-height: 1.35;
@@ -249,7 +249,7 @@ select:focus-visible {
 
 .studio-section-list button span:not(.nav-icon) {
   color: inherit;
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 500;
   line-height: 1.25;
 }
@@ -260,7 +260,7 @@ select:focus-visible {
   width: 28px;
   height: 28px;
   color: var(--studio-blue);
-  font-size: 18px;
+  font-size: 21.6px;
 }
 
 .studio-section-list button.is-active .nav-icon {
@@ -297,7 +297,7 @@ select:focus-visible {
   margin: 8px 0 10px;
   color: var(--studio-active);
   font-family: "GT Walsheim Framer Medium", "GT Walsheim Medium", Inter, system-ui, sans-serif;
-  font-size: 48px;
+  font-size: 57.6px;
   font-weight: 500;
   letter-spacing: 0;
   line-height: 0.98;
@@ -308,7 +308,7 @@ select:focus-visible {
 .studio-loading p {
   margin: 0;
   color: var(--studio-muted);
-  font-size: 14px;
+  font-size: 16.8px;
   line-height: 1.6;
 }
 
@@ -326,7 +326,7 @@ select:focus-visible {
   display: block;
   margin-top: 10px;
   color: var(--studio-active);
-  font-size: 18px;
+  font-size: 21.6px;
   font-weight: 500;
 }
 
@@ -428,7 +428,7 @@ select:focus-visible {
 .overview-title-row h1 {
   margin: 0 0 5px;
   color: var(--studio-active);
-  font-size: 24px;
+  font-size: 28.8px;
   font-weight: 600;
   letter-spacing: 0;
 }
@@ -436,12 +436,12 @@ select:focus-visible {
 .overview-title-row p {
   margin: 0;
   color: var(--studio-muted);
-  font-size: 14px;
+  font-size: 16.8px;
 }
 
 .overview-title-row span {
   color: var(--studio-muted);
-  font-size: 12px;
+  font-size: 14.4px;
 }
 
 .studio-panel {
@@ -468,7 +468,7 @@ select:focus-visible {
 
 .studio-panel-heading span {
   color: var(--studio-active);
-  font-size: 13px;
+  font-size: 15.6px;
   font-weight: 600;
 }
 
@@ -488,7 +488,7 @@ select:focus-visible {
 .project-facts dd {
   margin: 0;
   color: var(--studio-text);
-  font-size: 15px;
+  font-size: 18px;
   line-height: 1.5;
 }
 
@@ -516,7 +516,7 @@ select:focus-visible {
   display: block;
   margin-top: 14px;
   color: var(--studio-active);
-  font-size: 34px;
+  font-size: 40.8px;
   font-weight: 500;
   line-height: 1;
 }
@@ -525,7 +525,7 @@ select:focus-visible {
   display: block;
   margin-top: 8px;
   color: var(--studio-muted);
-  font-size: 12px;
+  font-size: 14.4px;
 }
 
 .overview-identity-panel {
@@ -569,7 +569,7 @@ select:focus-visible {
 }
 
 .overview-cover-placeholder span {
-  font-size: 13px;
+  font-size: 15.6px;
 }
 
 .overview-meta-list {
@@ -586,13 +586,13 @@ select:focus-visible {
 
 .overview-meta-list dt {
   color: var(--studio-muted);
-  font-size: 14px;
+  font-size: 16.8px;
 }
 
 .overview-meta-list dd {
   margin: 0;
   color: var(--studio-active);
-  font-size: 15px;
+  font-size: 18px;
   line-height: 1.55;
   overflow-wrap: anywhere;
   white-space: pre-line;
@@ -602,22 +602,22 @@ select:focus-visible {
   padding: 3px 8px;
   color: var(--studio-soft);
   font-family: "Azeret Mono", "SFMono-Regular", Consolas, monospace;
-  font-size: 12px;
+  font-size: 14.4px;
   background: var(--studio-frosted);
   border-radius: var(--studio-radius-pill);
 }
 
 .overview-identity-panel .overview-meta-list dt {
-  font-size: 15px;
+  font-size: 18px;
 }
 
 .overview-identity-panel .overview-meta-list dd {
-  font-size: 17px;
+  font-size: 20.4px;
   line-height: 1.5;
 }
 
 .overview-identity-panel .overview-meta-list code {
-  font-size: 12px;
+  font-size: 14.4px;
 }
 
 .overview-subgrid {
@@ -642,7 +642,7 @@ select:focus-visible {
 .overview-subpanel h2 {
   margin: 0;
   color: var(--studio-active);
-  font-size: 16px;
+  font-size: 19.2px;
   font-weight: 600;
 }
 
@@ -740,7 +740,7 @@ select:focus-visible {
 
 .issue-row strong {
   display: block;
-  font-size: 12px;
+  font-size: 14.4px;
   font-weight: 600;
   line-height: 1.3;
   text-transform: capitalize;
@@ -750,7 +750,7 @@ select:focus-visible {
   display: block;
   margin-top: 2px;
   color: var(--studio-muted);
-  font-size: 12px;
+  font-size: 14.4px;
   line-height: 1.35;
 }
 
@@ -934,7 +934,7 @@ select:focus-visible {
 .scene-asset-heading strong {
   min-width: 0;
   color: var(--studio-active);
-  font-size: 14px;
+  font-size: 16.8px;
   font-weight: 700;
 }
 
@@ -992,7 +992,7 @@ select:focus-visible {
   width: 64px;
   height: 46px;
   color: var(--studio-blue);
-  font-size: 10px;
+  font-size: 12px;
   background: #050505;
   border: 1px solid var(--studio-line-soft);
   border-radius: 6px;
@@ -1013,14 +1013,14 @@ select:focus-visible {
 .scene-editor-header h2 {
   margin: 0;
   color: var(--studio-active);
-  font-size: 22px;
+  font-size: 26.4px;
   font-weight: 700;
 }
 
 .scene-editor-header p {
   margin: 4px 0 0;
   color: var(--studio-muted);
-  font-size: 13px;
+  font-size: 15.6px;
 }
 
 .scene-header-actions {
@@ -1067,7 +1067,7 @@ select:focus-visible {
 
 .scene-info-grid {
   display: grid;
-  grid-template-columns: minmax(360px, 1fr) minmax(380px, 0.9fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
   gap: 12px;
 }
 
@@ -1098,7 +1098,7 @@ select:focus-visible {
 
 .scene-asset-heading span {
   color: var(--studio-muted);
-  font-size: 12px;
+  font-size: 14.4px;
 }
 
 .scene-featured-background {
@@ -1192,7 +1192,7 @@ select:focus-visible {
   min-height: 30px;
   padding: 0 11px;
   color: var(--studio-soft);
-  font-size: 12px;
+  font-size: 14.4px;
   background: var(--studio-frosted);
   border: 1px solid var(--studio-line-soft);
   border-radius: var(--studio-radius-pill);
@@ -1234,7 +1234,7 @@ select:focus-visible {
 .scene-audio-list span,
 .scene-audio-list small {
   color: var(--studio-muted);
-  font-size: 12px;
+  font-size: 14.4px;
 }
 
 .scene-empty-panel {
@@ -1306,7 +1306,7 @@ select:focus-visible {
 .character-asset-heading strong {
   min-width: 0;
   color: var(--studio-active);
-  font-size: 14px;
+  font-size: 16.8px;
   font-weight: 700;
   overflow-wrap: anywhere;
 }
@@ -1374,7 +1374,7 @@ select:focus-visible {
   width: 36px;
   height: 42px;
   color: var(--studio-blue);
-  font-size: 10px;
+  font-size: 12px;
   background: #050505;
   border: 1px solid var(--studio-line-soft);
   border-radius: 6px;
@@ -1391,7 +1391,7 @@ select:focus-visible {
 .character-list button > span:not(.character-list-avatar) {
   min-width: 0;
   overflow: hidden;
-  font-size: 14px;
+  font-size: 16.8px;
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1399,7 +1399,7 @@ select:focus-visible {
 
 .character-list button small {
   color: var(--studio-muted);
-  font-size: 12px;
+  font-size: 14.4px;
 }
 
 .character-editor-panel {
@@ -1410,14 +1410,14 @@ select:focus-visible {
 .character-editor-header h2 {
   margin: 0;
   color: var(--studio-active);
-  font-size: 22px;
+  font-size: 26.4px;
   font-weight: 700;
 }
 
 .character-editor-header p {
   margin: 4px 0 0;
   color: var(--studio-muted);
-  font-size: 13px;
+  font-size: 15.6px;
 }
 
 .character-header-actions {
@@ -1463,7 +1463,7 @@ select:focus-visible {
 
 .character-asset-grid {
   display: grid;
-  grid-template-columns: minmax(320px, 0.9fr) minmax(320px, 1.1fr);
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
   gap: 14px;
 }
 
@@ -1492,7 +1492,7 @@ select:focus-visible {
 
 .character-asset-heading span {
   color: var(--studio-muted);
-  font-size: 12px;
+  font-size: 14.4px;
 }
 
 .character-spritesheet-stage {
@@ -1531,13 +1531,13 @@ select:focus-visible {
   align-items: center;
   padding: 0 14px 14px;
   color: var(--studio-muted);
-  font-size: 12px;
+  font-size: 14.4px;
 }
 
 .character-asset-meta strong {
   width: 100%;
   color: var(--studio-active);
-  font-size: 13px;
+  font-size: 15.6px;
   overflow-wrap: anywhere;
 }
 
@@ -1593,7 +1593,7 @@ select:focus-visible {
 .character-animation-frame > span {
   min-width: 0;
   color: var(--studio-muted);
-  font-size: 12px;
+  font-size: 14.4px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1693,7 +1693,7 @@ select:focus-visible {
 .story-file-toolbar strong,
 .story-runtime-heading > strong {
   color: var(--studio-active);
-  font-size: 12px;
+  font-size: 14.4px;
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -1781,7 +1781,7 @@ select:focus-visible {
 
 .story-folder-row span {
   color: var(--studio-soft);
-  font-size: 14px;
+  font-size: 16.8px;
 }
 
 .story-folder-icon {
@@ -1800,7 +1800,7 @@ select:focus-visible {
 
 .story-folder-row strong {
   color: inherit;
-  font-size: 13px;
+  font-size: 15.6px;
   font-weight: 500;
 }
 
@@ -1836,27 +1836,27 @@ select:focus-visible {
 .story-file-icon {
   color: var(--studio-blue);
   font-family: "Azeret Mono", "SFMono-Regular", Consolas, monospace;
-  font-size: 9px;
+  font-size: 10.8px;
 }
 
 .story-folder-files button > span:nth-child(2) {
   min-width: 0;
   overflow: hidden;
-  font-size: 13px;
+  font-size: 15.6px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .story-folder-files small {
   color: var(--studio-blue);
-  font-size: 12px;
+  font-size: 14.4px;
 }
 
 .story-file-footer {
   min-height: 40px;
   padding: 12px 10px;
   color: var(--studio-muted);
-  font-size: 12px;
+  font-size: 14.4px;
   border-top: 1px solid var(--studio-line-soft);
 }
 
@@ -1899,7 +1899,7 @@ select:focus-visible {
 .scene-list span,
 .asset-row small {
   color: inherit;
-  font-size: 14px;
+  font-size: 16.8px;
   line-height: 1.35;
   overflow-wrap: anywhere;
 }
@@ -1939,7 +1939,7 @@ select:focus-visible {
 .story-file-tab span:first-child {
   color: var(--studio-blue);
   font-family: "Azeret Mono", "SFMono-Regular", Consolas, monospace;
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .story-file-tab span:last-child {
@@ -1971,7 +1971,7 @@ select:focus-visible {
   min-height: 44px;
   padding: 0 18px;
   color: var(--studio-muted);
-  font-size: 13px;
+  font-size: 15.6px;
   border-bottom: 1px solid var(--studio-line-soft);
 }
 
@@ -2020,7 +2020,7 @@ select:focus-visible {
   border-bottom: 1px solid transparent;
   border-radius: 0;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 15.6px;
 }
 
 .story-symbol-bar nav button:hover,
@@ -2042,7 +2042,7 @@ select:focus-visible {
   flex: 0 0 116px;
   width: 116px;
   max-width: 116px;
-  font-size: 12px;
+  font-size: 14.4px;
 }
 
 .story-symbol-actions .quick-tags {
@@ -2076,7 +2076,7 @@ select:focus-visible {
 .tag-suggestions button {
   min-height: 28px;
   padding: 0 10px;
-  font-size: 11px;
+  font-size: 13.2px;
 }
 
 .quick-tags button:hover,
@@ -2127,7 +2127,7 @@ select:focus-visible {
 
 .story-runtime-tools span {
   color: var(--studio-muted);
-  font-size: 12px;
+  font-size: 14.4px;
   white-space: nowrap;
 }
 
@@ -2154,7 +2154,7 @@ select:focus-visible {
   margin: 0;
   color: var(--studio-text);
   font-family: "Azeret Mono", "SFMono-Regular", Consolas, monospace;
-  font-size: 14px;
+  font-size: 16.8px;
   line-height: 1.65;
 }
 
@@ -2172,7 +2172,7 @@ select:focus-visible {
   padding: 0 16px;
   color: #b9dcff;
   font-family: "Azeret Mono", "SFMono-Regular", Consolas, monospace;
-  font-size: 14px;
+  font-size: 16.8px;
   text-align: left;
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--studio-line-soft);
@@ -2246,13 +2246,13 @@ select:focus-visible {
 .story-variable-grid > span {
   min-height: 40px;
   color: var(--studio-soft);
-  font-size: 12px;
+  font-size: 14.4px;
   border-bottom: 1px solid var(--studio-line-soft);
 }
 
 .story-variable-grid p {
   color: var(--studio-muted);
-  font-size: 13px;
+  font-size: 15.6px;
 }
 
 .story-variable-grid button {
@@ -2273,7 +2273,7 @@ select:focus-visible {
   min-height: 40px;
   padding: 12px 14px;
   color: var(--studio-active);
-  font-size: 12px;
+  font-size: 14.4px;
   font-weight: 700;
   text-transform: uppercase;
   cursor: pointer;
@@ -2436,7 +2436,7 @@ select:focus-visible {
   min-height: 30px;
   padding: 6px 12px;
   color: var(--studio-soft);
-  font-size: 12px;
+  font-size: 14.4px;
   background: var(--studio-frosted);
   border: 1px solid var(--studio-line-soft);
   border-radius: var(--studio-radius-pill);
@@ -2478,7 +2478,7 @@ select:focus-visible {
 .character-atlas-facts dd {
   margin: 0;
   color: var(--studio-soft);
-  font-size: 12px;
+  font-size: 14.4px;
   line-height: 1.55;
   overflow-wrap: anywhere;
 }
@@ -2519,7 +2519,7 @@ select:focus-visible {
 .plugin-card-heading h2 {
   margin: 8px 0 0;
   color: var(--studio-active);
-  font-size: 24px;
+  font-size: 28.8px;
   font-weight: 500;
   letter-spacing: 0;
   line-height: 1.15;
@@ -2528,7 +2528,7 @@ select:focus-visible {
 .plugin-card-heading strong {
   align-self: start;
   padding: 7px 10px;
-  font-size: 12px;
+  font-size: 14.4px;
   font-weight: 600;
   background: var(--studio-frosted);
   border: 1px solid var(--studio-line-soft);
@@ -2537,7 +2537,7 @@ select:focus-visible {
 
 .plugin-card p {
   color: var(--studio-soft);
-  font-size: 14px;
+  font-size: 16.8px;
   line-height: 1.6;
 }
 
@@ -2558,7 +2558,7 @@ select:focus-visible {
 .plugin-facts dt,
 .plugin-facts dd {
   margin: 0;
-  font-size: 12px;
+  font-size: 14.4px;
   line-height: 1.5;
 }
 
@@ -2572,7 +2572,7 @@ select:focus-visible {
   padding: 12px;
   color: var(--studio-muted);
   font-family: "Azeret Mono", "SFMono-Regular", Consolas, monospace;
-  font-size: 11px;
+  font-size: 13.2px;
   line-height: 1.6;
   background: #000000;
   border: 1px solid var(--studio-line-soft);
@@ -2733,7 +2733,7 @@ select:focus-visible {
   }
 
   .project-header h1 {
-    font-size: 40px;
+    font-size: 48px;
   }
 
   .section-tabs {
@@ -2867,4 +2867,443 @@ select:focus-visible {
   .simulator-command {
     grid-template-columns: minmax(0, 1fr) auto;
   }
+}
+
+/* Manga Editor's Sketchbook design system override */
+:root {
+  --studio-bg: #F2EFE8;
+  --studio-surface: #F2EFE8;
+  --studio-surface-strong: #f5f3ee;
+  --studio-surface-high: #eae8e3;
+  --studio-line: #1b1c19;
+  --studio-line-soft: #747878;
+  --studio-ring: #346288;
+  --studio-blue: #346288;
+  --studio-blue-soft: #cde5ff;
+  --studio-text: #1b1c19;
+  --studio-muted: #444748;
+  --studio-soft: #30312e;
+  --studio-frosted: #f0eee9;
+  --studio-frosted-hover: #e4e2dd;
+  --studio-active: #000000;
+  --studio-error: #ba1a1a;
+  --studio-error-soft: #ffdad6;
+  --studio-warning: #93000a;
+  --studio-warning-soft: #ffdad7;
+  --studio-info: #346288;
+  --studio-info-soft: #cde5ff;
+  --studio-radius-card: 0;
+  --studio-radius-panel: 0;
+  --studio-radius-pill: 0;
+  color: var(--studio-text);
+  background: var(--studio-bg);
+  font-family: "Newsreader", Georgia, "Times New Roman", serif;
+  font-feature-settings: normal;
+}
+
+body {
+  font-size: 19px;
+  color: var(--studio-text);
+  background:
+    radial-gradient(circle at 18px 18px, rgba(27, 28, 25, 0.045) 1px, transparent 1.2px),
+    linear-gradient(90deg, rgba(52, 98, 136, 0.035) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(52, 98, 136, 0.025) 1px, transparent 1px),
+    #F2EFE8;
+  background-size: 26px 26px, 32px 32px, 32px 32px, auto;
+}
+
+button,
+input,
+textarea,
+select {
+  border-radius: 0;
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  border-color: var(--studio-blue);
+  box-shadow: 3px 3px 0 var(--studio-blue-soft);
+}
+
+.studio-topbar,
+.studio-sidebar {
+  background: #F2EFE8;
+  border-color: var(--studio-line);
+  box-shadow: 4px 4px 0 rgba(27, 28, 25, 0.12);
+  backdrop-filter: none;
+}
+
+.studio-mark strong,
+.project-header h1,
+.overview-title-row h1,
+.plugin-card-heading h2,
+.character-editor-header h2,
+.scene-editor-header h2 {
+  color: var(--studio-active);
+  font-family: "Newsreader", Georgia, "Times New Roman", serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.studio-mark span svg circle {
+  fill: #000000;
+}
+
+.studio-mark span svg text {
+  fill: #F2EFE8;
+}
+
+.project-selector-shell,
+.topbar-status,
+.status-block,
+.studio-panel,
+.overview-subpanel,
+.count-card,
+.issue-row,
+.plugin-example,
+.scene-list-panel,
+.scene-editor-panel,
+.scene-preview-panel,
+.character-list-panel,
+.character-editor-panel,
+.character-preview-panel,
+.story-file-panel,
+.story-editor-panel,
+.story-simulator-panel,
+.story-debug-panel,
+.scene-field-panel,
+.scene-background-panel,
+.scene-audio-panel,
+.scene-empty-panel,
+.character-asset-panel,
+.character-animation-list,
+.character-animation-strip,
+.asset-row img,
+.asset-row span {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.45), transparent 36%),
+    var(--studio-surface);
+  border: 1.5px solid var(--studio-line);
+  border-radius: 0;
+  box-shadow: 4px 4px 0 rgba(27, 28, 25, 0.16);
+}
+
+.studio-panel-heading,
+.story-file-toolbar,
+.story-tabbar,
+.story-breadcrumb,
+.story-symbol-bar,
+.story-runtime-heading,
+.story-debug-tabs,
+.story-debug-console,
+.character-panel-heading,
+.character-editor-header,
+.character-tabs,
+.character-asset-heading,
+.scene-panel-heading,
+.scene-editor-header,
+.scene-tabs,
+.scene-asset-heading {
+  background: transparent;
+  border-color: var(--studio-line);
+}
+
+.studio-panel-heading span,
+.story-file-toolbar strong,
+.story-runtime-heading > strong,
+.character-panel-heading strong,
+.character-asset-heading strong,
+.scene-panel-heading strong,
+.scene-asset-heading strong {
+  color: var(--studio-active);
+  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  font-weight: 700;
+}
+
+.eyebrow,
+.studio-sidebar-header,
+.count-card span,
+.project-facts dt,
+.status-block span,
+.studio-panel-heading,
+.story-file-list small,
+.preview-line small,
+.tag-suggestions span,
+.scene-list small,
+.scene-form label span,
+.asset-filter button,
+.asset-row span,
+.issue-row strong,
+.issue-row span,
+.issue-row small,
+.character-atlas-facts dt,
+.plugin-facts dt,
+.character-list button small,
+.scene-list button small,
+.character-editor-header p,
+.scene-editor-header p,
+.character-asset-heading span,
+.scene-asset-heading span {
+  color: var(--studio-muted);
+  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+}
+
+.studio-section-list button,
+.section-tabs button,
+.ghost-button,
+.quick-tags button,
+.tag-suggestions button,
+.asset-filter button,
+.story-file-toolbar button,
+.story-runtime-tools button,
+.simulator-command button,
+.story-folder-files button,
+.story-folder-row,
+.story-file-tab,
+.story-symbol-bar nav button,
+.story-debug-tabs button,
+.character-tabs button,
+.scene-tabs button,
+.character-list button,
+.scene-list button,
+.scene-background-grid button,
+.scene-audio-list button,
+.character-animation-list button:not(.ghost-button),
+.character-sprite-card,
+.character-animation-frame,
+.count-card,
+.diagnostics-summary span,
+.expression-list span,
+.scene-tag-row span,
+.scene-tag-row button,
+.scene-preview-variants button {
+  color: var(--studio-soft);
+  background: var(--studio-surface-container-low, #f5f3ee);
+  border: 1.5px solid var(--studio-line);
+  border-radius: 0;
+  box-shadow: 2px 2px 0 rgba(27, 28, 25, 0.14);
+  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+}
+
+.ghost-button:hover,
+.section-tabs button:hover,
+.studio-section-list button:hover,
+.studio-section-list button.is-active,
+.story-folder-files button:hover,
+.story-folder-files button.is-active,
+.character-list button:hover,
+.character-list button.is-active,
+.scene-list-panel .scene-list button:hover,
+.scene-list-panel .scene-list button.is-active,
+.scene-background-grid button:hover,
+.scene-background-grid button.is-active,
+.character-animation-list button:not(.ghost-button).is-active,
+.character-animation-list button:not(.ghost-button):hover {
+  color: var(--studio-active);
+  background:
+    radial-gradient(circle at 4px 4px, rgba(52, 98, 136, 0.22) 1px, transparent 1.5px),
+    #cde5ff;
+  background-size: 8px 8px, auto;
+  border-color: var(--studio-blue);
+  box-shadow: 3px 3px 0 var(--studio-blue);
+}
+
+.section-tabs button.is-active,
+.ghost-button.is-active,
+.story-symbol-bar nav button:hover,
+.story-symbol-bar nav button.is-active,
+.character-tabs button:hover,
+.character-tabs button.is-active,
+.scene-tabs button:hover,
+.scene-tabs button.is-active,
+.story-debug-tabs button.is-active {
+  color: var(--studio-blue);
+  background: transparent;
+  border-color: var(--studio-blue);
+  box-shadow: inset 0 -3px 0 var(--studio-blue);
+}
+
+.topbar-actions .ghost-button,
+.story-actions .ghost-button,
+.character-header-actions .ghost-button,
+.scene-header-actions .ghost-button {
+  background: #000000;
+  color: #F2EFE8;
+  border-color: #000000;
+  box-shadow: 3px 3px 0 #c4c7c7;
+}
+
+.topbar-actions .ghost-button:hover,
+.story-actions .ghost-button:hover,
+.character-header-actions .ghost-button:hover,
+.scene-header-actions .ghost-button:hover {
+  background: #346288;
+  color: #F2EFE8;
+  border-color: #000000;
+  box-shadow: 4px 4px 0 #1b1c19;
+}
+
+input,
+textarea,
+select,
+.project-selector-shell select,
+.story-file-search input,
+.story-symbol-actions select,
+.simulator-command input,
+.character-search input,
+.scene-search input,
+.scene-form input,
+.scene-form textarea,
+.scene-form select {
+  color: var(--studio-text);
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid var(--studio-line);
+  border-radius: 0;
+  box-shadow: none;
+  color-scheme: light;
+}
+
+input::placeholder,
+textarea::placeholder,
+.scene-form input::placeholder,
+.scene-form textarea::placeholder {
+  color: rgba(27, 28, 25, 0.48);
+}
+
+.story-workspace,
+.scene-workspace,
+.character-workspace {
+  background: transparent;
+}
+
+.monaco-frame,
+.story-file-tree,
+.simulator-scroll,
+.story-variable-grid,
+.scene-featured-background,
+.scene-preview-frame,
+.character-spritesheet-stage,
+.character-preview-frame,
+.character-sprite-thumb,
+.overview-cover-frame,
+.character-list-avatar,
+.scene-list-thumb {
+  background:
+    linear-gradient(45deg, rgba(27, 28, 25, 0.055) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(27, 28, 25, 0.055) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(27, 28, 25, 0.055) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(27, 28, 25, 0.055) 75%),
+    #f5f3ee;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  background-size: 16px 16px;
+  border-color: var(--studio-line);
+  border-radius: 0;
+}
+
+.simulator-lines p,
+.simulator-choices button,
+.story-file-icon,
+.overview-meta-list code,
+.plugin-example,
+.character-asset-meta strong,
+.scene-background-grid span,
+.scene-audio-list strong {
+  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+}
+
+.simulator-lines p,
+.preview-line p,
+.project-facts dd,
+.overview-meta-list dd,
+.issue-row p,
+.plugin-card p,
+.muted,
+.studio-loading p {
+  color: var(--studio-text);
+}
+
+.story-variable-grid > *,
+.story-debug-tabs button,
+.plugin-facts div {
+  border-color: var(--studio-line-soft);
+}
+
+.tag-suggestions button,
+.asset-filter button,
+.scene-tag-row span,
+.scene-preview-variants button,
+.expression-list span {
+  background:
+    radial-gradient(circle at 4px 4px, rgba(27, 28, 25, 0.18) 1px, transparent 1.4px),
+    #f0eee9;
+  background-size: 8px 8px, auto;
+}
+
+[data-status="error"],
+.issue-row.is-error .issue-icon,
+.issue-row.is-error strong {
+  color: var(--studio-error);
+}
+
+[data-status="warning"],
+.issue-row.is-warning .issue-icon,
+.issue-row.is-warning strong {
+  color: var(--studio-warning);
+}
+
+[data-status="ok"],
+.issue-row.is-info .issue-icon,
+.issue-row.is-info strong {
+  color: var(--studio-blue);
+}
+
+.issue-row.is-error,
+.issue-row.is-warning,
+.issue-row.is-info {
+  box-shadow: 4px 4px 0 rgba(27, 28, 25, 0.16);
+}
+
+.story-resize-handle::before {
+  background: var(--studio-line);
+}
+
+.story-resize-handle:hover::before,
+.story-resize-handle:focus-visible::before,
+.story-is-resizing .story-resize-handle::before {
+  background: var(--studio-blue);
+}
+
+.character-atlas-facts div {
+  color: var(--studio-text);
+  background: var(--studio-surface);
+  border-color: var(--studio-line);
+  border-radius: 0;
+  box-shadow: 2px 2px 0 rgba(27, 28, 25, 0.14);
+}
+
+.character-atlas-facts dd,
+.scene-audio-list strong,
+.scene-audio-list span,
+.scene-audio-list small {
+  color: var(--studio-text);
+}
+
+.scene-audio-list button {
+  grid-template-columns: 48px minmax(0, 1fr);
+  align-items: start;
+}
+
+.scene-audio-list strong,
+.scene-audio-list span {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.scene-audio-list small {
+  grid-column: 2;
 }
