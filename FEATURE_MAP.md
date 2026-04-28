@@ -19,24 +19,6 @@ Roadmaps de referencia:
 
 ## Pendientes
 
-### P5 - Preview Jugable Y Build Desde Studio
-
-Objetivo: cerrar el ciclo de autoria con preview real, build y distribucion local.
-
-Alcance:
-
-- Preview embebido del juego.
-- Preview desde escena/knot cuando sea posible.
-- Panel de variables/runtime basico.
-- Build desde UI usando manager.
-- Historial local de builds.
-- Acceso a `manifest.json` y diagnosticos de distribucion.
-
-Criterios de salida:
-
-- El usuario puede editar, validar, previsualizar y construir desde el Studio.
-- La build producida es identica en contrato a la CLI.
-
 ### P6 - Herramientas Avanzadas De Autoria
 
 Objetivo: mejorar productividad narrativa y control de calidad.

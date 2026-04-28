@@ -107,6 +107,7 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - SVG Studio icon set based on `icons.png`, used by the app logo, topbar actions, sidebar navigation and overview stat cards.
 - Studio project summaries now expose description and cover metadata, with missing-cover placeholders in the Overview screen.
 - Studio Story preview now uses `@chenglou/pretext` for explicit multiline text layout.
+- Studio Build/Preview section with manager-backed builds, embedded playable preview, local build history, manifest access and distribution diagnostics.
 
 ### Changed
 

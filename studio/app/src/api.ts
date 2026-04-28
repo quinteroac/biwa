@@ -1,6 +1,9 @@
 import type {
   StudioDoctorResponse,
   StudioAssetsResponse,
+  StudioBuildMode,
+  StudioBuildResponse,
+  StudioBuildsResponse,
   StudioCharacterAtlasResponse,
   StudioCharacterDraft,
   StudioCharacterResponse,
@@ -12,6 +15,7 @@ import type {
   StudioPluginsResponse,
   StudioProjectResponse,
   StudioProjectsResponse,
+  StudioManifestResponse,
   StudioStoryListResponse,
   StudioStoryResponse,
 } from '../../shared/types.ts'
@@ -41,6 +45,22 @@ export function fetchProject(gameId: string): Promise<StudioProjectResponse> {
 
 export function runDoctor(gameId: string): Promise<StudioDoctorResponse> {
   return requestJson<StudioDoctorResponse>(`/api/projects/${gameId}/doctor`, { method: 'POST' })
+}
+
+export function fetchBuilds(gameId: string): Promise<StudioBuildsResponse> {
+  return requestJson<StudioBuildsResponse>(`/api/projects/${gameId}/builds`)
+}
+
+export function runBuild(gameId: string, mode: StudioBuildMode): Promise<StudioBuildResponse> {
+  return requestJson<StudioBuildResponse>(`/api/projects/${gameId}/builds`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ mode }),
+  })
+}
+
+export function fetchBuildManifest(gameId: string): Promise<StudioManifestResponse> {
+  return requestJson<StudioManifestResponse>(`/api/projects/${gameId}/builds/manifest`)
 }
 
 export function fetchStoryFiles(gameId: string): Promise<StudioStoryListResponse> {

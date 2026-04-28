@@ -7,6 +7,7 @@ import { listAssets, resolveAssetFile } from './assets.ts'
 import { listScenes, readScene, writeScene } from './scenes.ts'
 import { generateCharacterAtlas, listCharacters, readCharacter, writeCharacter } from './characters.ts'
 import { installOfficialPlugin, listStudioPlugins, removeOfficialPlugin } from './plugins.ts'
+import { getBuildManifest, getBuilds, previewFileExists, previewMime, resolvePreviewFile, runStudioBuild } from './builds.ts'
 
 function jsonError(message: string, status = 500): Response {
   return Response.json({ error: message }, { status })
@@ -93,6 +94,31 @@ export const studioApi = new Elysia()
       const filePath = resolveAssetFile(params.gameId, path)
       if (!existsSync(filePath)) return jsonError(`Asset file not found: ${path}`, 404)
       return new Response(Bun.file(filePath), { headers: { 'Content-Type': mime(filePath) } })
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, 400)
+    }
+  })
+  .get('/api/projects/:gameId/builds', ({ params }) => {
+    try {
+      return getBuilds(params.gameId)
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, 400)
+    }
+  })
+  .post('/api/projects/:gameId/builds', async ({ body, params }) => {
+    try {
+      const payload = body as { mode?: unknown }
+      return await runStudioBuild(params.gameId, payload.mode)
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, 400)
+    }
+  })
+  .get('/api/projects/:gameId/builds/manifest', ({ params }) => {
+    try {
+      return getBuildManifest(params.gameId)
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e))
       return jsonError(err.message, 400)
@@ -194,6 +220,20 @@ export const studioApi = new Elysia()
       const payload = body as { importName?: unknown }
       if (typeof payload.importName !== 'string') throw new Error('Missing official plugin importName.')
       return await removeOfficialPlugin(params.gameId, payload.importName)
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, 400)
+    }
+  })
+  .all('/*', ({ request }) => {
+    const url = new URL(request.url)
+    const match = /^\/api\/projects\/([^/]+)\/preview(?:\/(.*))?$/.exec(url.pathname)
+    if (!match) return jsonError('Not found', 404)
+    const gameId = decodeURIComponent(match[1] ?? '')
+    try {
+      const filePath = resolvePreviewFile(gameId, request.url)
+      if (!previewFileExists(filePath)) return jsonError('Preview file not found. Run a build first.', 404)
+      return new Response(Bun.file(filePath), { headers: { 'Content-Type': previewMime(filePath) } })
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e))
       return jsonError(err.message, 400)

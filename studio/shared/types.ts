@@ -236,3 +236,38 @@ export interface StudioPluginMutationResponse {
   plugins: StudioPluginCatalogItem[]
   diagnostics: DoctorJsonReport
 }
+
+export type StudioBuildMode = 'standalone' | 'static' | 'portal' | 'embedded'
+export type StudioBuildStatus = 'success' | 'error'
+
+export interface StudioBuildRecord {
+  id: string
+  gameId: string
+  mode: StudioBuildMode
+  status: StudioBuildStatus
+  createdAt: string
+  durationMs: number
+  distPath: string
+  previewUrl: string | null
+  manifestUrl: string | null
+  manifest: Record<string, unknown> | null
+  error: string | null
+}
+
+export interface StudioBuildsResponse {
+  builds: StudioBuildRecord[]
+  latest: StudioBuildRecord | null
+  manifest: Record<string, unknown> | null
+  previewUrl: string | null
+  manifestUrl: string | null
+}
+
+export interface StudioBuildResponse {
+  build: StudioBuildRecord
+  builds: StudioBuildRecord[]
+}
+
+export interface StudioManifestResponse {
+  manifest: Record<string, unknown> | null
+  manifestUrl: string | null
+}

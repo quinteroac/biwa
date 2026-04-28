@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchProjects, runDoctor } from './api.ts'
+import { BuildPreview } from './BuildPreview.tsx'
 import { CharacterDesigner } from './CharacterDesigner.tsx'
 import { PluginManager } from './PluginManager.tsx'
 import { SceneLibrary } from './SceneLibrary.tsx'
@@ -333,6 +334,7 @@ function ProjectOverview(props: {
   const isStory = props.activeSection === 'Story'
   const isCharacters = props.activeSection === 'Characters'
   const isPlugins = props.activeSection === 'Plugins'
+  const isBuildPreview = props.activeSection === 'Build/Preview'
   const isSceneLibrary = props.activeSection === 'Scenes' || props.activeSection === 'Assets'
   return (
     <main className="studio-main">
@@ -357,6 +359,12 @@ function ProjectOverview(props: {
         />
       ) : isPlugins ? (
         <PluginManager
+          isRunningDoctor={props.isRunningDoctor}
+          onRunDoctor={props.onRunDoctor}
+          project={props.project}
+        />
+      ) : isBuildPreview ? (
+        <BuildPreview
           isRunningDoctor={props.isRunningDoctor}
           onRunDoctor={props.onRunDoctor}
           project={props.project}
