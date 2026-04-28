@@ -22,6 +22,9 @@ bun manager/cli.ts plugins official --category renderer
 bun manager/cli.ts plugins official --category effects
 bun manager/cli.ts plugins official --category player
 bun manager/cli.ts plugins official --status experimental
+bun manager/cli.ts plugins official --json
+bun manager/cli.ts plugins official --example screenEffects
+bun manager/cli.ts plugins official --example official-screen-effects --json
 ```
 
 | ID | Factory | Category | Status | Contract | Capabilities | Renderers | Tags |
@@ -265,6 +268,13 @@ Authors or custom tooling can request a fresh snapshot through:
 ```ts
 engine.bus.emit('engine:diagnostics:request', {})
 ```
+
+The default inspector supports:
+
+- keyboard toggle with Ctrl+`, Cmd+` or Alt+`.
+- variable search.
+- recent runtime snapshot entries.
+- copying the current diagnostics snapshot as JSON.
 
 `doctor` warns with `devtools_plugin_enabled` when the plugin is declared, so production builds can catch accidental inclusion. Suppress the warning only when the build is intentionally for development.
 

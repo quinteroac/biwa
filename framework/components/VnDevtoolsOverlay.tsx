@@ -1,15 +1,56 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { RuntimeDiagnosticsSnapshot } from '../types/diagnostics.d.ts'
 
 export interface VnDevtoolsOverlayProps {
   snapshot: RuntimeDiagnosticsSnapshot | null
   onRefresh: () => void
+  defaultOpen?: boolean
 }
 
-export function VnDevtoolsOverlay({ snapshot, onRefresh }: VnDevtoolsOverlayProps) {
-  const [open, setOpen] = useState(false)
+export function VnDevtoolsOverlay({ snapshot, onRefresh, defaultOpen = false }: VnDevtoolsOverlayProps) {
+  const [open, setOpen] = useState(defaultOpen)
+  const [variableQuery, setVariableQuery] = useState('')
+  const [copyStatus, setCopyStatus] = useState('')
+  const [recentEvents, setRecentEvents] = useState<string[]>([])
   const variables = useMemo(() => snapshot ? Object.entries(snapshot.variables) : [], [snapshot])
+  const filteredVariables = useMemo(() => {
+    const query = variableQuery.trim().toLowerCase()
+    if (!query) return variables
+    return variables.filter(([key, value]) =>
+      key.toLowerCase().includes(query) ||
+      JSON.stringify(value).toLowerCase().includes(query),
+    )
+  }, [variableQuery, variables])
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key === '`' && (event.ctrlKey || event.metaKey || event.altKey)) {
+        event.preventDefault()
+        setOpen(value => !value)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
+
+  useEffect(() => {
+    if (!snapshot) return
+    const scene = snapshot.scene.id ?? 'none'
+    const entry = `${new Date().toLocaleTimeString()} ${snapshot.state} scene:${scene}`
+    setRecentEvents(current => [entry, ...current].slice(0, 6))
+  }, [snapshot])
+
+  async function copySnapshot(): Promise<void> {
+    if (!snapshot) return
+    const text = JSON.stringify(snapshot, null, 2)
+    try {
+      await navigator.clipboard?.writeText(text)
+      setCopyStatus('copied')
+    } catch {
+      setCopyStatus('copy unavailable')
+    }
+  }
 
   return (
     <aside
@@ -24,8 +65,12 @@ export function VnDevtoolsOverlay({ snapshot, onRefresh }: VnDevtoolsOverlayProp
         <div style={contentStyle}>
           <header style={headerStyle}>
             <strong style={titleStyle}>Runtime</strong>
-            <button type="button" onClick={onRefresh} style={buttonStyle}>Refresh</button>
+            <div style={buttonGroupStyle}>
+              <button type="button" onClick={onRefresh} style={buttonStyle}>Refresh</button>
+              <button type="button" onClick={() => void copySnapshot()} disabled={!snapshot} style={buttonStyle}>Copy JSON</button>
+            </div>
           </header>
+          {copyStatus && <p style={statusStyle}>{copyStatus}</p>}
           {!snapshot ? (
             <p style={mutedStyle}>Waiting for diagnostics.</p>
           ) : (
@@ -46,8 +91,23 @@ export function VnDevtoolsOverlay({ snapshot, onRefresh }: VnDevtoolsOverlayProp
                 ))}
               </Section>
               <Section title="Variables">
-                {variables.length === 0 ? <p style={mutedStyle}>none</p> : variables.map(([key, value]) => (
+                <label style={searchLabelStyle}>
+                  <span style={visuallyHiddenStyle}>Search variables</span>
+                  <input
+                    type="search"
+                    value={variableQuery}
+                    onChange={event => setVariableQuery(event.currentTarget.value)}
+                    placeholder="Search variables"
+                    style={inputStyle}
+                  />
+                </label>
+                {filteredVariables.length === 0 ? <p style={mutedStyle}>none</p> : filteredVariables.map(([key, value]) => (
                   <Row key={key} label={key} value={JSON.stringify(value)} />
+                ))}
+              </Section>
+              <Section title="Recent">
+                {recentEvents.length === 0 ? <p style={mutedStyle}>none</p> : recentEvents.map((event, index) => (
+                  <Row key={`${event}-${index}`} label={`#${index + 1}`} value={event} />
                 ))}
               </Section>
               <Section title="Plugins">
@@ -135,6 +195,13 @@ const headerStyle = {
   marginBottom: 12,
 } as const
 
+const buttonGroupStyle = {
+  display: 'flex',
+  gap: 6,
+  flexWrap: 'wrap',
+  justifyContent: 'flex-end',
+} as const
+
 const titleStyle = {
   fontSize: 11,
   letterSpacing: '0.18em',
@@ -151,6 +218,43 @@ const buttonStyle = {
   fontSize: 10,
   textTransform: 'uppercase',
   cursor: 'pointer',
+} as const
+
+const searchLabelStyle = {
+  display: 'block',
+  marginBottom: 8,
+} as const
+
+const inputStyle = {
+  width: '100%',
+  height: 30,
+  boxSizing: 'border-box',
+  background: 'rgba(255,255,255,0.08)',
+  border: '1px solid rgba(255,255,255,0.18)',
+  color: '#e5e2e1',
+  font: 'inherit',
+  fontSize: 11,
+  padding: '0 8px',
+} as const
+
+const statusStyle = {
+  margin: '0 0 8px',
+  color: 'rgba(229,226,225,0.52)',
+  marginBottom: 8,
+  textTransform: 'uppercase',
+  fontSize: 10,
+} as const
+
+const visuallyHiddenStyle = {
+  position: 'absolute',
+  width: 1,
+  height: 1,
+  padding: 0,
+  margin: -1,
+  overflow: 'hidden',
+  clip: 'rect(0, 0, 0, 0)',
+  whiteSpace: 'nowrap',
+  border: 0,
 } as const
 
 const sectionStyle = {

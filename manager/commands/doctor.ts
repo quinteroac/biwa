@@ -27,6 +27,7 @@ export interface Issue {
 
 export interface DoctorOptions {
   json?: boolean
+  strict?: boolean
 }
 
 export interface DoctorJsonIssue {
@@ -42,6 +43,8 @@ export interface DoctorJsonIssue {
 export interface DoctorJsonReport {
   gameId: string
   summary: ReturnType<typeof summarizeIssues>
+  categories: ReturnType<typeof summarizeIssueCategories>
+  nextSteps: string[]
   issues: DoctorJsonIssue[]
 }
 
@@ -786,6 +789,40 @@ export function summarizeIssues(issues: Issue[]): Record<Severity, number> & { s
   }
 }
 
+function issueCategory(issue: Issue): string {
+  const code = issue.code ?? inferIssueCode(issue)
+  if (code.startsWith('config_') || code === 'invalid_distribution_mode') return 'config'
+  if (code.startsWith('plugin_') || code === 'devtools_plugin_enabled' || code === 'renderer_unknown' || code === 'tag_unknown') return 'plugins'
+  if (code.startsWith('asset_') || code.startsWith('atlas_') || code.includes('_missing')) return 'assets'
+  if (code.startsWith('story_') || issue.path.includes('/story/') || issue.path.includes('story/')) return 'story'
+  if (code.startsWith('minigame_')) return 'minigames'
+  if (code.startsWith('data_') || code.startsWith('frontmatter_') || code === 'id_filename_mismatch') return 'data'
+  return 'general'
+}
+
+export function summarizeIssueCategories(issues: Issue[]): Record<string, Record<Severity, number>> {
+  const categories: Record<string, Record<Severity, number>> = {}
+  for (const issue of issues) {
+    const category = issueCategory(issue)
+    categories[category] ??= { error: 0, warning: 0, info: 0 }
+    categories[category][issue.severity]++
+  }
+  return categories
+}
+
+export function suggestNextSteps(issues: Issue[]): string[] {
+  const codes = new Set(issues.filter(issue => issue.severity !== 'info').map(issue => issue.code ?? inferIssueCode(issue)))
+  const steps: string[] = []
+  if (codes.has('asset_missing')) steps.push('Add missing files under assets/ or update the referenced data paths.')
+  if (Array.from(codes).some(code => code.startsWith('atlas_'))) steps.push('Regenerate atlas JSON with `bun manager/cli.ts assets character-atlas <gameId> <characterId>`.')
+  if (codes.has('renderer_unknown')) steps.push('Enable or declare a renderer plugin, then verify with `bun manager/cli.ts plugins list <gameId>`.')
+  if (codes.has('tag_unknown')) steps.push('Enable the plugin that owns the Ink tag or declare it under plugins[].tags.')
+  if (Array.from(codes).some(code => code.startsWith('plugin_'))) steps.push('Run `bun manager/cli.ts plugins validate <gameId>` to inspect plugin declarations.')
+  if (Array.from(codes).some(code => code.startsWith('config_') || code === 'invalid_distribution_mode')) steps.push('Align game.config.ts with `framework/docs/game.config.schema.md`.')
+  if (Array.from(codes).some(code => code.startsWith('story_'))) steps.push('Check story locale paths and referenced ids in Ink.')
+  return steps
+}
+
 export function printIssues(gameDir: string, issues: Issue[]): void {
   const summary = summarizeIssues(issues)
   for (const issue of issues) {
@@ -797,6 +834,19 @@ export function printIssues(gameDir: string, issues: Issue[]): void {
     if (issue.suppressionReason) console.log(`         suppressed: ${issue.suppressionReason}`)
   }
   console.log(`\nDoctor summary: ${summary.error} error(s), ${summary.warning} warning(s), ${summary.info} info(s), ${summary.suppressed} suppressed.`)
+  const categories = summarizeIssueCategories(issues)
+  const categoryEntries = Object.entries(categories)
+  if (categoryEntries.length > 0) {
+    console.log('\nBy category:')
+    for (const [category, counts] of categoryEntries) {
+      console.log(`  ${category}: ${counts.error} error(s), ${counts.warning} warning(s), ${counts.info} info(s)`)
+    }
+  }
+  const nextSteps = suggestNextSteps(issues)
+  if (nextSteps.length > 0) {
+    console.log('\nNext steps:')
+    for (const step of nextSteps) console.log(`  - ${step}`)
+  }
 }
 
 function issuePathForReport(gameDir: string, issue: Issue): string {
@@ -807,6 +857,8 @@ export function createDoctorJsonReport(gameId: string, gameDir: string, issues: 
   return {
     gameId,
     summary: summarizeIssues(issues),
+    categories: summarizeIssueCategories(issues),
+    nextSteps: suggestNextSteps(issues),
     issues: issues.map(issue => ({
       severity: issue.severity,
       path: issuePathForReport(gameDir, issue),
@@ -843,6 +895,10 @@ function parseDoctorArgs(args: string[]): { gameId: string | undefined; options:
       options.json = true
       continue
     }
+    if (arg === '--strict') {
+      options.strict = true
+      continue
+    }
     if (arg.startsWith('--')) {
       throw new Error(`Unknown doctor option: ${arg}`)
     }
@@ -874,7 +930,10 @@ export async function doctor(...args: string[]): Promise<void> {
     printIssues(gameDir, issues)
   }
 
-  if (issues.some(issue => issue.severity === 'error')) {
+  const shouldFail = parsed.options.strict
+    ? issues.some(issue => issue.severity === 'error' || issue.severity === 'warning')
+    : issues.some(issue => issue.severity === 'error')
+  if (shouldFail) {
     process.exit(1)
   }
 }

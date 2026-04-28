@@ -105,7 +105,11 @@ describe('plugins command helpers', () => {
     await expect(plugins('official', '--category', 'renderer')).resolves.toBeUndefined()
     await expect(plugins('official', '--status', 'experimental')).resolves.toBeUndefined()
     await expect(plugins('official', '--category', 'player')).resolves.toBeUndefined()
+    await expect(plugins('official', '--json')).resolves.toBeUndefined()
+    await expect(plugins('official', '--example', 'screenEffects')).resolves.toBeUndefined()
+    await expect(plugins('official', '--example', 'official-screen-effects', '--json')).resolves.toBeUndefined()
     await expect(plugins('official', '--category', 'unknown')).rejects.toThrow('Invalid official plugin category')
+    await expect(plugins('official', '--example', 'unknown')).rejects.toThrow('Unknown official plugin example')
   })
 
   it('doctor accepts custom renderers only when declared by a plugin', async () => {

@@ -78,6 +78,8 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Public entrypoint smoke tests proving `smoke-fixture` can type against framework exports without deep runtime imports.
 - Official prebuilt plugin catalog contract metadata for `runtime` versus `profile` plugins.
 - Minimum official plugin fixture coverage for renderers, effects, player profiles and devtools.
+- `plugins official --json` and `plugins official --example <pluginId|factoryName>` for plugin discovery.
+- `doctor --strict`, category summaries and actionable next-step suggestions.
 
 ### Changed
 
@@ -107,3 +109,4 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Mature official runtime plugins promoted to `stable`: `inkWashBackground`, `screenEffects`, `atmosphereEffects` and `asepriteCharacterAtlas`.
 - Official player experience plugins are now documented as experimental preset profiles until player UI extension points settle.
 - `plugins official` now displays each official plugin contract beside category, status, renderers and tags.
+- Devtools inspector now supports keyboard toggling, variable search, recent snapshot entries and copying diagnostics JSON.

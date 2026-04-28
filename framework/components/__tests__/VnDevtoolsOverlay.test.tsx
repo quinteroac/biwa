@@ -32,4 +32,17 @@ describe('VnDevtoolsOverlay', () => {
     expect(html).toContain('data-testid="vn-devtools"')
     expect(html).toContain('Dev')
   })
+
+  it('renders author tooling controls when open', () => {
+    const html = renderToString(createElement(VnDevtoolsOverlay, {
+      snapshot,
+      onRefresh: () => {},
+      defaultOpen: true,
+    }))
+
+    expect(html).toContain('Search variables')
+    expect(html).toContain('Copy JSON')
+    expect(html).toContain('Recent')
+    expect(html).toContain('trust')
+  })
 })

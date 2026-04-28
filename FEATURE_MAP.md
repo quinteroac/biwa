@@ -20,40 +20,6 @@ El framework ya tiene una base tecnica estable para runtime, UI de jugador, dato
 
 ## Pendientes
 
-### P2 - Ergonomia De Autor En CLI Y Devtools
-
-Objetivo: reducir friccion para autores al crear, diagnosticar y probar juegos/plugins.
-
-Hallazgos:
-
-- `doctor smoke-fixture` esta limpio.
-- `mi-novela` reporta solo warnings conocidos, incluyendo `devtools_plugin_enabled` porque se habilito para pruebas.
-- `plugins official` lista el catalogo, pero no muestra ejemplos completos ni estado de estabilidad con detalle.
-- Devtools funciona como dock, pero es lectura basica y no tiene atajos, filtros ni export de snapshot.
-
-Alcance:
-
-- Mejorar `plugins official`:
-  - `--json`
-  - `--example <pluginId>`
-  - filtros combinables con salida mas compacta.
-- Mejorar `doctor` para autores:
-  - resumen por categoria.
-  - sugerencia de comando siguiente cuando falten assets o plugins.
-  - modo `--strict` para tratar warnings como errores en CI.
-- Mejorar devtools:
-  - atajo de teclado para abrir/cerrar.
-  - busqueda de variables.
-  - seccion de eventos recientes.
-  - copiar/exportar snapshot JSON.
-- Documentar flujo "diagnosticar una escena" usando doctor + devtools.
-
-Criterios de salida:
-
-- Un autor puede descubrir, activar y verificar un plugin oficial sin leer codigo fuente.
-- Devtools permite depurar una escena de forma practica durante `dev`.
-- Los comandos nuevos tienen pruebas CLI.
-
 ### P3 - Calidad Visual De Componentes Prebuilt
 
 Objetivo: hacer que las UIs incluidas se sientan como componentes de framework listos para usar, no solo placeholders funcionales.

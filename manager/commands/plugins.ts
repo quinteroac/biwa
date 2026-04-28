@@ -14,7 +14,7 @@ interface ParsedArgs {
 
 function usage(): string {
   return `Usage:
-  bun manager/cli.ts plugins official [--category renderer|effects|player|devtools|asset] [--status stable|experimental|planned]
+  bun manager/cli.ts plugins official [--category renderer|effects|player|devtools|asset] [--status stable|experimental|planned] [--json] [--example <pluginId>]
   bun manager/cli.ts plugins list <gameId>
   bun manager/cli.ts plugins validate <path|gameId>
   bun manager/cli.ts plugins scaffold <pluginId> [--out <dir>] [--template feature|renderer|ui]`
@@ -104,6 +104,23 @@ function rendererDefinitionSummary(renderers: VnPluginDescriptor['renderers']): 
 
 function tagDefinitionSummary(tags: string[] | undefined): string {
   return tags && tags.length > 0 ? tags.join(',') : '—'
+}
+
+function officialPluginJson(plugin: typeof officialPluginCatalog[number]) {
+  return {
+    id: plugin.id,
+    name: plugin.name,
+    category: plugin.category,
+    status: plugin.status,
+    contract: plugin.contract,
+    capabilities: plugin.capabilities,
+    renderers: plugin.renderers ?? {},
+    tags: plugin.tags ?? [],
+    importName: plugin.importName,
+    fixture: plugin.fixture,
+    stableCriteria: plugin.stableCriteria,
+    configExample: plugin.configExample,
+  }
 }
 
 type PluginTemplate = 'feature' | 'renderer' | 'ui'
@@ -296,10 +313,40 @@ function parseOfficialStatus(value: string | boolean | undefined): OfficialPlugi
 function listOfficialPlugins(flags: Record<string, string | boolean> = {}): void {
   const category = parseOfficialCategory(flags['category'])
   const status = parseOfficialStatus(flags['status'])
+  const example = flags['example']
   const plugins = officialPluginCatalog.filter(plugin =>
     (!category || plugin.category === category) &&
     (!status || plugin.status === status),
   )
+
+  if (typeof example === 'string') {
+    const plugin = officialPluginCatalog.find(item => item.id === example || item.importName === example)
+    if (!plugin) throw new Error(`Unknown official plugin example: ${example}`)
+    if (flags.json) {
+      console.log(JSON.stringify(officialPluginJson(plugin), null, 2))
+      return
+    }
+    console.log(`\n${plugin.name} (${plugin.id})\n`)
+    console.log(plugin.configExample)
+    console.log(`\nStatus: ${plugin.status}`)
+    console.log(`Contract: ${plugin.contract}`)
+    console.log(`Fixture: ${plugin.fixture}`)
+    console.log('\nStable criteria:')
+    for (const criterion of plugin.stableCriteria) console.log(`  - ${criterion}`)
+    console.log('')
+    return
+  }
+
+  if (flags.json) {
+    console.log(JSON.stringify({
+      filters: {
+        ...(category ? { category } : {}),
+        ...(status ? { status } : {}),
+      },
+      plugins: plugins.map(officialPluginJson),
+    }, null, 2))
+    return
+  }
 
   console.log('\nOfficial prebuilt plugins:\n')
   if (plugins.length === 0) {

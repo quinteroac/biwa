@@ -5,6 +5,7 @@
 ```bash
 bun manager/cli.ts doctor smoke-fixture
 bun manager/cli.ts doctor smoke-fixture --json
+bun manager/cli.ts doctor smoke-fixture --strict
 ```
 
 The default output is human-readable. `--json` emits a stable report for editor integrations, CI parsers and external tools:
@@ -13,9 +14,15 @@ The default output is human-readable. `--json` emits a stable report for editor 
 {
   "gameId": "smoke-fixture",
   "summary": { "error": 0, "warning": 0, "info": 0, "suppressed": 0 },
+  "categories": {},
+  "nextSteps": [],
   "issues": []
 }
 ```
+
+The human-readable output also groups issues by category and prints suggested next steps when the issue codes are actionable.
+
+`--strict` treats warnings as failures. Use it in CI when a release build should be warning-free, while keeping regular `doctor` friendlier during authoring.
 
 ## Severity
 
@@ -60,6 +67,18 @@ The default output is human-readable. `--json` emits a stable report for editor 
 | `atlas_frame_tags_missing` | An animation atlas has no frame tags. | Add `meta.frameTags`. |
 | `atlas_frame_tag_invalid` | A frame tag points outside the atlas frame range. | Fix `from`/`to`. |
 | `atlas_frame_tag_direction_invalid` | A frame tag direction is not supported. | Use `forward`, `reverse` or `pingpong`. |
+
+## Author Flow
+
+For scene debugging:
+
+```bash
+bun manager/cli.ts doctor my-game
+bun manager/cli.ts plugins list my-game
+bun manager/cli.ts plugins official --example screenEffects
+```
+
+If a plugin-owned Ink tag is reported as unknown, inspect the official plugin example and add the factory to `game.config.ts`. If assets are missing, fix the data path or add the file under `assets/`.
 
 ## Suppressions
 

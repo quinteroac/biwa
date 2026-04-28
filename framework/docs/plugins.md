@@ -44,6 +44,8 @@ Use the official catalog to discover prebuilt plugins:
 
 ```bash
 bun manager/cli.ts plugins official
+bun manager/cli.ts plugins official --json
+bun manager/cli.ts plugins official --example inkWashBackground
 ```
 
 See `framework/docs/prebuilt-plugins.md` for the full catalog, status policy and per-plugin options.
