@@ -1,5 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { MusicRoomTrack, ReplayScene } from '../types/extras.d.ts'
+import {
+  overlayButtonStyle,
+  overlayEyebrowStyle,
+  overlayFocusStyle,
+  overlayListRowStyle,
+  overlayMutedStyle,
+  overlayPanelStyle,
+  overlaySectionTitleStyle,
+  overlaySurfaceStyle,
+  overlayTitleStyle,
+  overlayHeaderStyle,
+} from './OverlayPrimitives.ts'
 
 export interface VnMusicRoomProps {
   isOpen: boolean
@@ -60,6 +72,8 @@ export function VnMusicRoom({ isOpen, tracks, unlockedTrackIds, replayScenes = [
       role="dialog"
       aria-modal="true"
       aria-label="Music room"
+      tabIndex={-1}
+      autoFocus
       onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}
       style={overlayStyle}
@@ -130,61 +144,31 @@ export function VnMusicRoom({ isOpen, tracks, unlockedTrackIds, replayScenes = [
 }
 
 const overlayStyle = {
-  position: 'absolute',
-  inset: 0,
+  ...overlaySurfaceStyle,
+  ...overlayFocusStyle,
   zIndex: 155,
-  padding: 24,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  background: 'rgba(0,0,0,0.72)',
-  pointerEvents: 'auto',
-  fontFamily: 'var(--vn-font, "Manrope", sans-serif)',
 } as const
 
 const panelStyle = {
+  ...overlayPanelStyle,
   width: 'min(820px, calc(100vw - 32px))',
-  maxHeight: 'calc(100vh - 48px)',
-  display: 'flex',
-  flexDirection: 'column',
-  background: 'rgba(12,12,14,0.96)',
-  border: '1px solid rgba(255,255,255,0.18)',
-  boxShadow: '0 24px 80px rgba(0,0,0,0.45)',
-  color: '#f7f3ef',
 } as const
 
 const headerStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: 16,
-  padding: '18px 20px',
-  borderBottom: '1px solid rgba(255,255,255,0.12)',
+  ...overlayHeaderStyle,
 } as const
 
 const eyebrowStyle = {
-  fontSize: 11,
-  textTransform: 'uppercase',
-  letterSpacing: '0.18em',
-  color: 'rgba(255,255,255,0.54)',
+  ...overlayEyebrowStyle,
 } as const
 
 const titleStyle = {
-  margin: '3px 0 0',
-  fontSize: 22,
-  fontWeight: 500,
-  letterSpacing: 0,
+  ...overlayTitleStyle,
+  marginTop: 3,
 } as const
 
 const buttonStyle = {
-  height: 34,
-  padding: '0 14px',
-  background: 'rgba(255,255,255,0.08)',
-  border: '1px solid rgba(255,255,255,0.22)',
-  borderRadius: 0,
-  color: '#f7f3ef',
-  cursor: 'pointer',
-  font: 'inherit',
+  ...overlayButtonStyle,
 } as const
 
 const bodyStyle = {
@@ -196,12 +180,8 @@ const bodyStyle = {
 } as const
 
 const sectionTitleStyle = {
-  margin: '0 0 10px',
+  ...overlaySectionTitleStyle,
   fontSize: 14,
-  fontWeight: 500,
-  textTransform: 'uppercase',
-  letterSpacing: '0.14em',
-  color: 'rgba(255,255,255,0.66)',
 } as const
 
 const listStyle = {
@@ -210,6 +190,7 @@ const listStyle = {
 } as const
 
 const rowButtonStyle = {
+  ...overlayListRowStyle,
   minHeight: 66,
   display: 'flex',
   alignItems: 'center',
@@ -217,21 +198,15 @@ const rowButtonStyle = {
   gap: 12,
   padding: '11px 12px',
   textAlign: 'left',
-  background: 'rgba(255,255,255,0.06)',
-  border: '1px solid rgba(255,255,255,0.16)',
-  borderRadius: 0,
-  color: '#f7f3ef',
   cursor: 'pointer',
   font: 'inherit',
 } as const
 
 const replayRowStyle = {
+  ...overlayListRowStyle,
   minHeight: 66,
   display: 'grid',
   gap: 4,
-  padding: '11px 12px',
-  background: 'rgba(255,255,255,0.045)',
-  border: '1px solid rgba(255,255,255,0.14)',
 } as const
 
 const rowTitleStyle = {
@@ -257,8 +232,7 @@ const rowActionStyle = {
 } as const
 
 const emptyStyle = {
+  ...overlayMutedStyle,
   padding: '18px 12px',
   border: '1px solid rgba(255,255,255,0.12)',
-  color: 'rgba(255,255,255,0.56)',
-  fontSize: 13,
 } as const

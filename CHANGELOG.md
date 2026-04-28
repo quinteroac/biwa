@@ -80,6 +80,8 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Minimum official plugin fixture coverage for renderers, effects, player profiles and devtools.
 - `plugins official --json` and `plugins official --example <pluginId|factoryName>` for plugin discovery.
 - `doctor --strict`, category summaries and actionable next-step suggestions.
+- Shared overlay primitives for prebuilt panels, headers, buttons, inputs, selects and list rows.
+- Playwright overlay smoke screenshots for save/load, backlog, settings, gallery and music room.
 
 ### Changed
 
@@ -110,3 +112,4 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Official player experience plugins are now documented as experimental preset profiles until player UI extension points settle.
 - `plugins official` now displays each official plugin contract beside category, status, renderers and tags.
 - Devtools inspector now supports keyboard toggling, variable search, recent snapshot entries and copying diagnostics JSON.
+- Backlog, gallery, music room, settings and devtools overlays now share visual tokens and Escape/focus behavior where applicable.

@@ -37,6 +37,22 @@ export {
 export type { PlayerInputAction, PlayerInputMap } from './components/VnInputMap.ts'
 export { VnMusicRoom } from './components/VnMusicRoom.tsx'
 export type { VnMusicRoomProps } from './components/VnMusicRoom.tsx'
+export {
+  overlayButtonActiveStyle,
+  overlayButtonStyle,
+  overlayEyebrowStyle,
+  overlayFocusStyle,
+  overlayHeaderStyle,
+  overlayInputStyle,
+  overlayListRowStyle,
+  overlayMutedStyle,
+  overlayOptionStyle,
+  overlayPanelStyle,
+  overlaySectionTitleStyle,
+  overlaySelectStyle,
+  overlaySurfaceStyle,
+  overlayTitleStyle,
+} from './components/OverlayPrimitives.ts'
 export { getAutoDelayMs, getAutoModeAction, getSkipModeAction } from './components/VnPlayerModes.ts'
 export type { PlayerAdvanceModeAction, PlayerAdvanceModeState } from './components/VnPlayerModes.ts'
 export { quickSave, VnQuickSave } from './components/VnQuickSave.tsx'

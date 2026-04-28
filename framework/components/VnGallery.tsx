@@ -1,5 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { GalleryItem } from '../types/extras.d.ts'
+import {
+  overlayButtonStyle,
+  overlayEyebrowStyle,
+  overlayFocusStyle,
+  overlayHeaderStyle,
+  overlayListRowStyle,
+  overlayMutedStyle,
+  overlayPanelStyle,
+  overlaySurfaceStyle,
+  overlayTitleStyle,
+} from './OverlayPrimitives.ts'
 
 export interface VnGalleryProps {
   isOpen: boolean
@@ -33,6 +44,8 @@ export function VnGallery({ isOpen, items, unlockedIds, onClose }: VnGalleryProp
       role="dialog"
       aria-modal="true"
       aria-label="CG gallery"
+      tabIndex={-1}
+      autoFocus
       onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}
       style={overlayStyle}
@@ -95,61 +108,31 @@ export function VnGallery({ isOpen, items, unlockedIds, onClose }: VnGalleryProp
 }
 
 const overlayStyle = {
-  position: 'absolute',
-  inset: 0,
+  ...overlaySurfaceStyle,
+  ...overlayFocusStyle,
   zIndex: 160,
-  padding: 24,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  background: 'rgba(0,0,0,0.72)',
-  pointerEvents: 'auto',
-  fontFamily: 'var(--vn-font, "Manrope", sans-serif)',
 } as const
 
 const panelStyle = {
+  ...overlayPanelStyle,
   width: 'min(1080px, calc(100vw - 32px))',
-  maxHeight: 'calc(100vh - 48px)',
-  display: 'flex',
-  flexDirection: 'column',
-  background: 'rgba(12,12,14,0.96)',
-  border: '1px solid rgba(255,255,255,0.18)',
-  boxShadow: '0 24px 80px rgba(0,0,0,0.45)',
-  color: '#f7f3ef',
 } as const
 
 const headerStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: 16,
-  padding: '18px 20px',
-  borderBottom: '1px solid rgba(255,255,255,0.12)',
+  ...overlayHeaderStyle,
 } as const
 
 const eyebrowStyle = {
-  fontSize: 11,
-  textTransform: 'uppercase',
-  letterSpacing: '0.18em',
-  color: 'rgba(255,255,255,0.54)',
+  ...overlayEyebrowStyle,
 } as const
 
 const titleStyle = {
-  margin: '3px 0 0',
-  fontSize: 22,
-  fontWeight: 500,
-  letterSpacing: 0,
+  ...overlayTitleStyle,
+  marginTop: 3,
 } as const
 
 const buttonStyle = {
-  height: 34,
-  padding: '0 14px',
-  background: 'rgba(255,255,255,0.08)',
-  border: '1px solid rgba(255,255,255,0.22)',
-  borderRadius: 0,
-  color: '#f7f3ef',
-  cursor: 'pointer',
-  font: 'inherit',
+  ...overlayButtonStyle,
 } as const
 
 const bodyStyle = {
@@ -168,15 +151,12 @@ const gridStyle = {
 } as const
 
 const thumbButtonStyle = {
+  ...overlayListRowStyle,
   minHeight: 124,
   display: 'grid',
   gridTemplateRows: '1fr auto',
   padding: 0,
   overflow: 'hidden',
-  background: 'rgba(255,255,255,0.06)',
-  border: '1px solid rgba(255,255,255,0.18)',
-  borderRadius: 0,
-  color: '#f7f3ef',
   cursor: 'pointer',
 } as const
 
@@ -243,8 +223,8 @@ const descriptionStyle = {
 } as const
 
 const emptyStyle = {
+  ...overlayMutedStyle,
   display: 'grid',
   placeItems: 'center',
   minHeight: 360,
-  color: 'rgba(255,255,255,0.56)',
 } as const

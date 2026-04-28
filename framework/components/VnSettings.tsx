@@ -1,4 +1,14 @@
 import type { PlayerPreferencesPatch, PlayerPreferencesState } from '../player/PlayerPreferences.ts'
+import {
+  overlayButtonActiveStyle,
+  overlayButtonStyle,
+  overlayFocusStyle,
+  overlayHeaderStyle,
+  overlayInputStyle,
+  overlayPanelStyle,
+  overlaySurfaceStyle,
+  overlayTitleStyle,
+} from './OverlayPrimitives.ts'
 
 export interface VnSettingsProps {
   isOpen: boolean
@@ -9,52 +19,36 @@ export interface VnSettingsProps {
 }
 
 const OVERLAY_STYLE: React.CSSProperties = {
-  position: 'fixed',
-  inset: 0,
+  ...overlaySurfaceStyle,
+  ...overlayFocusStyle,
+  position: 'absolute',
   zIndex: 110,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  background: 'rgba(0,0,0,0.72)',
-  pointerEvents: 'auto',
 }
 
 const PANEL_STYLE: React.CSSProperties = {
+  ...overlayPanelStyle,
   width: '100%',
   maxWidth: 520,
-  background: '#201f1f',
-  border: '1px solid rgba(255,255,255,0.14)',
-  color: '#e5e2e1',
   padding: '26px 30px',
-  fontFamily: 'var(--vn-font, "Manrope", sans-serif)',
-  display: 'flex',
-  flexDirection: 'column',
   gap: 18,
 }
 
 const HEADER_STYLE: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  borderBottom: '0.5px solid rgba(255,255,255,0.1)',
+  ...overlayHeaderStyle,
+  padding: 0,
   paddingBottom: 14,
 }
 
 const TITLE_STYLE: React.CSSProperties = {
-  margin: 0,
-  fontSize: 11,
-  fontWeight: 500,
-  letterSpacing: '0.2em',
-  textTransform: 'uppercase',
+  ...overlayTitleStyle,
 }
 
 const CLOSE_STYLE: React.CSSProperties = {
+  ...overlayButtonStyle,
   width: 28,
   height: 28,
-  background: 'rgba(0,0,0,0.6)',
-  border: '1px solid rgba(255,255,255,0.24)',
-  color: 'rgba(229,226,225,0.78)',
-  cursor: 'pointer',
+  minHeight: 28,
+  padding: 0,
 }
 
 const ROW_STYLE: React.CSSProperties = {
@@ -78,24 +72,17 @@ const VALUE_STYLE: React.CSSProperties = {
 }
 
 const BUTTON_STYLE: React.CSSProperties = {
-  height: 28,
+  ...overlayButtonStyle,
+  minHeight: 28,
   padding: '0 10px',
-  background: 'rgba(0,0,0,0.6)',
-  border: '1px solid rgba(255,255,255,0.24)',
-  color: 'rgba(229,226,225,0.78)',
-  fontFamily: 'inherit',
   fontSize: 10,
-  fontWeight: 500,
-  letterSpacing: '0.08em',
-  textTransform: 'uppercase',
-  cursor: 'pointer',
 }
 
 const ACTIVE_BUTTON_STYLE: React.CSSProperties = {
-  ...BUTTON_STYLE,
-  background: 'rgba(229,226,225,0.88)',
-  border: '1px solid rgba(229,226,225,0.95)',
-  color: 'rgba(0,0,0,0.86)',
+  ...overlayButtonActiveStyle,
+  minHeight: 28,
+  padding: '0 10px',
+  fontSize: 10,
 }
 
 function ToggleButton({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) {
@@ -141,6 +128,7 @@ function RangeRow({
         step={step}
         value={value}
         onChange={(event) => onChange(Number(event.currentTarget.value))}
+        style={overlayInputStyle}
       />
     </label>
   )
@@ -155,6 +143,9 @@ export function VnSettings({ isOpen, preferences, onChange, onReset, onClose }: 
       role="dialog"
       aria-modal="true"
       aria-label="Player settings"
+      tabIndex={-1}
+      autoFocus
+      onKeyDown={(event) => { if (event.key === 'Escape') onClose() }}
       onClick={(event) => {
         event.stopPropagation()
         if (event.target === event.currentTarget) onClose()

@@ -20,40 +20,6 @@ El framework ya tiene una base tecnica estable para runtime, UI de jugador, dato
 
 ## Pendientes
 
-### P3 - Calidad Visual De Componentes Prebuilt
-
-Objetivo: hacer que las UIs incluidas se sientan como componentes de framework listos para usar, no solo placeholders funcionales.
-
-Hallazgos:
-
-- Save/load y controles de jugador ya tienen una direccion visual mas consistente.
-- Backlog, gallery, music room, settings y devtools usan estilos separados y no comparten tokens/componentes.
-- Algunos controles usan texto donde convendria iconografia o controles mas especificos.
-- No hay pruebas visuales dedicadas para modales/overlays salvo humo general.
-
-Alcance:
-
-- Crear tokens compartidos para overlays:
-  - panel, header, button, input, select, list row.
-- Unificar backlog/settings/gallery/music/devtools sobre esos tokens.
-- Revisar accesibilidad:
-  - foco inicial.
-  - Escape consistente.
-  - labels visibles/aria.
-  - contraste.
-- Agregar Playwright visual smoke para:
-  - save/load.
-  - backlog con filtros.
-  - devtools abierto.
-  - gallery/music vacios y con datos.
-- Revisar responsive en viewport movil.
-
-Criterios de salida:
-
-- Los overlays prebuilt comparten lenguaje visual y comportamiento de teclado.
-- Hay screenshots de humo para componentes clave.
-- No hay regresiones de layout obvias en desktop/mobile.
-
 ### P4 - Preparacion Real De Publicacion Local
 
 Objetivo: acercar el roadmap de packaging a una prueba real sin publicar npm ni marketplace.

@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { RuntimeDiagnosticsSnapshot } from '../types/diagnostics.d.ts'
+import {
+  overlayButtonStyle,
+  overlayInputStyle,
+  overlayMutedStyle,
+  overlayPanelStyle,
+  overlaySectionTitleStyle,
+  overlayTitleStyle,
+} from './OverlayPrimitives.ts'
 
 export interface VnDevtoolsOverlayProps {
   snapshot: RuntimeDiagnosticsSnapshot | null
@@ -157,14 +165,9 @@ const dockStyle = {
 
 const panelStyle = {
   ...dockStyle,
+  ...overlayPanelStyle,
   width: 360,
   maxWidth: 'calc(100vw - 40px)',
-  maxHeight: 'calc(100vh - 40px)',
-  overflow: 'hidden',
-  background: 'rgba(8,8,10,0.92)',
-  border: '1px solid rgba(255,255,255,0.18)',
-  color: '#e5e2e1',
-  boxShadow: '0 18px 64px rgba(0,0,0,0.45)',
 } as const
 
 const toggleStyle = {
@@ -203,21 +206,15 @@ const buttonGroupStyle = {
 } as const
 
 const titleStyle = {
+  ...overlayTitleStyle,
   fontSize: 11,
-  letterSpacing: '0.18em',
-  textTransform: 'uppercase',
 } as const
 
 const buttonStyle = {
-  height: 26,
+  ...overlayButtonStyle,
+  minHeight: 26,
   padding: '0 9px',
-  background: 'rgba(255,255,255,0.08)',
-  border: '1px solid rgba(255,255,255,0.18)',
-  color: '#e5e2e1',
-  font: 'inherit',
   fontSize: 10,
-  textTransform: 'uppercase',
-  cursor: 'pointer',
 } as const
 
 const searchLabelStyle = {
@@ -226,13 +223,8 @@ const searchLabelStyle = {
 } as const
 
 const inputStyle = {
-  width: '100%',
+  ...overlayInputStyle,
   height: 30,
-  boxSizing: 'border-box',
-  background: 'rgba(255,255,255,0.08)',
-  border: '1px solid rgba(255,255,255,0.18)',
-  color: '#e5e2e1',
-  font: 'inherit',
   fontSize: 11,
   padding: '0 8px',
 } as const
@@ -263,12 +255,9 @@ const sectionStyle = {
 } as const
 
 const sectionTitleStyle = {
-  margin: '0 0 8px',
+  ...overlaySectionTitleStyle,
+  marginBottom: 8,
   fontSize: 10,
-  fontWeight: 600,
-  letterSpacing: '0.14em',
-  textTransform: 'uppercase',
-  color: 'rgba(229,226,225,0.58)',
 } as const
 
 const rowStyle = {
@@ -294,7 +283,6 @@ const valueStyle = {
 } as const
 
 const mutedStyle = {
-  margin: 0,
-  color: 'rgba(229,226,225,0.52)',
+  ...overlayMutedStyle,
   fontSize: 12,
 } as const

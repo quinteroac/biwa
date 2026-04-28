@@ -1,5 +1,17 @@
 import { useMemo, useState } from 'react'
 import type { BacklogEntry } from '../types/save.d.ts'
+import {
+  overlayButtonStyle,
+  overlayFocusStyle,
+  overlayHeaderStyle,
+  overlayInputStyle,
+  overlayMutedStyle,
+  overlayOptionStyle,
+  overlayPanelStyle,
+  overlaySelectStyle,
+  overlaySurfaceStyle,
+  overlayTitleStyle,
+} from './OverlayPrimitives.ts'
 
 export interface VnBacklogProps {
   isOpen: boolean
@@ -35,42 +47,32 @@ export function VnBacklog({ isOpen, entries, onClose, onClear, onReplayVoice }: 
       role="dialog"
       aria-modal="true"
       aria-label="Backlog"
+      tabIndex={-1}
+      autoFocus
       onClick={e => e.stopPropagation()}
+      onKeyDown={e => { if (e.key === 'Escape') onClose() }}
       style={{
-        position: 'absolute',
-        inset: 0,
+        ...overlaySurfaceStyle,
+        ...overlayFocusStyle,
         zIndex: 120,
-        background: 'rgba(0,0,0,0.72)',
-        color: '#e5e2e1',
-        fontFamily: 'var(--vn-font, "Manrope", sans-serif)',
-        pointerEvents: 'auto',
-        display: 'flex',
-        justifyContent: 'center',
         alignItems: 'stretch',
         padding: 32,
       }}
     >
       <section style={{
+        ...overlayPanelStyle,
         width: 'min(860px, 100%)',
-        background: 'rgba(12,12,14,0.94)',
-        border: '1px solid rgba(255,255,255,0.16)',
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: 0,
       }}>
         <header style={{
-          display: 'flex',
-          alignItems: 'center',
+          ...overlayHeaderStyle,
           gap: 12,
-          padding: '16px 20px',
-          borderBottom: '1px solid rgba(255,255,255,0.12)',
         }}>
-          <h2 style={{ margin: 0, fontSize: 14, fontWeight: 500, letterSpacing: '0.16em', textTransform: 'uppercase' }}>Backlog</h2>
+          <h2 style={overlayTitleStyle}>Backlog</h2>
           <div style={{ flex: 1 }} />
           {onClear && (
-            <button type="button" onClick={onClear} style={buttonStyle}>Clear</button>
+            <button type="button" onClick={onClear} style={overlayButtonStyle}>Clear</button>
           )}
-          <button type="button" onClick={onClose} style={buttonStyle}>Close</button>
+          <button type="button" onClick={onClose} style={overlayButtonStyle}>Close</button>
         </header>
 
         <div style={filterBarStyle}>
@@ -95,9 +97,9 @@ export function VnBacklog({ isOpen, entries, onClose, onClear, onReplayVoice }: 
 
         <div style={{ overflowY: 'auto', padding: '8px 20px 20px' }}>
           {entries.length === 0 ? (
-            <p style={{ color: 'rgba(229,226,225,0.62)' }}>No dialog history yet.</p>
+            <p style={overlayMutedStyle}>No dialog history yet.</p>
           ) : filteredEntries.length === 0 ? (
-            <p style={{ color: 'rgba(229,226,225,0.62)' }}>No backlog lines match the current filter.</p>
+            <p style={overlayMutedStyle}>No backlog lines match the current filter.</p>
           ) : filteredEntries.map(entry => (
             <article key={entry.index} style={{
               padding: '14px 0',
@@ -137,24 +139,15 @@ const filterBarStyle = {
 } as const
 
 const inputStyle = {
-  height: 34,
-  padding: '0 11px',
-  background: 'rgba(255,255,255,0.06)',
-  border: '1px solid rgba(255,255,255,0.16)',
-  color: '#e5e2e1',
-  font: 'inherit',
-  fontSize: 13,
+  ...overlayInputStyle,
 } as const
 
 const selectStyle = {
-  ...inputStyle,
-  cursor: 'pointer',
-  colorScheme: 'dark',
+  ...overlaySelectStyle,
 } as const
 
 const optionStyle = {
-  background: '#201f1f',
-  color: '#e5e2e1',
+  ...overlayOptionStyle,
 } as const
 
 const entryHeaderStyle = {
@@ -167,27 +160,9 @@ const entryHeaderStyle = {
 } as const
 
 const replayButtonStyle = {
-  height: 24,
+  ...overlayButtonStyle,
+  minHeight: 24,
   padding: '0 9px',
-  background: 'rgba(255,255,255,0.06)',
-  border: '1px solid rgba(255,255,255,0.16)',
   color: 'rgba(229,226,225,0.72)',
-  font: 'inherit',
   fontSize: 10,
-  letterSpacing: '0.1em',
-  textTransform: 'uppercase' as const,
-  cursor: 'pointer',
-}
-
-const buttonStyle = {
-  height: 32,
-  padding: '0 12px',
-  background: 'rgba(255,255,255,0.08)',
-  border: '1px solid rgba(255,255,255,0.18)',
-  color: '#e5e2e1',
-  font: 'inherit',
-  fontSize: 11,
-  letterSpacing: '0.08em',
-  textTransform: 'uppercase' as const,
-  cursor: 'pointer',
 }
