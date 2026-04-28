@@ -1,3 +1,4 @@
+import { asepriteCharacterAtlasPlugin } from './asepriteCharacterAtlas.tsx'
 import { devtoolsPlugin } from './devtools.ts'
 import { inkWashBackgroundPlugin } from './inkWashBackground.tsx'
 import { backlogEnhancerPlugin, galleryUnlocksPlugin, musicRoomPlugin, preferencesPanelPlugin } from './playerExperience.ts'
@@ -32,6 +33,7 @@ export const officialPlugins = {
   musicRoom: musicRoomPlugin,
   preferencesPanel: preferencesPanelPlugin,
   devtools: devtoolsPlugin,
+  asepriteCharacterAtlas: asepriteCharacterAtlasPlugin,
 }
 
 export const officialPluginCatalog: OfficialPluginDefinition[] = [
@@ -158,8 +160,25 @@ plugins: [
 ]`,
     factory: devtoolsPlugin,
   },
+  {
+    id: 'official-aseprite-character-atlas',
+    name: 'Aseprite Character Atlas',
+    category: 'asset',
+    status: 'experimental',
+    description: 'Character renderer profile for CLI-generated ComfyUI GameAssetsMaker Aseprite atlas JSON.',
+    capabilities: ['renderer', 'asset-loader'],
+    renderers: { character: ['aseprite-character-atlas'] },
+    importName: 'asepriteCharacterAtlas',
+    configExample: `import { officialPlugins } from '<framework/plugins/prebuilt>'
+
+plugins: [
+  officialPlugins.asepriteCharacterAtlas(),
+]`,
+    factory: asepriteCharacterAtlasPlugin,
+  },
 ]
 
+export { asepriteCharacterAtlasPlugin } from './asepriteCharacterAtlas.tsx'
 export { devtoolsPlugin } from './devtools.ts'
 export { inkWashBackgroundPlugin } from './inkWashBackground.tsx'
 export { backlogEnhancerPlugin, galleryUnlocksPlugin, musicRoomPlugin, preferencesPanelPlugin } from './playerExperience.ts'

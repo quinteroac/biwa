@@ -274,11 +274,14 @@ export function getAsepriteFrameTags(atlas: AsepriteAtlas): AsepriteFrameTag[] {
   }))
 }
 
-export function validateAsepriteAtlas(atlas: unknown, options: { requireAnimationTags?: boolean } = {}): AsepriteValidationIssue[] {
+export function validateAsepriteAtlas(atlas: unknown, options: { requireAnimationTags?: boolean; requireGameAssetsMaker?: boolean } = {}): AsepriteValidationIssue[] {
   const issues: AsepriteValidationIssue[] = []
   if (!atlas || typeof atlas !== 'object' || Array.isArray(atlas)) return [{ code: 'atlas_invalid', message: 'Atlas must be a JSON object.' }]
   const candidate = atlas as AsepriteAtlas
   const meta = candidate.meta ?? {}
+  if (options.requireGameAssetsMaker && (meta.app !== ASEPRITE_APP_NAME || meta.version !== ASEPRITE_ATLAS_VERSION)) {
+    issues.push({ code: 'atlas_contract_mismatch', message: `Atlas must use ${ASEPRITE_APP_NAME} ${ASEPRITE_ATLAS_VERSION}.` })
+  }
   if (meta.version && meta.version !== ASEPRITE_ATLAS_VERSION && meta.app === ASEPRITE_APP_NAME) {
     issues.push({ code: 'atlas_version_unsupported', message: `Unsupported atlas version: ${meta.version}` })
   }

@@ -81,4 +81,13 @@ describe('AsepriteAtlas', () => {
     expect(issues.map(issue => issue.code)).toContain('atlas_image_missing')
     expect(issues.map(issue => issue.code)).toContain('atlas_frame_out_of_bounds')
   })
+
+  it('can require the ComfyUI Game Assets Maker atlas contract', () => {
+    const issues = validateAsepriteAtlas({
+      frames: {},
+      meta: { image: 'bad.png', size: { w: 1, h: 1 } },
+    }, { requireGameAssetsMaker: true })
+
+    expect(issues.map(issue => issue.code)).toContain('atlas_contract_mismatch')
+  })
 })

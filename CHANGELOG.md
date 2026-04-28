@@ -71,6 +71,8 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Official player experience prebuilt profiles: `backlogEnhancer`, `galleryUnlocks`, `musicRoom` and `preferencesPanel`.
 - Enhanced backlog overlay with search, speaker filtering and voice replay for voiced lines.
 - Official `devtools` prebuilt plugin with runtime diagnostics snapshots and a default `VnStage` inspector dock.
+- Official `asepriteCharacterAtlas` prebuilt plugin for CLI-generated ComfyUI GameAssetsMaker character atlases.
+- `doctor` validation for Aseprite atlas expression references and GameAssetsMaker atlas contracts.
 
 ### Changed
 

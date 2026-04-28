@@ -38,11 +38,12 @@ export interface VnCharacterProps {
   onExited: (id: string) => void
 }
 
-function SpritesheetRenderer({ file, atlas, expression, expressions }: {
+export function AsepriteSpritesheetRenderer({ file, atlas, expression, expressions, assetBase = './assets/' }: {
   file: string
   atlas: string
   expression: string
   expressions: Record<string, string>
+  assetBase?: string
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const imgRef    = useRef<HTMLImageElement | null>(null)
@@ -51,18 +52,18 @@ function SpritesheetRenderer({ file, atlas, expression, expressions }: {
 
   useEffect(() => {
     let cancelled = false
-    fetch(`./assets/${atlas}`)
+    fetch(`${assetBase}${atlas}`)
       .then(r => r.json())
       .then((data: AsepriteAtlas) => { if (!cancelled) setAtlasData(data) })
       .catch(() => {})
     return () => { cancelled = true }
-  }, [atlas])
+  }, [assetBase, atlas])
 
   useEffect(() => {
     const img = new Image()
-    img.src = `./assets/${file}`
+    img.src = `${assetBase}${file}`
     imgRef.current = img
-  }, [file])
+  }, [assetBase, file])
 
   useEffect(() => {
     if (timerRef.current) clearInterval(timerRef.current)
@@ -196,7 +197,7 @@ export function VnCharacter({ id, charData, position, expression, exiting, onExi
         )
       })()}
       {!externalRenderer && anim?.type === 'spritesheet' && anim.file && anim.atlas && anim.expressions && (
-        <SpritesheetRenderer
+        <AsepriteSpritesheetRenderer
           file={anim.file}
           atlas={anim.atlas}
           expression={expression}

@@ -11,6 +11,7 @@ describe('official prebuilt plugins', () => {
     expect(officialPluginCatalog.map(plugin => plugin.id)).toContain('official-ink-wash-background')
     expect(officialPluginCatalog.map(plugin => plugin.id)).toContain('official-backlog-enhancer')
     expect(officialPluginCatalog.map(plugin => plugin.id)).toContain('official-devtools')
+    expect(officialPluginCatalog.map(plugin => plugin.id)).toContain('official-aseprite-character-atlas')
   })
 
   it('keeps catalog metadata complete and unique', () => {
@@ -90,5 +91,20 @@ describe('official prebuilt plugins', () => {
     expect(manifest.id).toBe('official-devtools')
     expect(manifest.capabilities).toEqual(['overlay', 'engine-event'])
     expect(typeof module.setup).toBe('function')
+  })
+
+  it('loads the Aseprite character atlas renderer', async () => {
+    const descriptor = officialPlugins.asepriteCharacterAtlas()
+    const { module } = await loadPluginDescriptor(descriptor)
+    const engine = { id: 'prebuilt-game' } as GameEngine
+    const context = {
+      ...createPluginContext(engine, new EventBus()),
+      rendererRegistry: new RendererRegistry(),
+    }
+
+    await module.setup?.(context)
+
+    expect(context.rendererRegistry.has('character', 'aseprite-character-atlas')).toBe(true)
+    expect(context.rendererRegistry.get('character', 'aseprite-character-atlas')?.pluginId).toBe('official-aseprite-character-atlas')
   })
 })

@@ -88,6 +88,26 @@ animation:
     blink:   blink_loop
 ```
 
+The official prebuilt plugin exposes the same runtime through a declared external renderer:
+
+```ts
+plugins: [
+  officialPlugins.asepriteCharacterAtlas(),
+]
+```
+
+```yaml
+animation:
+  type: aseprite-character-atlas
+  file:  characters/kai/kai_sheet.png
+  atlas: characters/kai/kai_atlas.json
+  expressions:
+    neutral: neutral
+    happy: happy
+```
+
+Use `aseprite-character-atlas` when you want the game config to make this asset contract explicit. `doctor` validates expression references against atlas frameTags or inferred frame names for both `spritesheet` and `aseprite-character-atlas`.
+
 ---
 
 #### `type: spine` — Spine 2D skeletal animation

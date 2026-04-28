@@ -47,3 +47,34 @@ Character spritesheets can use either explicit `meta.frameTags` or visual-novel 
 ```
 
 This lets `animation.expressions.neutral: neutral` resolve correctly without hand-editing the generated atlas.
+
+## Official Renderer Plugin
+
+Games can opt into the official renderer profile:
+
+```ts
+import { officialPlugins } from '../../framework/plugins/prebuilt/index.ts'
+
+plugins: [
+  officialPlugins.asepriteCharacterAtlas(),
+]
+```
+
+Then declare characters with:
+
+```yaml
+animation:
+  type: aseprite-character-atlas
+  file: characters/kai/kai_spritesheet.png
+  atlas: characters/kai/kai_atlas.json
+  expressions:
+    neutral: neutral
+    happy: happy
+```
+
+`doctor` checks that every expression points to a frame tag or generated frame name in the atlas. For this official type it also expects the GameAssetsMaker contract fields:
+
+- `meta.app: "ComfyUI Game Assets Maker"`
+- `meta.version: "aseprite-atlas-v1"`
+
+The future image-generation flow should produce the spritesheet image that matches `meta.image`; the current framework only generates and validates atlas JSON.

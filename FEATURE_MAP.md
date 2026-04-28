@@ -20,28 +20,7 @@ El framework ya tiene una base tecnica estable para runtime, UI de jugador, dato
 
 ## Pendientes
 
-### P1 - Assets Y Generacion Asistida
-
-Objetivo: conectar el flujo de assets que ya existe con plugins oficiales de render.
-
-Alcance:
-
-- `officialPlugins.asepriteCharacterAtlas()`:
-  - renderer/documentacion especifica para atlas generados por la CLI.
-  - validaciones de frameTags y expresiones.
-- Recetas para el flujo:
-  - `assets character-atlas`.
-  - editar/generar spritesheet.
-  - declarar character.
-  - renderizar con plugin oficial.
-- Preparar contrato para futura generacion via API de imagenes sin implementarla todavia.
-
-Criterios de salida:
-
-- El formato ComfyUI/GameAssetsMaker queda como contrato documentado del framework.
-- El motor, doctor y plugin oficial aceptan el mismo formato.
-
-### P2 - Packaging Futuro
+### P1 - Packaging Futuro
 
 Objetivo: preparar publicacion sin implementarla antes de cerrar versionado.
 

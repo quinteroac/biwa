@@ -218,4 +218,53 @@ export default config
     const result = await validateGame(gameId)
     expect(result.issues.map(issue => issue.code)).toContain('devtools_plugin_enabled')
   })
+
+  it('doctor validates official Aseprite character atlas expression references', async () => {
+    const gameId = 'plugin-aseprite-character-doctor'
+    writeMinimalGame(gameId, `data: { scenes: './data/scenes/', characters: './data/characters/' },
+  plugins: [{
+    id: 'official-aseprite-character-atlas',
+    name: 'Aseprite Character Atlas',
+    version: '0.1.0',
+    type: 'plugin',
+    capabilities: ['renderer', 'asset-loader'],
+    renderers: { character: ['aseprite-character-atlas'] },
+  }],`)
+    mkdirSync(join(gameDir(gameId), 'data/characters'), { recursive: true })
+    mkdirSync(join(gameDir(gameId), 'assets/characters/tester'), { recursive: true })
+    writeFileSync(join(gameDir(gameId), 'assets/characters/tester/tester.png'), '')
+    writeFileSync(join(gameDir(gameId), 'assets/characters/tester/tester_atlas.json'), JSON.stringify({
+      frames: {
+        'neutral.png': {
+          frame: { x: 0, y: 0, w: 32, h: 32 },
+          rotated: false,
+          trimmed: false,
+          spriteSourceSize: { x: 0, y: 0, w: 32, h: 32 },
+          sourceSize: { w: 32, h: 32 },
+          duration: 100,
+        },
+      },
+      meta: {
+        app: 'ComfyUI Game Assets Maker',
+        version: 'aseprite-atlas-v1',
+        image: 'tester.png',
+        size: { w: 32, h: 32 },
+      },
+    }))
+    writeFileSync(join(gameDir(gameId), 'data/characters/tester.md'), `---
+id: tester
+animation:
+  type: aseprite-character-atlas
+  file: characters/tester/tester.png
+  atlas: characters/tester/tester_atlas.json
+  expressions:
+    neutral: neutral
+    happy: happy
+---
+`)
+
+    const result = await validateGame(gameId)
+    expect(result.issues.map(issue => issue.code)).toContain('atlas_expression_missing')
+    expect(result.issues.map(issue => issue.code)).not.toContain('renderer_unknown')
+  })
 })

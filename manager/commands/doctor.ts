@@ -3,7 +3,7 @@ import { join, relative, resolve } from 'path'
 import { pathToFileURL } from 'url'
 import yaml from 'js-yaml'
 import { TagParser } from '../../framework/TagParser.ts'
-import { validateAsepriteAtlas } from '../../framework/engine/AsepriteAtlas.ts'
+import { getAsepriteFrameTags, validateAsepriteAtlas } from '../../framework/engine/AsepriteAtlas.ts'
 import { validatePluginManifest } from '../../framework/plugins/PluginRegistry.ts'
 import { CORE_TAGS } from '../../framework/plugins/TagRegistry.ts'
 import { validateJsonSchema } from '../schemaValidator.ts'
@@ -161,13 +161,22 @@ function checkAsset(gameDir: string, filePath: string, ref: unknown, issues: Iss
   }
 }
 
-function validateAtlasAsset(gameDir: string, filePath: string, ref: unknown, issues: Issue[], requireAnimationTags = false): void {
+function validateAtlasAsset(
+  gameDir: string,
+  filePath: string,
+  ref: unknown,
+  issues: Issue[],
+  options: { requireAnimationTags?: boolean; requireGameAssetsMaker?: boolean; expressions?: Record<string, unknown> | null } = {},
+): void {
   if (typeof ref !== 'string' || ref.length === 0 || /^https?:\/\//.test(ref)) return
   const resolved = resolveAsset(gameDir, ref)
   if (!existsSync(resolved)) return
   try {
     const atlas = JSON.parse(readFileSync(resolved, 'utf8')) as unknown
-    for (const issue of validateAsepriteAtlas(atlas, { requireAnimationTags })) {
+    const atlasOptions: { requireAnimationTags?: boolean; requireGameAssetsMaker?: boolean } = {}
+    if (options.requireAnimationTags !== undefined) atlasOptions.requireAnimationTags = options.requireAnimationTags
+    if (options.requireGameAssetsMaker !== undefined) atlasOptions.requireGameAssetsMaker = options.requireGameAssetsMaker
+    for (const issue of validateAsepriteAtlas(atlas, atlasOptions)) {
       issues.push({
         severity: issue.code === 'atlas_version_unsupported' ? 'error' : 'warning',
         path: filePath,
@@ -176,6 +185,7 @@ function validateAtlasAsset(gameDir: string, filePath: string, ref: unknown, iss
         suggestion: 'Regenerate the atlas with `bun manager/cli.ts assets character-atlas` or align it with aseprite-atlas-v1.',
       })
     }
+    validateExpressionReferences(filePath, atlas, options.expressions, issues)
   } catch (e) {
     const err = e instanceof Error ? e : new Error(String(e))
     issues.push({
@@ -185,6 +195,32 @@ function validateAtlasAsset(gameDir: string, filePath: string, ref: unknown, iss
       message: `Invalid character atlas JSON: ${ref}: ${err.message}`,
       suggestion: 'Regenerate the atlas with `bun manager/cli.ts assets character-atlas` or fix the JSON syntax.',
     })
+  }
+}
+
+function validateExpressionReferences(filePath: string, atlas: unknown, expressions: Record<string, unknown> | null | undefined, issues: Issue[]): void {
+  if (!expressions) return
+  const tags = new Set(getAsepriteFrameTags(atlas as Parameters<typeof getAsepriteFrameTags>[0]).map(tag => tag.name))
+  for (const [expression, rawTag] of Object.entries(expressions)) {
+    if (typeof rawTag !== 'string') {
+      issues.push({
+        severity: 'error',
+        path: filePath,
+        code: 'atlas_expression_invalid',
+        message: `Expression "${expression}" must reference a frame tag string.`,
+        suggestion: 'Set each animation.expressions value to an Aseprite frameTag or generated frame name.',
+      })
+      continue
+    }
+    if (!tags.has(rawTag)) {
+      issues.push({
+        severity: 'warning',
+        path: filePath,
+        code: 'atlas_expression_missing',
+        message: `Expression "${expression}" references missing atlas frame tag "${rawTag}".`,
+        suggestion: 'Update animation.expressions or regenerate the atlas with matching sprite names/frameTags.',
+      })
+    }
   }
 }
 
@@ -333,8 +369,11 @@ function validateDataFile(
       validateRendererReference(rendererDeclarations, filePath, 'character', animation['type'], issues)
       checkAsset(gameDir, filePath, animation['file'], issues, 'Character animation file')
       checkAsset(gameDir, filePath, animation['atlas'], issues, 'Character atlas')
-      if (animation['type'] === 'spritesheet') {
-        validateAtlasAsset(gameDir, filePath, animation['atlas'], issues)
+      if (animation['type'] === 'spritesheet' || animation['type'] === 'aseprite-character-atlas') {
+        validateAtlasAsset(gameDir, filePath, animation['atlas'], issues, {
+          requireGameAssetsMaker: animation['type'] === 'aseprite-character-atlas',
+          expressions: asRecord(animation['expressions']),
+        })
       }
       const sprites = asRecord(animation['sprites'])
       if (sprites) {
