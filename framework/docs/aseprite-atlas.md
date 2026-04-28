@@ -53,7 +53,7 @@ This lets `animation.expressions.neutral: neutral` resolve correctly without han
 Games can opt into the official renderer profile:
 
 ```ts
-import { officialPlugins } from '../../framework/plugins/prebuilt/index.ts'
+import { officialPlugins } from '../../framework/plugins.ts'
 
 plugins: [
   officialPlugins.asepriteCharacterAtlas(),

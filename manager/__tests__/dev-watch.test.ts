@@ -12,7 +12,7 @@ function makeWatchGame(gameId: string): void {
   mkdirSync(join(gameDir, 'story/en'), { recursive: true })
   mkdirSync(join(gameDir, 'data/scenes'), { recursive: true })
   mkdirSync(join(gameDir, 'assets/scenes/default'), { recursive: true })
-  writeFileSync(join(gameDir, 'game.config.ts'), `import type { GameConfig } from '../../framework/types/game-config.d.ts'
+  writeFileSync(join(gameDir, 'game.config.ts'), `import type { GameConfig } from '../../framework/types.ts'
 
 const config: GameConfig = {
   id: '${gameId}',

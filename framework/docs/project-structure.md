@@ -128,8 +128,7 @@ Minimal by design — the framework handles everything after mount:
   <div id="root"></div>
   <script type="module">
     import config from './game.config.ts'
-    import { GameEngine } from '../../framework/engine/GameEngine.ts'
-    import { mountVnApp } from '../../framework/components/VnApp.tsx'
+    import { GameEngine, mountVnApp } from '../../framework/index.ts'
 
     const engine = await GameEngine.init(config)
     mountVnApp(engine, document.getElementById('root'))

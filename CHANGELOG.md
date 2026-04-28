@@ -74,6 +74,8 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Official `asepriteCharacterAtlas` prebuilt plugin for CLI-generated ComfyUI GameAssetsMaker character atlases.
 - `doctor` validation for Aseprite atlas expression references and GameAssetsMaker atlas contracts.
 - Packaging roadmap covering future package names, semver policy, official plugin changelogs and `pluginApi` migrations.
+- Public local framework entrypoints: `framework/index.ts`, `framework/engine.ts`, `framework/react.ts`, `framework/plugins.ts` and `framework/types.ts`.
+- Public entrypoint smoke tests proving `smoke-fixture` can type against framework exports without deep runtime imports.
 
 ### Changed
 
@@ -98,3 +100,5 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Built-in visual components now consult external renderer registrations before showing unsupported renderer fallbacks.
 - Build manifests now include plugin-declared Ink tags.
 - `smoke-fixture` now exercises the official screen effects plugin in browser smoke coverage.
+- `smoke-fixture`, `mi-novela`, new game scaffolds and author-facing docs now use public framework entrypoints.
+- `GameConfig` public types now align `distribution.mode` with the schema and remove broad `any` escape hatches.

@@ -5,7 +5,7 @@ Prebuilt plugins are official framework extensions that games can opt into expli
 They are not loaded automatically. A game must import the factory and add the returned descriptor to `plugins`.
 
 ```ts
-import { officialPlugins } from '../../framework/plugins/prebuilt/index.ts'
+import { officialPlugins } from '../../framework/plugins.ts'
 
 plugins: [
   officialPlugins.inkWashBackground(),

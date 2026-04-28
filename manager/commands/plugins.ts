@@ -1,11 +1,9 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
 import { join, relative, resolve } from 'path'
 import { pathToFileURL } from 'url'
-import { validatePluginManifest } from '../../framework/plugins/PluginRegistry.ts'
-import { officialPluginCatalog } from '../../framework/plugins/prebuilt/index.ts'
-import type { GameConfig } from '../../framework/types/game-config.d.ts'
-import type { VnPluginDescriptor, VnPluginManifest } from '../../framework/types/plugins.d.ts'
-import type { OfficialPluginCategory, OfficialPluginStatus } from '../../framework/plugins/prebuilt/index.ts'
+import { officialPluginCatalog, validatePluginManifest } from '../../framework/plugins.ts'
+import type { OfficialPluginCategory, OfficialPluginStatus, VnPluginDescriptor, VnPluginManifest } from '../../framework/plugins.ts'
+import type { GameConfig } from '../../framework/types.ts'
 
 const ROOT = new URL('../../', import.meta.url).pathname.replace(/\/$/, '')
 
@@ -121,7 +119,7 @@ function scaffoldFiles(pluginId: string, template: PluginTemplate): { config: st
   if (template === 'renderer') {
     return {
       indexName: 'index.tsx',
-      config: `import type { VnPluginManifest } from '../../framework/types/plugins.d.ts'
+      config: `import type { VnPluginManifest } from '../../framework/plugins.ts'
 
 const manifest: VnPluginManifest = {
   id: '${pluginId}',
@@ -136,8 +134,7 @@ const manifest: VnPluginManifest = {
 
 export default manifest
 `,
-      index: `import type { BackgroundRendererProps } from '../../framework/renderers/RendererRegistry.ts'
-import type { VnPluginModule } from '../../framework/types/plugins.d.ts'
+      index: `import type { BackgroundRendererProps, VnPluginModule } from '../../framework/plugins.ts'
 
 function ${title.replace(/[^A-Za-z0-9]/g, '')}Background({ background, resolveAsset }: BackgroundRendererProps) {
   const image = typeof background.image === 'string' ? resolveAsset(background.image) : null
@@ -183,7 +180,7 @@ describe('${pluginId}', () => {
   if (template === 'ui') {
     return {
       indexName: 'index.tsx',
-      config: `import type { VnPluginManifest } from '../../framework/types/plugins.d.ts'
+      config: `import type { VnPluginManifest } from '../../framework/plugins.ts'
 
 const manifest: VnPluginManifest = {
   id: '${pluginId}',
@@ -198,8 +195,7 @@ const manifest: VnPluginManifest = {
 
 export default manifest
 `,
-      index: `import type { OverlayRendererProps } from '../../framework/renderers/RendererRegistry.ts'
-import type { VnPluginModule } from '../../framework/types/plugins.d.ts'
+      index: `import type { OverlayRendererProps, VnPluginModule } from '../../framework/plugins.ts'
 
 function ${title.replace(/[^A-Za-z0-9]/g, '')}Overlay({ id }: OverlayRendererProps) {
   return (
@@ -231,7 +227,7 @@ describe('${pluginId}', () => {
 
   return {
     indexName: 'index.ts',
-    config: `import type { VnPluginManifest } from '../../framework/types/plugins.d.ts'
+    config: `import type { VnPluginManifest } from '../../framework/plugins.ts'
 
 const manifest: VnPluginManifest = {
   id: '${pluginId}',
@@ -245,7 +241,7 @@ const manifest: VnPluginManifest = {
 
 export default manifest
 `,
-    index: `import type { VnPluginModule } from '../../framework/types/plugins.d.ts'
+    index: `import type { VnPluginModule } from '../../framework/plugins.ts'
 
 const plugin: VnPluginModule = {
   setup(context) {
@@ -315,7 +311,7 @@ function listOfficialPlugins(flags: Record<string, string | boolean> = {}): void
   for (const plugin of plugins) {
     console.log(`${plugin.id.padEnd(34)} ${plugin.category.padEnd(10)} ${plugin.status.padEnd(13)} ${rendererDefinitionSummary(plugin.renderers).padEnd(24)} ${tagDefinitionSummary(plugin.tags).padEnd(16)} ${plugin.description}`)
   }
-  console.log('\nImport from framework/plugins/prebuilt/index.ts and declare the factory in game.config.ts.\n')
+  console.log('\nImport from framework/plugins.ts and declare the factory in game.config.ts.\n')
 }
 
 async function listPlugins(gameId: string): Promise<void> {

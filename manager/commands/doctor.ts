@@ -7,7 +7,7 @@ import { getAsepriteFrameTags, validateAsepriteAtlas } from '../../framework/eng
 import { validatePluginManifest } from '../../framework/plugins/PluginRegistry.ts'
 import { CORE_TAGS } from '../../framework/plugins/TagRegistry.ts'
 import { validateJsonSchema } from '../schemaValidator.ts'
-import type { GameConfig } from '../../framework/types/game-config.d.ts'
+import type { GameConfig } from '../../framework/types.ts'
 import type { TagCommand } from '../../framework/TagParser.ts'
 
 const ROOT = new URL('../../', import.meta.url).pathname.replace(/\/$/, '')

@@ -49,8 +49,7 @@ When you need a different layout, additional screens, or behaviour that CSS cann
 ```tsx
 // games/my-novel/index.html inline module can import this component,
 // or you can move the boot code to main.tsx.
-import { GameEngine } from '../../framework/engine/GameEngine.ts'
-import { mountVnApp } from '../../framework/components/VnApp.tsx'
+import { GameEngine, mountVnApp } from '../../framework/index.ts'
 import type { VnStartMenuProps } from '../../framework/components/VnStartMenu.tsx'
 import config from './game.config.ts'
 
@@ -78,8 +77,7 @@ mountVnApp(engine, document.getElementById('root')!, {
 
 ```tsx
 import { forwardRef, useImperativeHandle } from 'react'
-import { GameEngine } from '../../framework/engine/GameEngine.ts'
-import { mountVnApp } from '../../framework/components/VnApp.tsx'
+import { GameEngine, mountVnApp } from '../../framework/index.ts'
 import type { VnDialogHandle, VnDialogProps } from '../../framework/components/VnDialog.tsx'
 import config from './game.config.ts'
 
@@ -142,7 +140,7 @@ See `framework/docs/plugins.md` for the renderer registry contract.
 You can use `GameEngine`, `ScriptRunner`, `SaveManager`, and `EventBus` independently of any UI component:
 
 ```ts
-import { GameEngine } from '../../framework/engine/GameEngine.ts'
+import { GameEngine } from '../../framework/engine.ts'
 import config from './game.config.ts'
 
 const engine = await GameEngine.init(config)

@@ -36,8 +36,7 @@ function writeMinimalGame(gameId: string, configExtra = '', sceneBackground = 't
   <div id="root"></div>
   <script type="module">
     import config from './game.config.ts'
-    import { GameEngine } from '../../framework/engine/GameEngine.ts'
-    import { mountVnApp } from '../../framework/components/VnApp.tsx'
+    import { GameEngine, mountVnApp } from '../../framework/index.ts'
 
     const engine = await GameEngine.init(config)
     mountVnApp(engine, document.getElementById('root'))
@@ -52,7 +51,7 @@ background:
     ${sceneBackground}
 ---
 `)
-  writeFileSync(join(dir, 'game.config.ts'), `import type { GameConfig } from '../../framework/types/game-config.d.ts'
+  writeFileSync(join(dir, 'game.config.ts'), `import type { GameConfig } from '../../framework/types.ts'
 
 const config: GameConfig = {
   id: '${gameId}',
@@ -121,7 +120,7 @@ describe('plugins command helpers', () => {
     const configPath = join(gameDir(validGameId), 'game.config.ts')
     mkdirSync(join(gameDir(validGameId), 'plugins/ink-wash'), { recursive: true })
     writeFileSync(join(gameDir(validGameId), 'plugins/ink-wash/index.ts'), 'export default {}\n')
-    writeFileSync(configPath, `import type { GameConfig } from '../../framework/types/game-config.d.ts'
+    writeFileSync(configPath, `import type { GameConfig } from '../../framework/types.ts'
 
 const config: GameConfig = {
   id: '${validGameId}',

@@ -16,7 +16,7 @@ Use scoped packages when the project is ready to publish:
 The current local imports stay supported during development:
 
 ```ts
-import { officialPlugins } from '../../framework/plugins/prebuilt/index.ts'
+import { officialPlugins } from '../../framework/plugins.ts'
 ```
 
 Future published-game imports should become:
@@ -99,9 +99,10 @@ Package publishing should be a shallow import migration:
 
 | Today | Future |
 |---|---|
-| `../../framework/engine/GameEngine.ts` | `@vn-experiment/core/engine` |
-| `../../framework/components/VnApp.tsx` | `@vn-experiment/core/react` |
-| `../../framework/plugins/prebuilt/index.ts` | `@vn-experiment/plugins` |
+| `../../framework/index.ts` | `@vn-experiment/core` |
+| `../../framework/engine.ts` | `@vn-experiment/core/engine` |
+| `../../framework/react.ts` | `@vn-experiment/core/react` |
+| `../../framework/plugins.ts` | `@vn-experiment/plugins` |
 | `bun manager/cli.ts build my-game` | `vnx build my-game` or `bunx @vn-experiment/manager build my-game` |
 
 Do not implement a remote marketplace in this step. Official plugins remain explicit imports and local game plugins remain trusted local code.

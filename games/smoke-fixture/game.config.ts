@@ -1,5 +1,5 @@
-import { officialPlugins } from '../../framework/plugins/prebuilt/index.ts'
-import type { GameConfig } from '../../framework/types/game-config.d.ts'
+import { officialPlugins } from '../../framework/plugins.ts'
+import type { GameConfig } from '../../framework/types.ts'
 
 const config: GameConfig = {
   id: 'smoke-fixture',

@@ -5,7 +5,7 @@
 ## Construction
 
 ```ts
-import { GameEngine } from '../framework/engine/GameEngine.ts'
+import { GameEngine } from '../framework/engine.ts'
 import config from './game.config.ts'
 
 const engine = await GameEngine.init(config)

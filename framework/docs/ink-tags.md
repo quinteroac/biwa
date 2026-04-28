@@ -109,7 +109,7 @@ plugins: [
 Register the handler in the plugin:
 
 ```ts
-import type { VnPluginModule } from '../../../framework/types/plugins.d.ts'
+import type { VnPluginModule } from '../../../framework/plugins.ts'
 
 const plugin: VnPluginModule = {
   setup({ tags, logger }) {

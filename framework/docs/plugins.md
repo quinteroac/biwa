@@ -5,7 +5,7 @@ Plugins let a game register trusted local extensions without forking the framewo
 The framework supports two plugin sources:
 
 - Local game plugins declared in `game.config.ts`.
-- Official prebuilt plugins imported explicitly from `framework/plugins/prebuilt/index.ts`.
+- Official prebuilt plugins imported explicitly from `framework/plugins.ts`.
 
 ## Declaring Plugins
 
@@ -33,7 +33,7 @@ plugins: [
 Official prebuilt plugins do not need a local `entry` because their module is imported from the framework:
 
 ```ts
-import { officialPlugins } from '../../framework/plugins/prebuilt/index.ts'
+import { officialPlugins } from '../../framework/plugins.ts'
 
 plugins: [
   officialPlugins.inkWashBackground(),
@@ -75,7 +75,7 @@ Supported capabilities:
 Plugin modules may export `setup` and `dispose`:
 
 ```ts
-import type { VnPluginModule } from '../../../framework/types/plugins.d.ts'
+import type { VnPluginModule } from '../../../framework/plugins.ts'
 
 const plugin: VnPluginModule = {
   setup(context) {
@@ -205,7 +205,7 @@ bun manager/cli.ts doctor my-game
 Plugins with the `renderer` capability can register external visual renderers during `setup()`.
 
 ```tsx
-import type { VnPluginModule } from '../../../framework/types/plugins.d.ts'
+import type { VnPluginModule } from '../../../framework/plugins.ts'
 
 const plugin: VnPluginModule = {
   setup({ rendererRegistry }) {
@@ -284,7 +284,7 @@ plugins: [
 Register handlers during setup:
 
 ```ts
-import type { VnPluginModule } from '../../../framework/types/plugins.d.ts'
+import type { VnPluginModule } from '../../../framework/plugins.ts'
 
 const plugin: VnPluginModule = {
   setup({ tags, logger }) {
@@ -313,7 +313,7 @@ Custom tags cannot override core framework tags such as `scene`, `character`, `b
 The first official prebuilt renderer is `officialPlugins.inkWashBackground()`. It registers the `background` renderer type `ink-wash`.
 
 ```ts
-import { officialPlugins } from '../../framework/plugins/prebuilt/index.ts'
+import { officialPlugins } from '../../framework/plugins.ts'
 
 const config = {
   plugins: [

@@ -50,8 +50,7 @@ export async function newGame(gameId?: string, title?: string): Promise<void> {
   <div id="root"></div>
   <script type="module">
     import config from './game.config.ts'
-    import { GameEngine } from '../../framework/engine/GameEngine.ts'
-    import { mountVnApp } from '../../framework/components/VnApp.tsx'
+    import { GameEngine, mountVnApp } from '../../framework/index.ts'
 
     const engine = await GameEngine.init(config)
     mountVnApp(engine, document.getElementById('root'))
@@ -62,7 +61,7 @@ export async function newGame(gameId?: string, title?: string): Promise<void> {
 
   // game.config.ts
   write(join(gameDir, 'game.config.ts'), `// games/${gameId}/game.config.ts
-import type { GameConfig } from '../../framework/types/game-config.d.ts'
+import type { GameConfig } from '../../framework/types.ts'
 
 const config: GameConfig = {
   id:          '${gameId}',

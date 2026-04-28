@@ -17,7 +17,7 @@ games/
 The file must have a default export of a `GameConfig` object:
 
 ```ts
-import type { GameConfig } from '../../framework/types/game-config.d.ts'
+import type { GameConfig } from '../../framework/types.ts'
 
 const config: GameConfig = { ... }
 
@@ -353,7 +353,7 @@ At startup, `GameEngine.init(config)` processes the config in this order:
 7. **Mounts components** — attaches Web Components to the DOM stage.
 
 ```js
-// framework/engine/GameEngine.ts
+// framework/engine.ts
 import config from '../../games/my-novel/game.config.ts'
 
 await GameEngine.init(config)

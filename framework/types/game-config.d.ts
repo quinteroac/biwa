@@ -1,5 +1,16 @@
 import type { VnPluginDescriptor } from './plugins.d.ts';
 
+export type GameConfigLazyModule = () => Promise<Record<string, unknown>>;
+export type DistributionMode = 'standalone' | 'portal' | 'static' | 'embedded';
+
+export interface GameThemeConfig {
+  font?: string;
+  dialogBg?: string;
+  accent?: string;
+  cssVars?: Record<string, string>;
+  [key: string]: unknown;
+}
+
 export interface GameConfig {
   id: string;
   title: string;
@@ -17,15 +28,9 @@ export interface GameConfig {
     minigames?: string;
     [key: string]: string | undefined;
   };
-  minigames?: Record<string, (() => Promise<any>) | string>;
+  minigames?: Record<string, GameConfigLazyModule | string>;
   plugins?: VnPluginDescriptor[];
-  theme?: {
-    font?: string;
-    dialogBg?: string;
-    accent?: string;
-    cssVars?: Record<string, string>;
-    [key: string]: any;
-  };
+  theme?: GameThemeConfig;
   saves?: {
     slots?: number;
     autoSave?: boolean;
@@ -43,10 +48,9 @@ export interface GameConfig {
     message?: string;
   };
   distribution?: {
-    mode?: 'standalone' | 'portal' | 'static' | 'embedded' | string;
+    mode?: DistributionMode;
     basePath?: string;
   };
-  [key: string]: any;
 }
 
 declare const config: GameConfig;
