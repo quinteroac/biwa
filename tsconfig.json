@@ -26,6 +26,6 @@
     "verbatimModuleSyntax": true,
     "types": ["bun-types"]
   },
-  "include": ["framework/**/*", "manager/**/*", "games/**/*"],
+  "include": ["framework/**/*", "manager/**/*", "games/**/*", "studio/**/*"],
   "exclude": ["dist", "node_modules", "framework/vendor"]
 }

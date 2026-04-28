@@ -87,6 +87,10 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - `doctor --strict`, category summaries and actionable next-step suggestions.
 - Shared overlay primitives for prebuilt panels, headers, buttons, inputs, selects and list rows.
 - Playwright overlay smoke screenshots for save/load, backlog, settings, gallery and music room.
+- Studio authoring roadmap that keeps the framework as runtime/source of truth.
+- Framework support roadmap for Studio-facing manager APIs, schemas, Ink tooling, asset tooling and preview contracts.
+- Initial VN Studio shell with Elysia API, React/Vite frontend, project dashboard and doctor diagnostics.
+- `studio`, `studio:api`, `studio:app` and `studio:build` scripts for local authoring tooling.
 
 ### Changed
 

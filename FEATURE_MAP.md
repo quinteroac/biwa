@@ -1,29 +1,187 @@
 # Feature Map
 
-Roadmap vivo del framework. Este documento contiene solo trabajo pendiente o no cerrado.
+Roadmap vivo del framework y tooling de autoria. Este documento contiene solo trabajo pendiente o no cerrado.
 
 El historial de lo ya implementado vive en `CHANGELOG.md`. Si una tarea se completa, debe salir de este mapa y entrar al changelog.
 
 ## Norte Actual
 
-El framework ya tiene una base tecnica estable para runtime, UI de jugador, datos, build y distribucion. El siguiente norte es convertir los plugins prebuilt en una libreria oficial de capacidades reutilizables que los juegos puedan activar explicitamente sin forkar el nucleo:
+El framework se mantiene como runtime, contrato de datos, CLI y sistema de plugins. El nuevo rumbo es construir un Studio de autoria encima del framework para generar, editar, validar y previsualizar novelas visuales sin crear un formato paralelo.
 
-- Mantener los entrypoints publicos y aliases tipo paquete alineados con el roadmap de publicacion.
-- Ampliar plugins oficiales solo cuando tengan contrato, fixture y documentacion.
-- Mantener tests en fixtures tecnicos, sin depender de completar `mi-novela`.
-- Registrar en `CHANGELOG.md` cada capacidad cerrada antes de limpiar este mapa.
+Regla principal:
+
+> Todo lo que el Studio produzca debe poder correr con el framework y la CLI sin abrir el Studio.
+
+Roadmaps de referencia:
+
+- `STUDIO_ROADMAP.md`: producto de autoria visual para crear VN.
+- `FRAMEWORK_ROADMAP.md`: limites y soporte que el framework debe exponer para el Studio.
 
 ## Pendientes
 
-No hay pendientes priorizados en este mapa. La siguiente pasada debe definir un nuevo bloque de trabajo antes de implementar.
+### P1 - Editor Ink Con Preview De Texto
+
+Objetivo: editar historia con Monaco y validar tags/assets mientras se escribe.
+
+Alcance:
+
+- Editor Monaco para archivos `.ink`.
+- Explorador de story por locale y archivo.
+- Preview simple de texto/dialogo y choices.
+- Autocompletado o insercion asistida de tags core.
+- Mostrar tags desconocidos usando la misma validacion del framework.
+- Acciones rapidas para insertar:
+  - cambio de escena.
+  - personaje/expresion.
+  - audio.
+  - efecto.
+  - unlock.
+
+Criterios de salida:
+
+- Se puede editar un Ink y ver preview textual.
+- `doctor` detecta cambios y reporta tags/assets faltantes.
+- El archivo guardado sigue siendo Ink compatible con la CLI.
+
+### P2 - Biblioteca De Assets Y Escenas
+
+Objetivo: administrar fondos, escenas y assets sin editar metadata manualmente.
+
+Alcance:
+
+- Biblioteca de assets por tipo: characters, scenes, audio, gallery, music, spritesheets.
+- Editor de metadata de escenas.
+- Preview de fondo con variantes, fit, position y poster.
+- Validacion visual de rutas faltantes.
+- Creacion de fichas de escenario:
+  - nombre.
+  - lugar.
+  - hora del dia.
+  - clima.
+  - mood.
+  - prompt base futuro.
+
+Criterios de salida:
+
+- Se puede crear/editar una escena desde UI.
+- El resultado usa los schemas actuales de `data/scenes`.
+- La preview usa los renderers del framework.
+
+### P3 - Creador De Personajes Y Atlas
+
+Objetivo: crear personajes desde ficha narrativa hasta contrato de sprites/atlas compatible con el framework.
+
+Alcance:
+
+- Ficha de personaje:
+  - nombre.
+  - rol.
+  - descripcion fisica.
+  - personalidad.
+  - paleta.
+  - vestuario.
+  - expresiones.
+  - prompt base futuro.
+- Editor de metadata `data/characters`.
+- Generacion de atlas JSON Aseprite/GameAssetsMaker desde UI.
+- Preview de spritesheet/atlas.
+- Mapper expresion narrativa -> frame/tag del atlas.
+- Ajustes visuales de personaje: escala, posicion, eje Y, offset.
+
+Criterios de salida:
+
+- Se puede crear un personaje completo sin editar archivos a mano.
+- El atlas generado conserva el formato que parsea el framework.
+- La preview coincide con `VnCharacter`.
+
+### P4 - Instalacion Y Configuracion De Plugins
+
+Objetivo: hacer que los plugins oficiales y locales sean instalables/configurables desde el Studio.
+
+Alcance:
+
+- Catalogo de plugins oficiales.
+- Filtros por categoria, estado y contrato.
+- Instalar/remover plugins en un proyecto.
+- Configuracion visual de opciones basicas.
+- Mostrar capacidades:
+  - renderers.
+  - Ink tags.
+  - overlays.
+  - player features.
+  - devtools.
+- Validar compatibilidad con `pluginApi`.
+
+Criterios de salida:
+
+- Un plugin oficial puede agregarse al proyecto desde UI.
+- `game.config.ts` queda actualizado con imports/declaraciones compatibles.
+- `doctor` confirma que los tags/renderers del plugin son validos.
+
+### P5 - Preview Jugable Y Build Desde Studio
+
+Objetivo: cerrar el ciclo de autoria con preview real, build y distribucion local.
+
+Alcance:
+
+- Preview embebido del juego.
+- Preview desde escena/knot cuando sea posible.
+- Panel de variables/runtime basico.
+- Build desde UI usando manager.
+- Historial local de builds.
+- Acceso a `manifest.json` y diagnosticos de distribucion.
+
+Criterios de salida:
+
+- El usuario puede editar, validar, previsualizar y construir desde el Studio.
+- La build producida es identica en contrato a la CLI.
+
+### P6 - Herramientas Avanzadas De Autoria
+
+Objetivo: mejorar productividad narrativa y control de calidad.
+
+Alcance:
+
+- Grafo de knots/choices.
+- Busqueda global por dialogo, speaker, tag, variable y asset.
+- Coverage narrativa de rutas alcanzables.
+- Simulacion de branches.
+- Notas/comentarios de guion.
+- Panel de saves/debug state.
+- Preparacion para localizacion.
+
+Criterios de salida:
+
+- El Studio ayuda a encontrar rutas rotas y contenido no usado.
+- Las herramientas siguen leyendo/escribiendo contratos del framework.
+
+### P7 - Generacion Asistida De Assets
+
+Objetivo: preparar la integracion futura con modelos de imagen sin bloquear el Studio base.
+
+Alcance:
+
+- Prompts versionados para personajes y escenarios.
+- Export de prompt packs.
+- Integracion futura con API de imagenes.
+- Cola de generacion y revision manual.
+- Asociacion de resultados generados a atlas/fondos existentes.
+
+Criterios de salida:
+
+- La generacion asistida es opcional.
+- El Studio puede operar completamente sin servicios externos.
 
 ## Fuera De Alcance Actual
 
-- Optimizar o completar assets de `mi-novela`.
-- Publicacion real como paquete npm hasta cerrar la politica de versionado.
-- Marketplace remoto o instalacion desde internet.
-- Sandbox fuerte para codigo de terceros no confiable.
-- ABI estable para binarios nativos o WebAssembly externo.
+- Reemplazar el framework o la CLI.
+- Crear un formato propietario alternativo a `game.config.ts`, Ink y data files.
+- Completar assets de `mi-novela`.
+- Publicacion npm real.
+- Marketplace remoto.
+- Edicion colaborativa en tiempo real.
+- Generacion de imagenes por API en la primera etapa del Studio.
+- Sandbox fuerte para codigo de plugins de terceros no confiables.
 
 ## Verificacion Base
 
