@@ -88,8 +88,8 @@ export function VnBacklog({ isOpen, entries, onClose, onClear, onReplayVoice }: 
             onChange={event => setSpeaker(event.currentTarget.value)}
             style={selectStyle}
           >
-            <option value="all">All speakers</option>
-            {speakers.map(name => <option key={name} value={name}>{name}</option>)}
+            <option value="all" style={optionStyle}>All speakers</option>
+            {speakers.map(name => <option key={name} value={name} style={optionStyle}>{name}</option>)}
           </select>
         </div>
 
@@ -149,6 +149,12 @@ const inputStyle = {
 const selectStyle = {
   ...inputStyle,
   cursor: 'pointer',
+  colorScheme: 'dark',
+} as const
+
+const optionStyle = {
+  background: '#201f1f',
+  color: '#e5e2e1',
 } as const
 
 const entryHeaderStyle = {
