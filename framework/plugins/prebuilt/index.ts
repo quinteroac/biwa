@@ -1,3 +1,4 @@
+import { devtoolsPlugin } from './devtools.ts'
 import { inkWashBackgroundPlugin } from './inkWashBackground.tsx'
 import { backlogEnhancerPlugin, galleryUnlocksPlugin, musicRoomPlugin, preferencesPanelPlugin } from './playerExperience.ts'
 import { atmosphereEffectsPlugin, screenEffectsPlugin } from './screenEffects.ts'
@@ -30,6 +31,7 @@ export const officialPlugins = {
   galleryUnlocks: galleryUnlocksPlugin,
   musicRoom: musicRoomPlugin,
   preferencesPanel: preferencesPanelPlugin,
+  devtools: devtoolsPlugin,
 }
 
 export const officialPluginCatalog: OfficialPluginDefinition[] = [
@@ -141,8 +143,24 @@ plugins: [
 ]`,
     factory: preferencesPanelPlugin,
   },
+  {
+    id: 'official-devtools',
+    name: 'Runtime Devtools',
+    category: 'devtools',
+    status: 'experimental',
+    description: 'Development-only runtime inspector for scene, variables, active characters, audio, plugins and renderers.',
+    capabilities: ['overlay', 'engine-event'],
+    importName: 'devtools',
+    configExample: `import { officialPlugins } from '<framework/plugins/prebuilt>'
+
+plugins: [
+  officialPlugins.devtools(),
+]`,
+    factory: devtoolsPlugin,
+  },
 ]
 
+export { devtoolsPlugin } from './devtools.ts'
 export { inkWashBackgroundPlugin } from './inkWashBackground.tsx'
 export { backlogEnhancerPlugin, galleryUnlocksPlugin, musicRoomPlugin, preferencesPanelPlugin } from './playerExperience.ts'
 export { atmosphereEffectsPlugin, screenEffectsPlugin } from './screenEffects.ts'

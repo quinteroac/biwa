@@ -627,6 +627,16 @@ function validatePluginConfig(gameDir: string, config: GameConfig, issues: Issue
     }
     ids.add(plugin.id)
 
+    if (plugin.id === 'official-devtools') {
+      issues.push({
+        severity: 'warning',
+        path,
+        code: 'devtools_plugin_enabled',
+        message: 'Official runtime devtools plugin is enabled.',
+        suggestion: 'Use officialPlugins.devtools() only in development builds or suppress this warning intentionally.',
+      })
+    }
+
     if (plugin.entry && /^https?:\/\//.test(plugin.entry)) {
       issues.push({
         severity: 'error',

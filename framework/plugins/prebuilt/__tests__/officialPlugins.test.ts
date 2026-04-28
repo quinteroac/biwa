@@ -10,6 +10,7 @@ describe('official prebuilt plugins', () => {
   it('exposes a catalog of explicit plugin factories', () => {
     expect(officialPluginCatalog.map(plugin => plugin.id)).toContain('official-ink-wash-background')
     expect(officialPluginCatalog.map(plugin => plugin.id)).toContain('official-backlog-enhancer')
+    expect(officialPluginCatalog.map(plugin => plugin.id)).toContain('official-devtools')
   })
 
   it('keeps catalog metadata complete and unique', () => {
@@ -81,5 +82,13 @@ describe('official prebuilt plugins', () => {
       expect(manifest.capabilities).toEqual(['overlay', 'engine-event'])
       expect(typeof module.setup).toBe('function')
     }
+  })
+
+  it('loads runtime devtools as a devtools catalog plugin', async () => {
+    const { manifest, module } = await loadPluginDescriptor(officialPlugins.devtools())
+
+    expect(manifest.id).toBe('official-devtools')
+    expect(manifest.capabilities).toEqual(['overlay', 'engine-event'])
+    expect(typeof module.setup).toBe('function')
   })
 })

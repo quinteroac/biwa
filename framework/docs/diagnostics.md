@@ -47,6 +47,7 @@ The default output is human-readable. `--json` emits a stable report for editor 
 | `story_reference_unknown` | An Ink tag references an unknown id. | Create matching data or change the tag. |
 | `config_id_missing` | `game.config.ts` has no `id`. | Set a lowercase slug. |
 | `config_title_missing` | `game.config.ts` has no `title`. | Set the player-facing title. |
+| `devtools_plugin_enabled` | Official runtime devtools plugin is declared. | Keep `officialPlugins.devtools()` development-only or suppress intentionally. |
 | `config_default_locale_missing` | `story.defaultLocale` is missing. | Set it to one of `story.locales` keys. |
 | `story_locale_path_missing` | A configured story locale path does not exist. | Create the `.ink` file or update the path. |
 | `story_default_locale_unmapped` | The default locale has no matching story path. | Make `defaultLocale` match a key in `story.locales`. |

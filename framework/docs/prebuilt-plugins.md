@@ -33,6 +33,7 @@ bun manager/cli.ts plugins official --status experimental
 | `official-gallery-unlocks` | `officialPlugins.galleryUnlocks()` | `player` | `experimental` | `overlay`, `engine-event` | — | — |
 | `official-music-room` | `officialPlugins.musicRoom()` | `player` | `experimental` | `overlay`, `engine-event` | — | — |
 | `official-preferences-panel` | `officialPlugins.preferencesPanel()` | `player` | `experimental` | `overlay`, `engine-event` | — | — |
+| `official-devtools` | `officialPlugins.devtools()` | `devtools` | `experimental` | `overlay`, `engine-event` | — | — |
 
 ## Stability Policy
 
@@ -217,6 +218,34 @@ Unlocked tracks can be previewed and looped in the default music room overlay.
 - read-only skip.
 - high contrast.
 - reduced motion.
+
+## Runtime Devtools
+
+`officialPlugins.devtools()` enables a development-only runtime inspector.
+
+```ts
+plugins: [
+  ...(import.meta.env?.DEV ? [officialPlugins.devtools()] : []),
+]
+```
+
+The plugin emits `engine:diagnostics` snapshots and the default `VnStage` shows a compact `Dev` dock when the plugin is active. Snapshots include:
+
+- runtime state.
+- current scene and variant.
+- Ink/runtime variables.
+- active characters.
+- active persistent audio.
+- declared plugins.
+- registered renderers.
+
+Authors or custom tooling can request a fresh snapshot through:
+
+```ts
+engine.bus.emit('engine:diagnostics:request', {})
+```
+
+`doctor` warns with `devtools_plugin_enabled` when the plugin is declared, so production builds can catch accidental inclusion. Suppress the warning only when the build is intentionally for development.
 
 ## Catalog Maintenance
 

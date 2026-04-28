@@ -2,6 +2,7 @@ import type { TagCommand } from '../TagParser.ts'
 import type { EngineState } from '../engine/GameEngine.ts'
 import type { PlayerUnlockState, UnlockKind } from './extras.d.ts'
 import type { BacklogEntry } from './save.d.ts'
+import type { RuntimeDiagnosticsSnapshot } from './diagnostics.d.ts'
 
 export interface EngineDialogEvent {
   text: string
@@ -66,6 +67,11 @@ export interface EngineEffectEvent {
   effect: Record<string, unknown>
 }
 
+export interface EngineDiagnosticsEvent {
+  source: 'devtools' | 'runtime'
+  snapshot: RuntimeDiagnosticsSnapshot
+}
+
 export interface EndScreenEvent {
   title?: string
   message?: string
@@ -88,6 +94,8 @@ export interface EngineEventMap {
   'engine:unlocks': EngineUnlocksEvent
   'engine:tag:unknown': EngineUnknownTagEvent
   'engine:effect': EngineEffectEvent
+  'engine:diagnostics': EngineDiagnosticsEvent
+  'engine:diagnostics:request': Record<string, never>
   'engine:end': Record<string, never>
   end_screen: EndScreenEvent
 }

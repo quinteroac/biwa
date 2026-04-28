@@ -70,6 +70,7 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - `VnEffectsLayer` for stacked temporary and persistent visual effects.
 - Official player experience prebuilt profiles: `backlogEnhancer`, `galleryUnlocks`, `musicRoom` and `preferencesPanel`.
 - Enhanced backlog overlay with search, speaker filtering and voice replay for voiced lines.
+- Official `devtools` prebuilt plugin with runtime diagnostics snapshots and a default `VnStage` inspector dock.
 
 ### Changed
 

@@ -15,7 +15,9 @@ import type { BacklogEntry, GameSaveState, SavedAudioState, SavedCharacterState,
 import type { GameConfig } from '../types/game-config.d.ts'
 import type { TagCommand } from './ScriptRunner.ts'
 import type { EngineEventMap } from '../types/events.d.ts'
+import type { RuntimeDiagnosticsSnapshot } from '../types/diagnostics.d.ts'
 import type { GalleryItem, MusicRoomTrack, PlayerUnlockState, ReplayScene, UnlockKind } from '../types/extras.d.ts'
+import type { VnPluginRendererDeclarations } from '../types/plugins.d.ts'
 
 const STATE = Object.freeze({
   IDLE:       'IDLE',
@@ -186,6 +188,33 @@ export class GameEngine {
 
   getReplayScenes(): ReplayScene[] {
     return Object.entries(this.#data.replay).map(([id, data]) => normalizeReplayScene(id, data))
+  }
+
+  getDiagnosticsSnapshot(): RuntimeDiagnosticsSnapshot {
+    return {
+      state: this.#state,
+      scene: {
+        id: this.#currentSceneId,
+        variant: this.#currentSceneVariant,
+      },
+      variables: this.#vars.snapshot(),
+      characters: Array.from(this.#currentCharacters.values()).map(character => ({ ...character })),
+      audio: { ...this.#currentAudio },
+      plugins: this.#pluginRegistry.list().map(record => ({
+        id: record.manifest.id,
+        name: record.manifest.name,
+        version: record.manifest.version,
+        active: record.active,
+        capabilities: [...record.manifest.capabilities],
+        renderers: normalizeRendererDiagnostics(record.manifest.renderers),
+        tags: [...(record.manifest.tags ?? [])],
+      })),
+      renderers: createPluginContext(this, this.#bus, './assets/', this.#tagRegistry).rendererRegistry.list().map(renderer => ({
+        kind: renderer.kind,
+        type: renderer.type,
+        ...(renderer.pluginId ? { pluginId: renderer.pluginId } : {}),
+      })),
+    }
   }
 
   clearBacklog(): void {
@@ -646,6 +675,11 @@ export class GameEngine {
 function readString(data: Record<string, unknown>, key: string): string | undefined {
   const value = data[key]
   return typeof value === 'string' && value.length > 0 ? value : undefined
+}
+
+function normalizeRendererDiagnostics(renderers: VnPluginRendererDeclarations | undefined): Record<string, string[]> {
+  if (!renderers) return {}
+  return Object.fromEntries(Object.entries(renderers).map(([kind, values]) => [kind, [...values]]))
 }
 
 function normalizeGalleryItem(id: string, data: Record<string, unknown>): GalleryItem {

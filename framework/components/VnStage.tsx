@@ -11,6 +11,7 @@ import { VnSettings } from './VnSettings.tsx'
 import { VnGallery } from './VnGallery.tsx'
 import { VnMusicRoom } from './VnMusicRoom.tsx'
 import { effectDurationMs, VnEffectsLayer } from './VnEffectsLayer.tsx'
+import { VnDevtoolsOverlay } from './VnDevtoolsOverlay.tsx'
 import { SaveControlsBar } from './SaveControlsBar.tsx'
 import { getStageAdvanceAction } from './VnStageAdvance.ts'
 import { getAutoDelayMs, getAutoModeAction, getSkipModeAction } from './VnPlayerModes.ts'
@@ -26,6 +27,7 @@ import type { PlayerInputMap } from './VnInputMap.ts'
 import type { PlayerPreferencesPatch, PlayerPreferencesState } from '../player/PlayerPreferences.ts'
 import type { GalleryItem, MusicRoomTrack, PlayerUnlockState, ReplayScene } from '../types/extras.d.ts'
 import type { EngineEffectEvent } from '../types/events.d.ts'
+import type { RuntimeDiagnosticsSnapshot } from '../types/diagnostics.d.ts'
 import type { VnEffectState } from './VnEffectsLayer.tsx'
 
 export interface CharacterState {
@@ -73,6 +75,7 @@ interface PlayerFeatureEngine {
   getGalleryItems?: () => GalleryItem[]
   getMusicTracks?: () => MusicRoomTrack[]
   getReplayScenes?: () => ReplayScene[]
+  plugins?: { get?: (id: string) => unknown }
 }
 
 function getPlayerFeatureEngine(engine: GameEngine): PlayerFeatureEngine {
@@ -105,6 +108,10 @@ function getEngineMusicTracks(engine: GameEngine): MusicRoomTrack[] {
 
 function getEngineReplayScenes(engine: GameEngine): ReplayScene[] {
   return getPlayerFeatureEngine(engine).getReplayScenes?.() ?? []
+}
+
+function hasDevtoolsPlugin(engine: GameEngine): boolean {
+  return Boolean(getPlayerFeatureEngine(engine).plugins?.get?.('official-devtools'))
 }
 
 function recordValue(value: unknown): Record<string, unknown> | null {
@@ -228,6 +235,7 @@ export interface VnStageComponents {
   Gallery?: typeof VnGallery
   MusicRoom?: typeof VnMusicRoom
   EffectsLayer?: typeof VnEffectsLayer
+  Devtools?: typeof VnDevtoolsOverlay
 }
 
 export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, showAutoSave = true, resumeFrom, inputMap, components = {} }: VnStageProps) {
@@ -244,6 +252,7 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
   const GalleryComponent = components.Gallery ?? VnGallery
   const MusicRoomComponent = components.MusicRoom ?? VnMusicRoom
   const EffectsLayerComponent = components.EffectsLayer ?? VnEffectsLayer
+  const DevtoolsComponent = components.Devtools ?? VnDevtoolsOverlay
   const engineStorageId = getEngineStorageId(engine)
   const preferencesStore = useMemo(() => new PlayerPreferences(engineStorageId), [engineStorageId])
   const resolvedInputMap = useMemo(() => mergePlayerInputMap(inputMap), [inputMap])
@@ -263,6 +272,7 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
   const [choices, setChoices]       = useState<StepChoice[] | null>(null)
   const [transition, setTransition] = useState<TransitionState | null>(null)
   const [effects, setEffects] = useState<VnEffectState[]>([])
+  const [diagnostics, setDiagnostics] = useState<RuntimeDiagnosticsSnapshot | null>(null)
   const dialogRef = useRef<VnDialogHandle>(null)
   const audioRef  = useRef(new AudioManager())
   const effectTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
@@ -349,6 +359,10 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
           setEffects(prev => prev.filter(item => item.key !== key))
         }, effectDurationMs(effect))
         effectTimersRef.current.push(timer)
+      }),
+
+      bus.on('engine:diagnostics', ({ snapshot }) => {
+        setDiagnostics(snapshot)
       }),
 
       bus.on<{ id: string } & Record<string, unknown>>('engine:bgm',      ({ id, ...data }) => audio.playBgm(id, data as AudioPlaybackData)),
@@ -611,6 +625,13 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
             engine.restoreState(state)
           }}
         />
+
+        {hasDevtoolsPlugin(engine) && (
+          <DevtoolsComponent
+            snapshot={diagnostics}
+            onRefresh={() => engine.bus.emit('engine:diagnostics:request', {})}
+          />
+        )}
 
         <div
           style={{

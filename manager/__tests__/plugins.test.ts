@@ -204,4 +204,18 @@ export default config
     const valid = await validateGame(validGameId)
     expect(valid.issues.map(issue => issue.code)).not.toContain('tag_unknown')
   })
+
+  it('doctor warns when official devtools is declared', async () => {
+    const gameId = 'plugin-devtools-warning'
+    writeMinimalGame(gameId, `plugins: [{
+    id: 'official-devtools',
+    name: 'Runtime Devtools',
+    version: '0.1.0',
+    type: 'plugin',
+    capabilities: ['overlay', 'engine-event'],
+  }],`)
+
+    const result = await validateGame(gameId)
+    expect(result.issues.map(issue => issue.code)).toContain('devtools_plugin_enabled')
+  })
 })

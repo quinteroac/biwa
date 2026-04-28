@@ -26,6 +26,7 @@ const engine = await GameEngine.init(config)
 | `bus` | `EventBus<EngineEventMap>` | Typed event bus for runtime/UI communication. |
 | `vars` | `VariableStore` | Runtime variable store mirrored from save snapshots. |
 | `state` | `EngineState` | Current high-level runtime state. |
+| `getDiagnosticsSnapshot()` | `RuntimeDiagnosticsSnapshot` | Development snapshot for devtools and diagnostics plugins. |
 | `data` | `GameData` | Loaded character, scene, audio and minigame metadata. |
 | `title` | `string` | Player-facing title from `game.config.ts`. |
 | `saveManager` | `SaveManager` | Namespaced save/load manager for this game. |
@@ -58,6 +59,8 @@ The engine emits a typed `EngineEventMap` from `framework/types/events.d.ts`.
 | `engine:sfx` | SFX tag plus resolved audio data when available. |
 | `engine:ambience` | Ambience tag plus resolved audio data when available. |
 | `engine:voice` | Voice tag plus resolved audio data when available. |
+| `engine:diagnostics` | Runtime diagnostics snapshot emitted by devtools. |
+| `engine:diagnostics:request` | Request a fresh runtime diagnostics snapshot. |
 | `engine:transition` | Transition config and completion callback. |
 | `engine:minigame:start` | Minigame id and merged tag/config payload. |
 | `engine:minigame:end` | Minigame result or error. |

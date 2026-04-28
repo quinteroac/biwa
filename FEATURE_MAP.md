@@ -20,29 +20,7 @@ El framework ya tiene una base tecnica estable para runtime, UI de jugador, dato
 
 ## Pendientes
 
-### P1 - Devtools Y Diagnostico En Runtime
-
-Objetivo: ofrecer herramientas oficiales para autores mientras desarrollan.
-
-Alcance:
-
-- `officialPlugins.devtools()`:
-  - inspector de escena actual.
-  - variables Ink/runtime.
-  - personajes activos.
-  - audio activo.
-  - plugins y renderers registrados.
-- Modo dev-only recomendado:
-  - docs para activarlo solo en desarrollo.
-  - advertencia si se incluye en build de produccion.
-- Eventos de diagnostico estables para plugins.
-
-Criterios de salida:
-
-- Un autor puede depurar una escena sin abrir internals del engine.
-- `doctor` o build advierte si devtools se empaqueta accidentalmente.
-
-### P2 - Assets Y Generacion Asistida
+### P1 - Assets Y Generacion Asistida
 
 Objetivo: conectar el flujo de assets que ya existe con plugins oficiales de render.
 
@@ -63,7 +41,7 @@ Criterios de salida:
 - El formato ComfyUI/GameAssetsMaker queda como contrato documentado del framework.
 - El motor, doctor y plugin oficial aceptan el mismo formato.
 
-### P3 - Packaging Futuro
+### P2 - Packaging Futuro
 
 Objetivo: preparar publicacion sin implementarla antes de cerrar versionado.
 
