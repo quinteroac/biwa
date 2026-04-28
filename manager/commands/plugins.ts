@@ -306,10 +306,10 @@ function listOfficialPlugins(flags: Record<string, string | boolean> = {}): void
     console.log('No official plugins match the selected filters.\n')
     return
   }
-  console.log(`${'ID'.padEnd(34)} ${'Category'.padEnd(10)} ${'Status'.padEnd(13)} ${'Renderers'.padEnd(24)} ${'Tags'.padEnd(16)} Description`)
-  console.log('─'.repeat(120))
+  console.log(`${'ID'.padEnd(34)} ${'Category'.padEnd(10)} ${'Status'.padEnd(13)} ${'Contract'.padEnd(9)} ${'Renderers'.padEnd(24)} ${'Tags'.padEnd(16)} Description`)
+  console.log('─'.repeat(132))
   for (const plugin of plugins) {
-    console.log(`${plugin.id.padEnd(34)} ${plugin.category.padEnd(10)} ${plugin.status.padEnd(13)} ${rendererDefinitionSummary(plugin.renderers).padEnd(24)} ${tagDefinitionSummary(plugin.tags).padEnd(16)} ${plugin.description}`)
+    console.log(`${plugin.id.padEnd(34)} ${plugin.category.padEnd(10)} ${plugin.status.padEnd(13)} ${plugin.contract.padEnd(9)} ${rendererDefinitionSummary(plugin.renderers).padEnd(24)} ${tagDefinitionSummary(plugin.tags).padEnd(16)} ${plugin.description}`)
   }
   console.log('\nImport from framework/plugins.ts and declare the factory in game.config.ts.\n')
 }

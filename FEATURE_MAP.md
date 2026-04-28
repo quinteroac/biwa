@@ -20,35 +20,6 @@ El framework ya tiene una base tecnica estable para runtime, UI de jugador, dato
 
 ## Pendientes
 
-### P1 - Pulido De Plugins Oficiales
-
-Objetivo: elevar los plugins oficiales de "experimental funcional" a una libreria coherente y testeable.
-
-Hallazgos:
-
-- Hay 9 plugins oficiales en catalogo, todos `experimental`.
-- Varios plugins de experiencia de jugador son perfiles documentales sobre UI core, no extension points reales todavia.
-- `overlay` y `extras` estan declarados como renderer kinds, pero la documentacion indica que siguen reservados.
-- Los plugins oficiales no tienen fixtures por plugin, solo pruebas unitarias del catalogo.
-
-Alcance:
-
-- Definir criterio para promover un plugin de `experimental` a `stable`.
-- Crear fixtures minimos por categoria:
-  - renderer: `inkWashBackground`, `asepriteCharacterAtlas`.
-  - effects: `screenEffects`, `atmosphereEffects`.
-  - player: backlog/gallery/music/preferences.
-  - devtools: inspector activo.
-- Separar plugins "perfil declarativo" vs plugins que registran runtime real.
-- Decidir si `backlogEnhancer`, `galleryUnlocks`, `musicRoom` y `preferencesPanel` deben registrar extension points propios o renombrarse como presets/perfiles.
-- Completar dispatch real para `overlay`/`extras` o sacarlos del alcance de plugins publicos.
-
-Criterios de salida:
-
-- Cada plugin oficial tiene prueba/fixture que demuestre su uso recomendado.
-- El catalogo comunica claramente si un plugin registra runtime, declara contrato o ambas cosas.
-- Al menos los plugins maduros pueden pasar a `stable` con criterios escritos.
-
 ### P2 - Ergonomia De Autor En CLI Y Devtools
 
 Objetivo: reducir friccion para autores al crear, diagnosticar y probar juegos/plugins.

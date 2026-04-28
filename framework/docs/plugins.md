@@ -70,6 +70,13 @@ Supported capabilities:
 - `asset-loader`
 - `ink-tag`
 
+Official prebuilt plugins also publish catalog metadata with a `contract` field:
+
+- `runtime`: registers behavior such as renderers, Ink tags or diagnostics listeners.
+- `profile`: documents an opt-in framework profile backed by existing core UI.
+
+Renderer declarations are public for `background`, `character` and `transition`. `overlay` and `extras` are reserved until the player UI extension model is finalized.
+
 ## Module Contract
 
 Plugin modules may export `setup` and `dispose`:

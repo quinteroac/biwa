@@ -24,17 +24,17 @@ bun manager/cli.ts plugins official --category player
 bun manager/cli.ts plugins official --status experimental
 ```
 
-| ID | Factory | Category | Status | Capabilities | Renderers | Tags |
-|----|---------|----------|--------|--------------|-----------|------|
-| `official-ink-wash-background` | `officialPlugins.inkWashBackground()` | `renderer` | `experimental` | `renderer` | `background:ink-wash` | — |
-| `official-screen-effects` | `officialPlugins.screenEffects()` | `effects` | `experimental` | `ink-tag` | — | `effect` |
-| `official-atmosphere-effects` | `officialPlugins.atmosphereEffects()` | `effects` | `experimental` | `ink-tag` | — | `atmosphere` |
-| `official-backlog-enhancer` | `officialPlugins.backlogEnhancer()` | `player` | `experimental` | `overlay`, `engine-event` | — | — |
-| `official-gallery-unlocks` | `officialPlugins.galleryUnlocks()` | `player` | `experimental` | `overlay`, `engine-event` | — | — |
-| `official-music-room` | `officialPlugins.musicRoom()` | `player` | `experimental` | `overlay`, `engine-event` | — | — |
-| `official-preferences-panel` | `officialPlugins.preferencesPanel()` | `player` | `experimental` | `overlay`, `engine-event` | — | — |
-| `official-devtools` | `officialPlugins.devtools()` | `devtools` | `experimental` | `overlay`, `engine-event` | — | — |
-| `official-aseprite-character-atlas` | `officialPlugins.asepriteCharacterAtlas()` | `asset` | `experimental` | `renderer`, `asset-loader` | `character:aseprite-character-atlas` | — |
+| ID | Factory | Category | Status | Contract | Capabilities | Renderers | Tags |
+|----|---------|----------|--------|----------|--------------|-----------|------|
+| `official-ink-wash-background` | `officialPlugins.inkWashBackground()` | `renderer` | `stable` | `runtime` | `renderer` | `background:ink-wash` | — |
+| `official-screen-effects` | `officialPlugins.screenEffects()` | `effects` | `stable` | `runtime` | `ink-tag` | — | `effect` |
+| `official-atmosphere-effects` | `officialPlugins.atmosphereEffects()` | `effects` | `stable` | `runtime` | `ink-tag` | — | `atmosphere` |
+| `official-backlog-enhancer` | `officialPlugins.backlogEnhancer()` | `player` | `experimental` | `profile` | `overlay`, `engine-event` | — | — |
+| `official-gallery-unlocks` | `officialPlugins.galleryUnlocks()` | `player` | `experimental` | `profile` | `overlay`, `engine-event` | — | — |
+| `official-music-room` | `officialPlugins.musicRoom()` | `player` | `experimental` | `profile` | `overlay`, `engine-event` | — | — |
+| `official-preferences-panel` | `officialPlugins.preferencesPanel()` | `player` | `experimental` | `profile` | `overlay`, `engine-event` | — | — |
+| `official-devtools` | `officialPlugins.devtools()` | `devtools` | `experimental` | `runtime` | `overlay`, `engine-event` | — | — |
+| `official-aseprite-character-atlas` | `officialPlugins.asepriteCharacterAtlas()` | `asset` | `stable` | `runtime` | `renderer`, `asset-loader` | `character:aseprite-character-atlas` | — |
 
 ## Stability Policy
 
@@ -43,6 +43,13 @@ Statuses describe the public contract of each official plugin:
 - `stable`: safe for long-lived game content. Breaking changes need a migration note.
 - `experimental`: usable, tested and documented, but options may still change before package publishing.
 - `planned`: reserved catalog entry for a plugin that is not implemented yet.
+
+Promotion to `stable` requires:
+
+- a documented data, Ink tag or renderer contract.
+- a minimum fixture test proving the recommended setup path.
+- runtime behavior that is owned by the plugin, or a deliberate `profile` contract that says the plugin documents existing core UI.
+- no dependency on unfinished game content such as `mi-novela`.
 
 The current plugin API is `vn-plugin-api-v1`. Official plugins must declare that API in their manifest compatibility metadata.
 
@@ -55,6 +62,17 @@ Future package publishing, plugin changelog sections and `pluginApi` migration r
 - `player`: player-facing VN features such as backlog, gallery, music room or preferences.
 - `devtools`: authoring and runtime inspection tools.
 - `asset`: helpers tied to asset formats or generation workflows.
+
+## Contracts
+
+Official catalog entries use one of two contracts:
+
+- `runtime`: the plugin registers runtime behavior, such as a renderer, Ink tag handler or diagnostics event listener.
+- `profile`: the plugin is an explicit preset/profile for core player UI that already exists in the framework. These are useful for project policy and manifests, but they do not yet own a separate renderer dispatch path.
+
+Current player plugins are intentionally `profile` plugins. Promote them to `stable` only after either adding plugin-owned extension points or keeping them documented permanently as presets.
+
+`background`, `character` and `transition` are the public external renderer kinds today. `overlay` and `extras` remain reserved while the framework settles the player UI extension model.
 
 ## Ink Wash Background
 

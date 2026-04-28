@@ -76,6 +76,8 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Packaging roadmap covering future package names, semver policy, official plugin changelogs and `pluginApi` migrations.
 - Public local framework entrypoints: `framework/index.ts`, `framework/engine.ts`, `framework/react.ts`, `framework/plugins.ts` and `framework/types.ts`.
 - Public entrypoint smoke tests proving `smoke-fixture` can type against framework exports without deep runtime imports.
+- Official prebuilt plugin catalog contract metadata for `runtime` versus `profile` plugins.
+- Minimum official plugin fixture coverage for renderers, effects, player profiles and devtools.
 
 ### Changed
 
@@ -102,3 +104,6 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - `smoke-fixture` now exercises the official screen effects plugin in browser smoke coverage.
 - `smoke-fixture`, `mi-novela`, new game scaffolds and author-facing docs now use public framework entrypoints.
 - `GameConfig` public types now align `distribution.mode` with the schema and remove broad `any` escape hatches.
+- Mature official runtime plugins promoted to `stable`: `inkWashBackground`, `screenEffects`, `atmosphereEffects` and `asepriteCharacterAtlas`.
+- Official player experience plugins are now documented as experimental preset profiles until player UI extension points settle.
+- `plugins official` now displays each official plugin contract beside category, status, renderers and tags.

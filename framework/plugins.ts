@@ -45,6 +45,7 @@ export {
 } from './plugins/prebuilt/index.ts'
 export type {
   OfficialPluginCategory,
+  OfficialPluginContract,
   OfficialPluginDefinition,
   OfficialPluginStatus,
 } from './plugins/prebuilt/index.ts'
