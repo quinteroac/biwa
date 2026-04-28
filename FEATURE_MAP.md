@@ -20,24 +20,15 @@ El framework ya tiene una base tecnica estable para runtime, UI de jugador, dato
 
 ## Pendientes
 
-### P1 - Packaging Futuro
+No hay pendientes priorizados en este mapa despues del cierre de Packaging Futuro.
 
-Objetivo: preparar publicacion sin implementarla antes de cerrar versionado.
+Para abrir el siguiente ciclo, hacer un nuevo recorrido del framework y crear un mapa con foco en:
 
-Alcance:
-
-- Diseno de nombres de paquete:
-  - core framework.
-  - plugins oficiales.
-  - templates.
-- Politica semver de plugins oficiales.
-- Estrategia de changelog por plugin.
-- Plan de migraciones cuando `pluginApi` cambie.
-
-Criterios de salida:
-
-- Hay una decision documentada para pasar de imports locales a paquetes publicables.
-- No se implementa marketplace remoto en esta fase.
+- estabilidad de APIs publicas.
+- pulido de plugins oficiales.
+- ergonomia de autor en CLI/devtools.
+- calidad visual de componentes prebuilt.
+- preparacion real de publicacion si ya se decide salir del modo local.
 
 ## Fuera De Alcance Actual
 

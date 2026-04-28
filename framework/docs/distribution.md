@@ -111,3 +111,9 @@ https://example.com/
 ```
 
 Because runtime paths are relative, both layouts work.
+
+## Future Package Publishing
+
+The current build copies local framework source into `dist/<gameId>/`. Future npm-style publishing is planned but not implemented in this phase.
+
+The packaging decision lives in [packaging-roadmap.md](./packaging-roadmap.md), including package names, semver policy, official plugin changelogs and `pluginApi` migration steps.

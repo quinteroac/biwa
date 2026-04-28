@@ -46,6 +46,8 @@ Statuses describe the public contract of each official plugin:
 
 The current plugin API is `vn-plugin-api-v1`. Official plugins must declare that API in their manifest compatibility metadata.
 
+Future package publishing, plugin changelog sections and `pluginApi` migration rules are tracked in [packaging-roadmap.md](./packaging-roadmap.md).
+
 ## Categories
 
 - `renderer`: visual renderers for backgrounds, characters, transitions, overlays or extras.

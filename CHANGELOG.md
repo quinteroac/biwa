@@ -73,6 +73,7 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Official `devtools` prebuilt plugin with runtime diagnostics snapshots and a default `VnStage` inspector dock.
 - Official `asepriteCharacterAtlas` prebuilt plugin for CLI-generated ComfyUI GameAssetsMaker character atlases.
 - `doctor` validation for Aseprite atlas expression references and GameAssetsMaker atlas contracts.
+- Packaging roadmap covering future package names, semver policy, official plugin changelogs and `pluginApi` migrations.
 
 ### Changed
 

@@ -350,6 +350,8 @@ Version recommendations until public package publishing exists:
 
 When the framework introduces a new plugin API contract, `doctor` will reject unsupported values so games fail early.
 
+See [packaging-roadmap.md](./packaging-roadmap.md) for the package split, official plugin changelog policy and `pluginApi` migration plan.
+
 ## External Renderer Recipes
 
 When integrating rendering libraries:

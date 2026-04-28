@@ -59,6 +59,7 @@ See [framework/docs/distribution.md](framework/docs/distribution.md).
 - [Project structure](framework/docs/project-structure.md)
 - [Customizing components](framework/docs/customizing-components.md)
 - [Distribution](framework/docs/distribution.md)
+- [Packaging roadmap](framework/docs/packaging-roadmap.md)
 
 ## Feature Matrix
 
