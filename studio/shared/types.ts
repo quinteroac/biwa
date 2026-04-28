@@ -187,3 +187,34 @@ export interface StudioCharacterAtlasResponse {
   atlas: StudioCharacterAtlasSummary
   character: StudioCharacterItem
 }
+
+export type StudioPluginCategory = 'renderer' | 'effects' | 'player' | 'devtools' | 'asset'
+export type StudioPluginStatus = 'stable' | 'experimental' | 'planned'
+export type StudioPluginContract = 'runtime' | 'profile' | 'local'
+
+export interface StudioPluginCatalogItem {
+  id: string
+  name: string
+  category: StudioPluginCategory | 'local'
+  status: StudioPluginStatus | 'local'
+  contract: StudioPluginContract
+  description: string
+  capabilities: string[]
+  renderers: Record<string, string[]>
+  tags: string[]
+  importName: string | null
+  configExample: string
+  installed: boolean
+  removable: boolean
+  compatible: boolean
+  compatibilityMessage: string
+}
+
+export interface StudioPluginsResponse {
+  plugins: StudioPluginCatalogItem[]
+}
+
+export interface StudioPluginMutationResponse {
+  plugins: StudioPluginCatalogItem[]
+  diagnostics: DoctorJsonReport
+}

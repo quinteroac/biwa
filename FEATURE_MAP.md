@@ -19,30 +19,6 @@ Roadmaps de referencia:
 
 ## Pendientes
 
-### P4 - Instalacion Y Configuracion De Plugins
-
-Objetivo: hacer que los plugins oficiales y locales sean instalables/configurables desde el Studio.
-
-Alcance:
-
-- Catalogo de plugins oficiales.
-- Filtros por categoria, estado y contrato.
-- Instalar/remover plugins en un proyecto.
-- Configuracion visual de opciones basicas.
-- Mostrar capacidades:
-  - renderers.
-  - Ink tags.
-  - overlays.
-  - player features.
-  - devtools.
-- Validar compatibilidad con `pluginApi`.
-
-Criterios de salida:
-
-- Un plugin oficial puede agregarse al proyecto desde UI.
-- `game.config.ts` queda actualizado con imports/declaraciones compatibles.
-- `doctor` confirma que los tags/renderers del plugin son validos.
-
 ### P5 - Preview Jugable Y Build Desde Studio
 
 Objetivo: cerrar el ciclo de autoria con preview real, build y distribucion local.

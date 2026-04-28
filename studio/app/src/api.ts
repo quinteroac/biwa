@@ -8,6 +8,8 @@ import type {
   StudioSceneDraft,
   StudioSceneResponse,
   StudioScenesResponse,
+  StudioPluginMutationResponse,
+  StudioPluginsResponse,
   StudioProjectResponse,
   StudioProjectsResponse,
   StudioStoryListResponse,
@@ -102,5 +104,25 @@ export function generateCharacterAtlas(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path, character }),
+  })
+}
+
+export function fetchPlugins(gameId: string): Promise<StudioPluginsResponse> {
+  return requestJson<StudioPluginsResponse>(`/api/projects/${gameId}/plugins`)
+}
+
+export function installPlugin(gameId: string, importName: string): Promise<StudioPluginMutationResponse> {
+  return requestJson<StudioPluginMutationResponse>(`/api/projects/${gameId}/plugins/install`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ importName }),
+  })
+}
+
+export function removePlugin(gameId: string, importName: string): Promise<StudioPluginMutationResponse> {
+  return requestJson<StudioPluginMutationResponse>(`/api/projects/${gameId}/plugins/remove`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ importName }),
   })
 }

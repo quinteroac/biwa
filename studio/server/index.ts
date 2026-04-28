@@ -6,6 +6,7 @@ import { listStoryFiles, readStoryFile, writeStoryFile } from './story.ts'
 import { listAssets, resolveAssetFile } from './assets.ts'
 import { listScenes, readScene, writeScene } from './scenes.ts'
 import { generateCharacterAtlas, listCharacters, readCharacter, writeCharacter } from './characters.ts'
+import { installOfficialPlugin, listStudioPlugins, removeOfficialPlugin } from './plugins.ts'
 
 function jsonError(message: string, status = 500): Response {
   return Response.json({ error: message }, { status })
@@ -168,6 +169,34 @@ export const studioApi = new Elysia()
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e))
       return jsonError(err.message, err.message.includes('not found') ? 404 : 400)
+    }
+  })
+  .get('/api/projects/:gameId/plugins', async ({ params }) => {
+    try {
+      return await listStudioPlugins(params.gameId)
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, err.message.includes('does not exist') ? 404 : 400)
+    }
+  })
+  .post('/api/projects/:gameId/plugins/install', async ({ body, params }) => {
+    try {
+      const payload = body as { importName?: unknown }
+      if (typeof payload.importName !== 'string') throw new Error('Missing official plugin importName.')
+      return await installOfficialPlugin(params.gameId, payload.importName)
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, 400)
+    }
+  })
+  .post('/api/projects/:gameId/plugins/remove', async ({ body, params }) => {
+    try {
+      const payload = body as { importName?: unknown }
+      if (typeof payload.importName !== 'string') throw new Error('Missing official plugin importName.')
+      return await removeOfficialPlugin(params.gameId, payload.importName)
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, 400)
     }
   })
 

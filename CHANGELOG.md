@@ -100,6 +100,9 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Studio Characters section with character sheet editing, runtime metadata controls, sprite preview and atlas summaries.
 - Studio Elysia APIs for character frontmatter read/write and GameAssetsMaker-compatible atlas generation.
 - Studio character tests covering metadata persistence, preview URLs and atlas mapping updates.
+- Studio Plugins section with official/local plugin catalog filters, capability details and install/remove actions.
+- Studio Elysia APIs for editing official plugin declarations in `game.config.ts` and returning doctor diagnostics.
+- Studio plugin tests covering catalog state, official plugin installation and removal.
 
 ### Changed
 
