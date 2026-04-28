@@ -55,3 +55,55 @@ export interface StudioStoryResponse {
   preview: StudioStoryPreviewLine[]
   tagSuggestions: string[]
 }
+
+export type StudioAssetKind = 'characters' | 'scenes' | 'audio' | 'gallery' | 'music' | 'spritesheets' | 'other'
+
+export interface StudioAssetItem {
+  path: string
+  kind: StudioAssetKind
+  extension: string
+  size: number
+  previewUrl: string | null
+}
+
+export interface StudioAssetsResponse {
+  assets: StudioAssetItem[]
+}
+
+export interface StudioSceneItem {
+  path: string
+  id: string
+  displayName: string
+  description: string
+  location: string
+  timeOfDay: string
+  weather: string
+  mood: string
+  prompt: string
+  thumbnail: string
+  background?: Record<string, unknown>
+  previewUrl: string | null
+  body: string
+}
+
+export interface StudioSceneDraft {
+  id: string
+  displayName: string
+  description: string
+  location: string
+  timeOfDay: string
+  weather: string
+  mood: string
+  prompt: string
+  thumbnail: string
+  background: Record<string, unknown>
+  body?: string
+}
+
+export interface StudioScenesResponse {
+  scenes: StudioSceneItem[]
+}
+
+export interface StudioSceneResponse {
+  scene: StudioSceneItem
+}

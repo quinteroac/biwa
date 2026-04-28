@@ -168,6 +168,7 @@ Esta capa llega despues de tener el Studio base.
 - Asset library.
 - Editor de escenas.
 - Preview visual basico.
+- Siguiente mejora: crear escenas nuevas desde UI y soporte completo para variantes/parallax/video.
 
 ### Fase 4 - Personajes
 

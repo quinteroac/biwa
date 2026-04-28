@@ -19,30 +19,6 @@ Roadmaps de referencia:
 
 ## Pendientes
 
-### P2 - Biblioteca De Assets Y Escenas
-
-Objetivo: administrar fondos, escenas y assets sin editar metadata manualmente.
-
-Alcance:
-
-- Biblioteca de assets por tipo: characters, scenes, audio, gallery, music, spritesheets.
-- Editor de metadata de escenas.
-- Preview de fondo con variantes, fit, position y poster.
-- Validacion visual de rutas faltantes.
-- Creacion de fichas de escenario:
-  - nombre.
-  - lugar.
-  - hora del dia.
-  - clima.
-  - mood.
-  - prompt base futuro.
-
-Criterios de salida:
-
-- Se puede crear/editar una escena desde UI.
-- El resultado usa los schemas actuales de `data/scenes`.
-- La preview usa los renderers del framework.
-
 ### P3 - Creador De Personajes Y Atlas
 
 Objetivo: crear personajes desde ficha narrativa hasta contrato de sprites/atlas compatible con el framework.

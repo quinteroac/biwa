@@ -1,5 +1,9 @@
 import type {
   StudioDoctorResponse,
+  StudioAssetsResponse,
+  StudioSceneDraft,
+  StudioSceneResponse,
+  StudioScenesResponse,
   StudioProjectResponse,
   StudioProjectsResponse,
   StudioStoryListResponse,
@@ -46,5 +50,25 @@ export function saveStoryFile(gameId: string, path: string, content: string): Pr
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path, content }),
+  })
+}
+
+export function fetchAssets(gameId: string): Promise<StudioAssetsResponse> {
+  return requestJson<StudioAssetsResponse>(`/api/projects/${gameId}/assets`)
+}
+
+export function fetchScenes(gameId: string): Promise<StudioScenesResponse> {
+  return requestJson<StudioScenesResponse>(`/api/projects/${gameId}/scenes`)
+}
+
+export function fetchScene(gameId: string, path: string): Promise<StudioSceneResponse> {
+  return requestJson<StudioSceneResponse>(`/api/projects/${gameId}/scenes/file?path=${encodeURIComponent(path)}`)
+}
+
+export function saveScene(gameId: string, path: string, scene: StudioSceneDraft): Promise<StudioSceneResponse> {
+  return requestJson<StudioSceneResponse>(`/api/projects/${gameId}/scenes/file`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path, scene }),
   })
 }

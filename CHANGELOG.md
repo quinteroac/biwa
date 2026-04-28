@@ -94,6 +94,9 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Studio Story section with Monaco Ink editing, story file explorer, safe read/write API and simple text/choice preview.
 - Studio quick insert controls for core Ink tags and common narrative actions.
 - Studio story API tests covering Ink listing, preview generation and path-safety checks.
+- Studio Scenes and Assets sections with scene metadata editing, background previews and categorized asset browsing.
+- Studio Elysia APIs for scene frontmatter read/write, safe asset serving and asset classification.
+- Studio scene/asset tests covering frontmatter persistence, preview URLs and framework asset categories.
 
 ### Changed
 
