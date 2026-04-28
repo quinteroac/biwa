@@ -4,6 +4,11 @@ import yaml from 'js-yaml'
 import { Compiler } from 'inkjs/compiler/Compiler.js'
 import { CompilerOptions } from 'inkjs/compiler/CompilerOptions.js'
 import { VN_PLUGIN_API_VERSION } from '../../framework/plugins/PluginRegistry.ts'
+import {
+  VN_FRAMEWORK_PACKAGE_ENTRYPOINTS,
+  VN_FRAMEWORK_PEER_DEPENDENCIES,
+  VN_FRAMEWORK_VERSION,
+} from '../../framework/version.ts'
 import { printIssues, summarizeIssues, validateGame } from './doctor.ts'
 
 const ROOT = new URL('../../', import.meta.url).pathname.replace(/\/$/, '')
@@ -356,6 +361,12 @@ function writeBuildManifest(
       strategy: 'esm-vendor-importmap',
       entry: 'index.html',
       wrappers: distributionWrapperFiles(mode),
+    },
+    framework: {
+      version: VN_FRAMEWORK_VERSION,
+      pluginApiVersion: VN_PLUGIN_API_VERSION,
+      packageEntrypoints: VN_FRAMEWORK_PACKAGE_ENTRYPOINTS,
+      peerDependencies: VN_FRAMEWORK_PEER_DEPENDENCIES,
     },
     pluginPolicy: {
       apiVersion: VN_PLUGIN_API_VERSION,

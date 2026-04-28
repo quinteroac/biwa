@@ -70,6 +70,11 @@ describe('P2 build modes and schema validation', () => {
     const manifest = readJson(distPath(gameId, 'manifest.json'))
     expect(manifest.distribution.mode).toBe('static')
     expect(manifest.distribution.wrappers).toEqual([])
+    expect(manifest.framework.version).toBe('0.1.0')
+    expect(manifest.framework.pluginApiVersion).toBe('vn-plugin-api-v1')
+    expect(manifest.framework.packageEntrypoints.core).toBe('@vn-experiment/core')
+    expect(manifest.framework.packageEntrypoints.plugins).toBe('@vn-experiment/plugins')
+    expect(manifest.framework.peerDependencies.react).toBe('^19.2.5')
   })
 
   it('build rejects unsupported mode values with an actionable error', () => {

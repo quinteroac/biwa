@@ -78,6 +78,11 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Public entrypoint smoke tests proving `smoke-fixture` can type against framework exports without deep runtime imports.
 - Official prebuilt plugin catalog contract metadata for `runtime` versus `profile` plugins.
 - Minimum official plugin fixture coverage for renderers, effects, player profiles and devtools.
+- Local package-style aliases for future `@vn-experiment/core`, `@vn-experiment/plugins` and `@vn-experiment/manager` imports.
+- Root private export map and package-style smoke tests for core, React, plugins and manager entrypoints.
+- Framework package metadata constants for version, expected entrypoints and peer dependencies.
+- Build manifest framework metadata with framework version, plugin API version, package entrypoints and peer dependencies.
+- Packaging roadmap notes for local package simulation, manifest metadata, peer dependencies and out-of-scope publishing work.
 - `plugins official --json` and `plugins official --example <pluginId|factoryName>` for plugin discovery.
 - `doctor --strict`, category summaries and actionable next-step suggestions.
 - Shared overlay primitives for prebuilt panels, headers, buttons, inputs, selects and list rows.

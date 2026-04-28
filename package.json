@@ -1,7 +1,16 @@
 {
   "name": "visual-novel-experiment",
+  "version": "0.1.0",
   "type": "module",
   "private": true,
+  "exports": {
+    ".": "./framework/index.ts",
+    "./engine": "./framework/engine.ts",
+    "./react": "./framework/react.ts",
+    "./plugins": "./framework/plugins.ts",
+    "./types": "./framework/types.ts",
+    "./manager": "./manager/index.ts"
+  },
   "scripts": {
     "dev": "bun manager/cli.ts dev",
     "build": "bun manager/cli.ts build",

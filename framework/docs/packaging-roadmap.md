@@ -107,13 +107,87 @@ Package publishing should be a shallow import migration:
 
 Do not implement a remote marketplace in this step. Official plugins remain explicit imports and local game plugins remain trusted local code.
 
+## Local Package Simulation
+
+The repository validates future package names before publishing by using TypeScript/Bun path aliases:
+
+| Future package import | Current local target |
+|---|---|
+| `@vn-experiment/core` | `framework/index.ts` |
+| `@vn-experiment/core/engine` | `framework/engine.ts` |
+| `@vn-experiment/core/react` | `framework/react.ts` |
+| `@vn-experiment/core/plugins` | `framework/plugins.ts` |
+| `@vn-experiment/core/types` | `framework/types.ts` |
+| `@vn-experiment/plugins` | `framework/plugins.ts` |
+| `@vn-experiment/manager` | `manager/index.ts` |
+
+The root `package.json` also exposes local entrypoints for the current private monolith:
+
+```json
+{
+  "exports": {
+    ".": "./framework/index.ts",
+    "./engine": "./framework/engine.ts",
+    "./react": "./framework/react.ts",
+    "./plugins": "./framework/plugins.ts",
+    "./types": "./framework/types.ts",
+    "./manager": "./manager/index.ts"
+  }
+}
+```
+
+`framework/__tests__/package-entrypoints.test.ts` is the package-style smoke fixture. It imports only package aliases and verifies core, React, plugins and manager entrypoints resolve without touching deep framework paths.
+
+## Runtime Manifest Metadata
+
+Build output records the local package contract in `dist/<gameId>/manifest.json`:
+
+```json
+{
+  "framework": {
+    "version": "0.1.0",
+    "pluginApiVersion": "vn-plugin-api-v1",
+    "packageEntrypoints": {
+      "core": "@vn-experiment/core",
+      "engine": "@vn-experiment/core/engine",
+      "react": "@vn-experiment/core/react",
+      "plugins": "@vn-experiment/plugins",
+      "manager": "@vn-experiment/manager"
+    },
+    "peerDependencies": {
+      "inkjs": "^2.3.0",
+      "react": "^19.2.5",
+      "react-dom": "^19.2.5"
+    }
+  }
+}
+```
+
+This metadata is informational until packages are published, but it gives builds, portals and diagnostics a stable place to read framework and plugin API compatibility.
+
+## Peer Dependencies
+
+Expected peer dependencies for the first package split:
+
+| Peer | Reason |
+|---|---|
+| `react` | Runtime UI components and mount helpers. |
+| `react-dom` | Browser renderer used by `mountVnApp`. |
+| `inkjs` | Story compilation and Ink runtime compatibility. |
+
+The current private repository still installs these dependencies directly. Published packages should declare them as peers and keep compatible development dependencies for local tests.
+
+## Out Of Scope Until Real Publishing
+
+- Publishing packages to npm.
+- Splitting the repository into workspaces or separate versioned package directories.
+- Replacing every fixture/game import with package aliases.
+- Remote plugin marketplace installation.
+- Locking a long-term binary or WebAssembly ABI.
+
 ## Pre-Publish Checklist
 
 Before turning this plan into actual packages:
 
-- Define public export maps for core, React components, plugin types and CLI entrypoints.
-- Add package-level smoke tests that import only public exports.
-- Ensure generated `dist/<gameId>/manifest.json` records package versions.
 - Decide whether templates are copied by the manager package or installed as a separate package dependency.
-- Document peer dependencies for React and Ink.
 - Keep `bun run verify` green after replacing one fixture with package-style imports.

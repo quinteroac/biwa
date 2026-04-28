@@ -1,4 +1,5 @@
 export * from './engine.ts'
 export * from './react.ts'
 export * from './plugins.ts'
+export * from './version.ts'
 export type * from './types.ts'
