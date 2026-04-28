@@ -1,6 +1,7 @@
 import type {
   StudioDoctorResponse,
   StudioAssetsResponse,
+  StudioAuthoringAnalysisResponse,
   StudioBuildMode,
   StudioBuildResponse,
   StudioBuildsResponse,
@@ -45,6 +46,11 @@ export function fetchProject(gameId: string): Promise<StudioProjectResponse> {
 
 export function runDoctor(gameId: string): Promise<StudioDoctorResponse> {
   return requestJson<StudioDoctorResponse>(`/api/projects/${gameId}/doctor`, { method: 'POST' })
+}
+
+export function fetchAuthoringAnalysis(gameId: string, query = ''): Promise<StudioAuthoringAnalysisResponse> {
+  const suffix = query.trim() ? `?q=${encodeURIComponent(query.trim())}` : ''
+  return requestJson<StudioAuthoringAnalysisResponse>(`/api/projects/${gameId}/authoring${suffix}`)
 }
 
 export function fetchBuilds(gameId: string): Promise<StudioBuildsResponse> {

@@ -8,6 +8,7 @@ import { listScenes, readScene, writeScene } from './scenes.ts'
 import { generateCharacterAtlas, listCharacters, readCharacter, writeCharacter } from './characters.ts'
 import { installOfficialPlugin, listStudioPlugins, removeOfficialPlugin } from './plugins.ts'
 import { getBuildManifest, getBuilds, previewFileExists, previewMime, resolvePreviewFile, runStudioBuild } from './builds.ts'
+import { analyzeAuthoring } from './authoring.ts'
 
 function jsonError(message: string, status = 500): Response {
   return Response.json({ error: message }, { status })
@@ -119,6 +120,15 @@ export const studioApi = new Elysia()
   .get('/api/projects/:gameId/builds/manifest', ({ params }) => {
     try {
       return getBuildManifest(params.gameId)
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, 400)
+    }
+  })
+  .get('/api/projects/:gameId/authoring', async ({ params, query }) => {
+    try {
+      const search = typeof query['q'] === 'string' ? query['q'] : ''
+      return await analyzeAuthoring(params.gameId, search)
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e))
       return jsonError(err.message, 400)

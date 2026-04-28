@@ -19,25 +19,6 @@ Roadmaps de referencia:
 
 ## Pendientes
 
-### P6 - Herramientas Avanzadas De Autoria
-
-Objetivo: mejorar productividad narrativa y control de calidad.
-
-Alcance:
-
-- Grafo de knots/choices.
-- Busqueda global por dialogo, speaker, tag, variable y asset.
-- Coverage narrativa de rutas alcanzables.
-- Simulacion de branches.
-- Notas/comentarios de guion.
-- Panel de saves/debug state.
-- Preparacion para localizacion.
-
-Criterios de salida:
-
-- El Studio ayuda a encontrar rutas rotas y contenido no usado.
-- Las herramientas siguen leyendo/escribiendo contratos del framework.
-
 ### P7 - Generacion Asistida De Assets
 
 Objetivo: preparar la integracion futura con modelos de imagen sin bloquear el Studio base.

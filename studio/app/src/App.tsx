@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchProjects, runDoctor } from './api.ts'
+import { AuthoringTools } from './AuthoringTools.tsx'
 import { BuildPreview } from './BuildPreview.tsx'
 import { CharacterDesigner } from './CharacterDesigner.tsx'
 import { PluginManager } from './PluginManager.tsx'
@@ -10,7 +11,7 @@ import { StoryEditor } from './StoryEditor.tsx'
 import type { StudioIconName } from './StudioIcon.tsx'
 import type { StudioProjectSummary } from '../../shared/types.ts'
 
-const sections = ['Overview', 'Story', 'Characters', 'Scenes', 'Assets', 'Plugins', 'Build/Preview']
+const sections = ['Overview', 'Story', 'Characters', 'Scenes', 'Assets', 'Plugins', 'Tools', 'Build/Preview']
 
 function sectionLabel(section: string): string {
   return section === 'Build/Preview' ? 'Build' : section
@@ -24,6 +25,7 @@ function sectionIcon(section: string): StudioIconName {
     Scenes: 'scenes',
     Assets: 'assets',
     Plugins: 'plugins',
+    Tools: 'settings',
     'Build/Preview': 'build',
   } as Record<string, StudioIconName>)[section] ?? 'overview'
 }
@@ -334,6 +336,7 @@ function ProjectOverview(props: {
   const isStory = props.activeSection === 'Story'
   const isCharacters = props.activeSection === 'Characters'
   const isPlugins = props.activeSection === 'Plugins'
+  const isTools = props.activeSection === 'Tools'
   const isBuildPreview = props.activeSection === 'Build/Preview'
   const isSceneLibrary = props.activeSection === 'Scenes' || props.activeSection === 'Assets'
   return (
@@ -359,6 +362,12 @@ function ProjectOverview(props: {
         />
       ) : isPlugins ? (
         <PluginManager
+          isRunningDoctor={props.isRunningDoctor}
+          onRunDoctor={props.onRunDoctor}
+          project={props.project}
+        />
+      ) : isTools ? (
+        <AuthoringTools
           isRunningDoctor={props.isRunningDoctor}
           onRunDoctor={props.onRunDoctor}
           project={props.project}

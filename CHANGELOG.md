@@ -108,6 +108,7 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Studio project summaries now expose description and cover metadata, with missing-cover placeholders in the Overview screen.
 - Studio Story preview now uses `@chenglou/pretext` for explicit multiline text layout.
 - Studio Build/Preview section with manager-backed builds, embedded playable preview, local build history, manifest access and distribution diagnostics.
+- Studio Tools section for advanced authoring with Ink graph analysis, global search, route coverage, branch samples, script notes, localization readiness and debug state.
 
 ### Changed
 

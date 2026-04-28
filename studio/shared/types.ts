@@ -271,3 +271,92 @@ export interface StudioManifestResponse {
   manifest: Record<string, unknown> | null
   manifestUrl: string | null
 }
+
+export type StudioAuthoringNodeKind = 'root' | 'knot'
+export type StudioAuthoringEdgeKind = 'choice' | 'divert'
+export type StudioSearchKind = 'dialogue' | 'speaker' | 'tag' | 'variable' | 'asset' | 'data' | 'script'
+
+export interface StudioAuthoringNode {
+  id: string
+  kind: StudioAuthoringNodeKind
+  locale: string
+  path: string
+  line: number
+  title: string
+}
+
+export interface StudioAuthoringEdge {
+  from: string
+  to: string
+  target: string
+  label: string
+  kind: StudioAuthoringEdgeKind
+  locale: string
+  path: string
+  line: number
+  resolved: boolean
+}
+
+export interface StudioAuthoringCoverage {
+  totalKnots: number
+  reachableKnots: number
+  unreachableKnots: StudioAuthoringNode[]
+  unresolvedEdges: StudioAuthoringEdge[]
+}
+
+export interface StudioAuthoringSearchResult {
+  path: string
+  line: number
+  kind: StudioSearchKind
+  snippet: string
+}
+
+export interface StudioAuthoringNote {
+  path: string
+  line: number
+  tag: string
+  text: string
+}
+
+export interface StudioAuthoringLocaleSummary {
+  locale: string
+  storyFiles: number
+  knots: number
+  choices: number
+  dialogueLines: number
+  missingFiles: string[]
+  extraFiles: string[]
+}
+
+export interface StudioAuthoringBranchStep {
+  node: string
+  via: string
+  kind: StudioAuthoringEdgeKind
+}
+
+export interface StudioAuthoringBranchPath {
+  id: string
+  steps: StudioAuthoringBranchStep[]
+  terminal: string
+  stoppedBy: 'end' | 'cycle' | 'depth'
+}
+
+export interface StudioAuthoringDebugState {
+  diagnostics: DoctorJsonReport['summary']
+  buildStatus: StudioBuildStatus | 'none'
+  buildMode: StudioBuildMode | null
+  manifestUrl: string | null
+}
+
+export interface StudioAuthoringAnalysisResponse {
+  graph: {
+    nodes: StudioAuthoringNode[]
+    edges: StudioAuthoringEdge[]
+  }
+  coverage: StudioAuthoringCoverage
+  search: StudioAuthoringSearchResult[]
+  notes: StudioAuthoringNote[]
+  localization: StudioAuthoringLocaleSummary[]
+  branches: StudioAuthoringBranchPath[]
+  debug: StudioAuthoringDebugState
+}
