@@ -103,6 +103,10 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Studio Plugins section with official/local plugin catalog filters, capability details and install/remove actions.
 - Studio Elysia APIs for editing official plugin declarations in `game.config.ts` and returning doctor diagnostics.
 - Studio plugin tests covering catalog state, official plugin installation and removal.
+- Framer-inspired `DESIGN.md` refresh for VN Studio with pure black canvas, Framer Blue accents and product-forward authoring rules.
+- SVG Studio icon set based on `icons.png`, used by the app logo, topbar actions, sidebar navigation and overview stat cards.
+- Studio project summaries now expose description and cover metadata, with missing-cover placeholders in the Overview screen.
+- Studio Story preview now uses `@chenglou/pretext` for explicit multiline text layout.
 
 ### Changed
 
@@ -134,3 +138,7 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - `plugins official` now displays each official plugin contract beside category, status, renderers and tags.
 - Devtools inspector now supports keyboard toggling, variable search, recent snapshot entries and copying diagnostics JSON.
 - Backlog, gallery, music room, settings and devtools overlays now share visual tokens and Escape/focus behavior where applicable.
+- VN Studio interface restyled around the Framer-inspired design system with pill controls, blue focus rings, dark product panels and responsive workspaces.
+- VN Studio layout now uses a top project/action header, dedicated section sidebar and dynamic main workspace.
+- VN Studio workspace header title removed so editors and previews have more vertical room; project context now lives in the top selector.
+- VN Studio Overview redesigned around identity, localization, plugin, statistics and diagnostics panels.

@@ -1,154 +1,346 @@
 ---
-name: Ethereal Overlay
+name: Framer Void Studio
 colors:
-  surface: '#131313'
-  surface-dim: '#131313'
-  surface-bright: '#3a3939'
-  surface-container-lowest: '#0e0e0e'
-  surface-container-low: '#1c1b1b'
-  surface-container: '#201f1f'
-  surface-container-high: '#2a2a2a'
-  surface-container-highest: '#353534'
-  on-surface: '#e5e2e1'
-  on-surface-variant: '#c4c7c8'
-  inverse-surface: '#e5e2e1'
-  inverse-on-surface: '#313030'
-  outline: '#8e9192'
-  outline-variant: '#444748'
-  surface-tint: '#c6c6c7'
-  primary: '#ffffff'
-  on-primary: '#2f3131'
-  primary-container: '#e2e2e2'
-  on-primary-container: '#636565'
-  inverse-primary: '#5d5f5f'
-  secondary: '#c7c6c6'
-  on-secondary: '#2f3131'
-  secondary-container: '#484949'
-  on-secondary-container: '#b8b8b8'
-  tertiary: '#ffffff'
-  on-tertiary: '#313030'
-  tertiary-container: '#e5e2e1'
-  on-tertiary-container: '#656464'
+  background: '#000000'
+  on-background: '#ffffff'
+  surface: '#000000'
+  surface-dim: '#000000'
+  surface-bright: '#090909'
+  surface-container-lowest: '#000000'
+  surface-container-low: '#050505'
+  surface-container: '#090909'
+  surface-container-high: '#101010'
+  surface-container-highest: '#161616'
+  on-surface: '#ffffff'
+  on-surface-variant: '#a6a6a6'
+  muted: '#a6a6a6'
+  tertiary-text: 'rgba(255, 255, 255, 0.6)'
+  outline: 'rgba(255, 255, 255, 0.14)'
+  outline-variant: 'rgba(255, 255, 255, 0.08)'
+  frosted: 'rgba(255, 255, 255, 0.1)'
+  frosted-hover: 'rgba(255, 255, 255, 0.5)'
+  primary: '#0099ff'
+  on-primary: '#ffffff'
+  primary-glow: 'rgba(0, 153, 255, 0.15)'
   error: '#ffb4ab'
-  on-error: '#690005'
-  error-container: '#93000a'
-  on-error-container: '#ffdad6'
-  primary-fixed: '#e2e2e2'
-  primary-fixed-dim: '#c6c6c7'
-  on-primary-fixed: '#1a1c1c'
-  on-primary-fixed-variant: '#454747'
-  secondary-fixed: '#e3e2e2'
-  secondary-fixed-dim: '#c7c6c6'
-  on-secondary-fixed: '#1a1c1c'
-  on-secondary-fixed-variant: '#464747'
-  tertiary-fixed: '#e5e2e1'
-  tertiary-fixed-dim: '#c8c6c5'
-  on-tertiary-fixed: '#1c1b1b'
-  on-tertiary-fixed-variant: '#474746'
-  background: '#131313'
-  on-background: '#e5e2e1'
-  surface-variant: '#353534'
+  on-error: '#000000'
 typography:
   display:
-    fontFamily: Manrope
+    fontFamily: '"GT Walsheim Framer Medium", "GT Walsheim Medium", Inter, system-ui, sans-serif'
+    fontSize: 72px
+    fontWeight: '500'
+    lineHeight: '0.9'
+    letterSpacing: -0.055em
+  h1:
+    fontFamily: '"GT Walsheim Framer Medium", "GT Walsheim Medium", Inter, system-ui, sans-serif'
     fontSize: 42px
-    fontWeight: '200'
+    fontWeight: '500'
+    lineHeight: '0.98'
+    letterSpacing: -0.045em
+  h2:
+    fontFamily: Inter, -apple-system, system-ui, sans-serif
+    fontSize: 24px
+    fontWeight: '500'
     lineHeight: '1.2'
     letterSpacing: -0.02em
-  h1:
-    fontFamily: Manrope
-    fontSize: 24px
-    fontWeight: '300'
-    lineHeight: '1.4'
-    letterSpacing: 0.05em
-  dialogue:
-    fontFamily: Manrope
-    fontSize: 18px
-    fontWeight: '300'
-    lineHeight: '1.8'
-    letterSpacing: 0.01em
-  body-sm:
-    fontFamily: Manrope
+  body:
+    fontFamily: Inter, -apple-system, system-ui, sans-serif
+    fontSize: 15px
+    fontWeight: '400'
+    lineHeight: '1.35'
+    letterSpacing: -0.01em
+  body-readable:
+    fontFamily: Inter, -apple-system, system-ui, sans-serif
     fontSize: 14px
     fontWeight: '400'
     lineHeight: '1.6'
-    letterSpacing: 0.02em
-  label-caps:
-    fontFamily: Manrope
-    fontSize: 11px
+    letterSpacing: 0
+  label:
+    fontFamily: Inter, -apple-system, system-ui, sans-serif
+    fontSize: 12px
     fontWeight: '500'
-    lineHeight: '1'
-    letterSpacing: 0.2em
+    lineHeight: '1.4'
+    letterSpacing: 0
+  micro:
+    fontFamily: '"Azeret Mono", "SFMono-Regular", Consolas, monospace'
+    fontSize: 11px
+    fontWeight: '400'
+    lineHeight: '1.6'
+    letterSpacing: 0
 spacing:
-  unit: 4px
+  unit: 8px
+  xxs: 2px
   xs: 4px
-  sm: 12px
-  md: 24px
-  lg: 48px
-  xl: 80px
-  safe-margin: 64px
+  sm: 8px
+  md: 16px
+  lg: 24px
+  xl: 40px
+  xxl: 64px
+  safe-margin: 32px
+radius:
+  micro: 6px
+  card: 12px
+  container: 16px
+  pill: 999px
 ---
 
-## Brand & Style
+# Design System Inspired by Framer
 
-This design system is built on the philosophy of "The Invisible Interface." It serves as a sophisticated, hyper-minimalist framework designed specifically for visual novels where the narrative and artwork must remain the focal points. The personality is quiet, intellectual, and clinical, removing all unnecessary visual noise to create a sense of calm and focus.
+This design system adapts Framer's cinematic dark product language to the VN Studio. The Studio is not a marketing page, but it should feel like a tool made by people who care deeply about craft: pure black canvas, product UI as the hero, precise typography, pill-shaped interaction, and one cold electric accent.
 
-The style draws heavily from extreme minimalism and Swiss International Style, utilizing high-precision alignment and intentional whitespace. It rejects the "gamified" aesthetics of traditional visual novels—such as heavy bevels, glowing buttons, and ornate frames—in favor of a utilitarian elegance. The UI acts as a thin, translucent veil between the reader and the story, appearing only when needed and receding into the background during moments of immersion.
+The framework and runtime remain the source of truth. The Studio UI should make Ink files, character sheets, scene metadata, plugins and build outputs feel like full-fidelity product surfaces floating in a pure black void.
 
-## Colors
+## 1. Visual Theme & Atmosphere
 
-The palette is strictly achromatic to ensure absolute neutrality against varying background art. The primary focus is on deep blacks and a range of functional grays.
+The primary canvas is pure black (`#000000`). Avoid charcoal, warm grays and brown-tinted dark surfaces. UI panels should feel suspended in space through low-contrast rings, small white edge highlights and occasional Framer Blue focus glows.
 
-- **Backgrounds:** Use a near-pure black (#050505) for high-contrast moments or solid menus.
-- **Surfaces:** UI panels use semi-transparent layers. These should not use heavy blurs; instead, they rely on low-opacity fills to suggest a physical presence without obscuring the artwork entirely.
-- **Accents:** White is used exclusively for active states and critical text. Soft grays are used for secondary information and inactive elements.
-- **Lines:** All structural divisions use a faint gray (#FFFFFF at 10-15% opacity) to maintain a "hairline" aesthetic.
+The tool itself is the visual centerpiece. Story previews, Monaco, sprite previews, scene thumbnails, plugin cards and build artifacts should read as product screenshots and live demos, not as decorative cards.
 
-## Typography
+**Key Characteristics**
 
-Typography is the primary structural element of this design system. We use **Manrope** for its balanced, modern geometric forms and excellent legibility at light weights.
+- Pure black (`#000000`) void canvas.
+- Framer Blue (`#0099ff`) as the only accent color.
+- White primary text and muted silver secondary text.
+- Pill-shaped interactive elements with 40px+ radius.
+- Frosted controls using `rgba(255, 255, 255, 0.1)` on black.
+- Blue ring shadows for focus and active containment.
+- Product-forward panels: editor, preview and metadata are the hero art.
+- No decorative illustrations, gradient blobs or ornamental imagery.
 
-The hierarchy is strictly controlled. Dialogue text uses a light weight (300) with generous line height (1.8) to ensure readability and a "literary" feel. UI labels and navigation elements are often set in small-caps with increased letter spacing to differentiate them from the narrative prose. Avoid bold weights entirely; hierarchy should be established through scale, spacing, and opacity rather than thickness.
+## 2. Color Palette & Roles
 
-## Layout & Spacing
+### Primary
 
-The layout follows a fluid model with extreme "safe-area" margins. Content is rarely pushed to the edges of the screen, creating a focused central column or specific anchored zones that feel intentional.
+- **Void Black** (`#000000`): App background and main canvas.
+- **Pure White** (`#ffffff`): Primary text, strong labels, solid button backgrounds.
+- **Framer Blue** (`#0099ff`): Focus rings, links, active borders and interactive highlights.
 
-- **Margins:** A minimum safe margin of 64px (or 5% of screen width) is maintained on all sides.
-- **Rhythm:** A 4px baseline grid governs all vertical spacing.
-- **Dialogue Placement:** The dialogue box should not be a "box" in the traditional sense, but a floating zone defined by its alignment to the bottom or side margins.
-- **Whitespace:** Use whitespace aggressively to separate UI controls from the narrative. Elements should feel like they have room to "breathe" on top of the background art.
+### Secondary
 
-## Elevation & Depth
+- **Muted Silver** (`#a6a6a6`): Body text, captions, secondary metadata.
+- **Ghost White** (`rgba(255, 255, 255, 0.6)`): Placeholder text and tertiary details.
+- **Near Black** (`#090909`): Elevated panels and tool surfaces.
 
-This design system avoids all traditional depth markers like drop shadows or inner glows. Depth is communicated through:
+### Surfaces
 
-1.  **Opacity Stacking:** Surfaces are created by layering semi-transparent fills. A secondary panel is slightly more opaque than the primary background.
-2.  **Hairline Borders:** 0.5px or 1px lines define the boundaries of interactive zones. These lines should be low-contrast (e.g., white at 15% opacity).
-3.  **Backdrop Filtering:** While heavy blurring is discouraged, a very subtle saturation or brightness shift can be applied to the background behind an active UI overlay to ensure text remains legible without creating a "frosted glass" look.
+- **Frosted White** (`rgba(255, 255, 255, 0.1)`): Secondary button and toolbar surfaces.
+- **Frosted Hover** (`rgba(255, 255, 255, 0.5)`): Hover emphasis, used sparingly.
+- **Blue Glow** (`rgba(0, 153, 255, 0.15)`): Ring shadows and focus halos.
+- **Hairline** (`rgba(255, 255, 255, 0.14)`): Subtle structure on black.
 
-## Shapes
+### Rules
 
-The shape language is strictly architectural and sharp. We use **0px corner radius** (Sharp) for all elements. 
+- Do not introduce additional accent colors. Semantic errors may use `#ffb4ab`, but should not become a visual theme.
+- Do not use light section backgrounds.
+- Do not use large decorative gradients. A very subtle blue radial aura behind a preview is allowed only when it supports focus.
 
-The use of right angles reinforces the "framework" feel of the interface, making it look like a precise technical overlay. This sharpness provides a clean contrast to the organic shapes typically found in character illustrations. Interactive elements are defined by rectangular outlines or simple underlines rather than rounded buttons.
+## 3. Typography Rules
 
-## Components
+### Font Family
 
-### Dialogue Interface
-The dialogue container is a full-width or centered-width overlay with no top or side borders. It is defined only by a single 0.5px horizontal line at the top and a subtle 20% black wash behind the text. The character name is placed above the text in `label-caps`.
+- **Display**: `GT Walsheim Framer Medium`, `GT Walsheim Medium`, fallback `Inter`, `system-ui`.
+- **Body/UI**: `Inter Variable`, `Inter`, fallback `-apple-system`, `system-ui`.
+- **Monospace**: `Azeret Mono`, fallback `SFMono-Regular`, `Consolas`, monospace.
 
-### Buttons & Inputs
-Interactive elements are "Ghost" style. They consist of text only or text contained within a 1px border.
-- **Normal:** Text in silver/gray.
-- **Hover/Active:** Text shifts to pure white; the hairline border (if present) increases in opacity. 
-- **Transitions:** All state changes must be instant or use a very fast (100ms) linear fade.
+If GT Walsheim or Azeret Mono are not available locally, use the fallback stack without changing spacing rules.
 
-### Navigation / Menus
-Menus should feel like an architectural blueprint. Use vertical lists with generous padding (`24px` per item). Separate items with full-width 0.5px lines.
+### Hierarchy
 
-### Choice Elements
-In-game choices are presented as centered vertical stacks. Each choice is separated by significant whitespace (`16px` to `24px`) and uses a simple hairline box that only appears on hover.
+| Role | Font | Size | Weight | Line Height | Letter Spacing | Use |
+| --- | --- | --- | --- | --- | --- | --- |
+| Product Display | GT Walsheim | 72px | 500 | 0.9 | -0.055em | Rare top-level Studio identity moments |
+| Page Heading | GT Walsheim | 42px | 500 | 0.98 | -0.045em | Project title, major workspace heading |
+| Section Heading | GT Walsheim | 32px | 500 | 1.05 | -0.035em | Primary panels and feature sections |
+| Card Title | Inter | 24px | 500 | 1.2 | -0.02em | Plugin, project and asset cards |
+| UI Heading | Inter | 18px | 600 | 1.2 | -0.02em | Dense tool headings |
+| Body | Inter | 15px | 400 | 1.35 | -0.01em | Standard UI copy |
+| Body Readable | Inter | 14px | 400 | 1.6 | 0 | Long descriptions and docs preview |
+| Label | Inter | 12px | 500 | 1.4 | 0 | Form labels and metadata |
+| Micro Code | Azeret Mono | 11px | 400 | 1.6 | 0 | Paths, tags, ids and diagnostics |
 
-### Progress Indicators
-Save slots and progress bars use simple, thin horizontal lines. A "Save Slot" is a simple rectangle with a 1px border, containing a timestamp in `label-caps` and a low-opacity thumbnail.
+### Principles
+
+- Display type should feel compressed and kinetic through negative tracking.
+- GT Walsheim stays medium weight (`500`). Do not use bold GT Walsheim.
+- Inter should feel refined and precise. Use OpenType features when practical: `cv01`, `cv05`, `cv09`, `cv11`, `ss03`, `ss07`.
+- Avoid all-caps letter-spaced labels as the default. Use clean readable labels; reserve uppercase micro text for status or tiny tags.
+- Monaco/code areas can keep monospace density, but surrounding UI should follow Inter.
+
+## 4. Component Styling
+
+### Buttons
+
+All interactive buttons are pill-shaped. Avoid squared, sharp or slightly rounded buttons.
+
+- **Solid White Pill**: White background, black text, 999px radius, 40px minimum height.
+- **Frosted Pill**: `rgba(255,255,255,0.1)` background, white text, 999px radius.
+- **Blue Accent Pill**: Black or near-black fill with Framer Blue border/ring. Use for active filters or primary tool actions.
+- **Ghost Pill**: Transparent background, white or muted silver text, hover reveals frosted surface.
+
+Button transitions should be short and tactile: opacity, transform or background color over 120ms-180ms. Press states may scale to `0.98`, not dramatically.
+
+### Cards & Containers
+
+- Studio panels use `#090909` or pure black with a blue-tinted ring: `0 0 0 1px rgba(0,153,255,0.15)`.
+- Standard cards use 10px-15px radius. Do not use full pills for cards.
+- Elevated cards may use a subtle top highlight plus ambient shadow:
+  - `rgba(255,255,255,0.1) 0 0.5px 0 0.5px`
+  - `rgba(0,0,0,0.25) 0 10px 30px`
+- Avoid cards inside cards. Use full workspace bands and direct panel composition.
+
+### Inputs & Forms
+
+- Inputs use dark backgrounds, white text and subtle hairline borders.
+- Focus state uses Framer Blue border/ring.
+- Placeholder text uses `rgba(255,255,255,0.4)`.
+- Selects, segmented controls and filters should be pill-based when compact.
+- Textareas and Monaco frames may keep rectangular containers, but with 12px radius and blue focus treatment.
+
+### Navigation
+
+- The Studio shell uses a dark fixed or persistent navigation area.
+- Nav items use Inter at 14px-15px, white or muted silver.
+- Active navigation receives a subtle frosted pill or blue ring, not a large color block.
+- The current project identity should appear product-forward, with the project title visible in the first viewport.
+
+### Product Previews
+
+- Monaco editor, story preview, sprite preview, scene preview, plugin declarations and build manifests are the visual content.
+- Previews should be large enough to inspect. Avoid tiny decorative thumbnails when the user needs to evaluate output.
+- Product screenshots/previews use 8px-12px radius and dark-on-dark containment.
+- Do not crop important tool content just to create a dramatic composition.
+
+## 5. Layout Principles
+
+### Studio Layout
+
+The Studio is an operational tool, not a landing page. The interface should prioritize scanning, editing and repeated actions.
+
+- Use dense but organized workspaces.
+- Keep sidebars predictable and persistent.
+- Put editor and preview panes side-by-side on desktop.
+- Prefer split panes, toolbars, inspector panels and scrollable lists.
+- Avoid hero sections inside the working app.
+
+### Spacing
+
+- Base unit: 8px.
+- Common gaps: 8px, 12px, 16px, 24px, 40px.
+- Workspace padding: 24px-40px on desktop.
+- Section spacing: 40px-64px inside dashboards, not marketing-scale 120px gaps.
+- Dense inside panels, spacious between major work areas.
+
+### Grid
+
+- Desktop workspaces may use 3 columns: list, editor, preview/inspector.
+- Keep preview panels wide enough for actual inspection.
+- Avoid floating cards as page sections.
+- Long panels must scroll internally rather than pushing critical controls off-screen.
+
+## 6. Depth & Elevation
+
+| Level | Treatment | Use |
+| --- | --- | --- |
+| Level 0 | Pure black, no border | App background |
+| Level 1 | Blue ring `0 0 0 1px rgba(0,153,255,0.15)` | Panels, cards, active tools |
+| Level 2 | Near-black surface plus hairline | Editors, inspectors, modals |
+| Level 3 | Top white highlight and ambient shadow | Floating menus, dialogs, dropdowns |
+
+Depth should be subtle. The Studio should feel crisp and precise, not glossy or over-lit.
+
+## 7. Do's And Don'ts
+
+### Do
+
+- Use pure black as the global canvas.
+- Use Framer Blue only for interactive accent, focus and active states.
+- Make buttons and filter controls pill-shaped.
+- Let the product UI be the visual centerpiece.
+- Use negative letter-spacing for display headings.
+- Keep cards and preview containers softly rounded, not pill-shaped.
+- Use blue ring shadows for focus and selected states.
+- Keep the Studio ergonomic and tool-like.
+
+### Don't
+
+- Do not use warm dark palettes, beige, brown, slate-blue themes or purple gradients.
+- Do not add decorative illustrations, blobs, orbs or marketing art.
+- Do not use squared buttons.
+- Do not use heavy shadows or bright glows.
+- Do not introduce additional accent colors.
+- Do not make landing-page heroes inside the Studio app.
+- Do not hide real tool output behind tiny thumbnails or atmospheric crops.
+- Do not create a proprietary visual format separate from framework contracts.
+
+## 8. Responsive Behavior
+
+### Breakpoints
+
+| Name | Width | Behavior |
+| --- | --- | --- |
+| Mobile | <809px | Single-column tool stack, persistent project controls, full-width pills |
+| Tablet | 809px-1199px | Two-column workspaces where possible, inspectors collapse below |
+| Desktop | >1199px | Full list/editor/preview layouts |
+
+### Rules
+
+- Mobile keeps all actions reachable with 40px+ touch targets.
+- Toolbars wrap into pill rows instead of shrinking text.
+- Editor and preview panes stack vertically on mobile.
+- Product previews preserve aspect ratio and remain inspectable.
+- Avoid viewport-width font scaling. Define fixed responsive type steps.
+
+## 9. VN Studio Application Rules
+
+### Story
+
+- Monaco is the primary artifact. It should feel like a product screenshot on the black canvas.
+- Text preview should be scrollable, inspectable and visually quieter than the editor.
+- Ink tags use small pill chips, with active/focus states in Framer Blue.
+
+### Characters
+
+- Sprite preview must show the resolved frame/expression, not the whole spritesheet when an atlas exists.
+- Character sheet fields should feel like an inspector, with compact labels and strong grouping.
+- Scale and offset controls should be ergonomic and visible near the preview.
+
+### Scenes And Assets
+
+- Scene previews are functional visual artifacts. Do not over-darken, blur or crop them beyond recognition.
+- Asset lists use compact rows and larger preview cards only when needed for inspection.
+
+### Plugins
+
+- Plugin cards show capabilities, renderers, Ink tags and compatibility clearly.
+- Install/remove actions are pill buttons.
+- Official plugins can use config snippets, but the main view should prioritize status and capability scanning.
+
+### Build And Preview
+
+- Build output, manifest data and diagnostics should look like precise product panels.
+- Preview iframe/window is the hero artifact of that workspace.
+
+## 10. Agent Prompt Guide
+
+### Quick Reference
+
+- Background: `#000000`
+- Text: `#ffffff`
+- Secondary text: `#a6a6a6`
+- Accent: `#0099ff`
+- Frosted surface: `rgba(255,255,255,0.1)`
+- Ring: `0 0 0 1px rgba(0,153,255,0.15)`
+- Button radius: `999px`
+- Card radius: `10px-15px`
+
+### Implementation Guidance
+
+When redesigning a Studio screen:
+
+1. Start from the actual workflow: list, editor, preview, inspector.
+2. Put the real product artifact in the largest visual area.
+3. Use black as the canvas and a restrained blue ring for focus.
+4. Convert rectangular buttons and filters into pills.
+5. Keep cards shallow, precise and content-forward.
+6. Verify text fits on desktop and mobile.
+7. Preserve framework contracts: `game.config.ts`, Ink, data files and assets remain the source of truth.

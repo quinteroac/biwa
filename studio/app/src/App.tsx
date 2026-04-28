@@ -4,10 +4,28 @@ import { fetchProjects, runDoctor } from './api.ts'
 import { CharacterDesigner } from './CharacterDesigner.tsx'
 import { PluginManager } from './PluginManager.tsx'
 import { SceneLibrary } from './SceneLibrary.tsx'
+import { StudioIcon } from './StudioIcon.tsx'
 import { StoryEditor } from './StoryEditor.tsx'
+import type { StudioIconName } from './StudioIcon.tsx'
 import type { StudioProjectSummary } from '../../shared/types.ts'
 
 const sections = ['Overview', 'Story', 'Characters', 'Scenes', 'Assets', 'Plugins', 'Build/Preview']
+
+function sectionLabel(section: string): string {
+  return section === 'Build/Preview' ? 'Build' : section
+}
+
+function sectionIcon(section: string): StudioIconName {
+  return ({
+    Overview: 'overview',
+    Story: 'story',
+    Characters: 'characters',
+    Scenes: 'scenes',
+    Assets: 'assets',
+    Plugins: 'plugins',
+    'Build/Preview': 'build',
+  } as Record<string, StudioIconName>)[section] ?? 'overview'
+}
 
 function statusLabel(project: StudioProjectSummary): string {
   if (project.status === 'error') return `${project.diagnostics.summary.error} errors`
@@ -25,32 +43,112 @@ function countItems(project: StudioProjectSummary): Array<[string, number]> {
   ]
 }
 
-function ProjectList(props: {
+function countIcon(label: string): StudioIconName {
+  return ({
+    Story: 'story',
+    Characters: 'characters',
+    Scenes: 'scenes',
+    Assets: 'assets',
+    Plugins: 'plugins',
+  } as Record<string, StudioIconName>)[label] ?? 'overview'
+}
+
+function diagnosticIcon(severity: string): StudioIconName {
+  if (severity === 'error') return 'error'
+  if (severity === 'warning') return 'warning'
+  return 'info'
+}
+
+function countColor(label: string): string {
+  return ({
+    Story: '#38B2F6',
+    Characters: '#22C55E',
+    Scenes: '#A855F7',
+    Assets: '#FACC15',
+    Plugins: '#EC4899',
+  } as Record<string, string>)[label] ?? '#E5E7EB'
+}
+
+function StudioTopbar(props: {
   projects: StudioProjectSummary[]
   selectedId: string | null
   onSelect: (id: string) => void
+  selectedProject: StudioProjectSummary | null
+  activeSection: string
+  setActiveSection: (section: string) => void
+  isRunningDoctor: boolean
+  onRunDoctor: () => void
 }) {
   return (
-    <aside className="studio-sidebar" aria-label="Projects">
+    <header className="studio-topbar">
       <div className="studio-mark">
-        <span>VN</span>
+        <span><StudioIcon name="app-logo" size={34} /></span>
         <strong>Studio</strong>
       </div>
-      <div className="studio-sidebar-header">Projects</div>
-      <div className="studio-project-list">
-        {props.projects.map(project => (
+      <div className="project-selector-shell">
+        <label htmlFor="project-selector">Project</label>
+        <select
+          id="project-selector"
+          onChange={(event) => props.onSelect(event.target.value)}
+          value={props.selectedId ?? ''}
+        >
+          {props.projects.map(project => (
+            <option key={project.id} value={project.id}>
+              {project.title}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="topbar-spacer" />
+      {props.selectedProject ? (
+        <span className="topbar-status" data-status={props.selectedProject.status}>
+          {statusLabel(props.selectedProject)}
+        </span>
+      ) : null}
+      <div className="topbar-actions">
+        <button className="ghost-button" disabled={props.isRunningDoctor} onClick={props.onRunDoctor} type="button">
+          <StudioIcon name="run-doctor" size={18} />
+          {props.isRunningDoctor ? 'Running' : 'Run Doctor'}
+        </button>
+        <button className="ghost-button" onClick={() => props.setActiveSection('Build/Preview')} type="button">
+          <StudioIcon name="preview" size={18} />
+          Preview
+        </button>
+        <button
+          className={`ghost-button ${props.activeSection === 'Build/Preview' ? 'is-active' : ''}`}
+          onClick={() => props.setActiveSection('Build/Preview')}
+          type="button"
+        >
+          <StudioIcon name="build" size={18} />
+          Build
+        </button>
+      </div>
+    </header>
+  )
+}
+
+function StudioSidebar(props: {
+  activeSection: string
+  setActiveSection: (section: string) => void
+}) {
+  return (
+    <aside className="studio-sidebar" aria-label="Project sections">
+      <div className="studio-sidebar-header">Project</div>
+      <nav className="studio-section-list" aria-label="Project sections">
+        {sections.map(section => (
           <button
-            className={`studio-project-button ${project.id === props.selectedId ? 'is-active' : ''}`}
-            key={project.id}
-            onClick={() => props.onSelect(project.id)}
+            className={section === props.activeSection ? 'is-active' : ''}
+            key={section}
+            onClick={() => props.setActiveSection(section)}
             type="button"
           >
-            <span>{project.title}</span>
-            <small>{project.id}</small>
-            <em data-status={project.status}>{statusLabel(project)}</em>
+            <span className="nav-icon" aria-hidden="true">
+              <StudioIcon name={sectionIcon(section)} size={22} />
+            </span>
+            <span>{sectionLabel(section)}</span>
           </button>
         ))}
-      </div>
+      </nav>
     </aside>
   )
 }
@@ -70,18 +168,25 @@ function DiagnosticsPanel(props: {
         </button>
       </div>
       <div className="diagnostics-summary">
-        <span>{props.project.diagnostics.summary.error} errors</span>
-        <span>{props.project.diagnostics.summary.warning} warnings</span>
-        <span>{props.project.diagnostics.summary.info} info</span>
+        <span data-severity="error"><StudioIcon name="error" size={16} />{props.project.diagnostics.summary.error} errors</span>
+        <span data-severity="warning"><StudioIcon name="warning" size={16} />{props.project.diagnostics.summary.warning} warnings</span>
+        <span data-severity="info"><StudioIcon name="info" size={16} />{props.project.diagnostics.summary.info} info</span>
       </div>
       {issues.length === 0 ? (
         <p className="muted">No diagnostics reported for this project.</p>
       ) : (
         <div className="issue-list">
           {issues.slice(0, 8).map((issue, index) => (
-            <article className="issue-row" key={`${issue.path}-${issue.code}-${index}`}>
-              <strong>{issue.severity}</strong>
-              <span>{issue.code}</span>
+            <article className={`issue-row is-${issue.severity}`} key={`${issue.path}-${issue.code}-${index}`}>
+              <div className="issue-row-heading">
+                <span className="issue-icon">
+                  <StudioIcon name={diagnosticIcon(issue.severity)} size={18} />
+                </span>
+                <div>
+                  <strong>{issue.severity}</strong>
+                  <span>{issue.code}</span>
+                </div>
+              </div>
               <p>{issue.message}</p>
               <small>{issue.path}</small>
             </article>
@@ -89,6 +194,132 @@ function DiagnosticsPanel(props: {
         </div>
       )}
     </section>
+  )
+}
+
+function ProjectCover(props: { project: StudioProjectSummary }) {
+  if (props.project.coverUrl) {
+    return <img alt={`${props.project.title} cover`} src={props.project.coverUrl} />
+  }
+  const label = props.project.coverPath ? 'Cover Missing' : 'No Cover'
+  return (
+    <div className="overview-cover-placeholder" aria-label={label} role="img">
+      <StudioIcon name="project" size={44} />
+      <span>{label}</span>
+    </div>
+  )
+}
+
+function OverviewSection(props: {
+  project: StudioProjectSummary
+  isRunningDoctor: boolean
+  onRunDoctor: () => void
+  setActiveSection: (section: string) => void
+}) {
+  return (
+    <div className="overview-workspace">
+      <div className="overview-content">
+        <header className="overview-title-row">
+          <div>
+            <h1>Overview</h1>
+            <p>Project summary and key information.</p>
+          </div>
+        </header>
+
+        <section className="studio-panel overview-identity-panel">
+          <div className="studio-panel-heading">
+            <span>Identity</span>
+            <button className="ghost-button" type="button">
+              Edit
+            </button>
+          </div>
+          <p className="muted">Basic information about your visual novel.</p>
+          <div className="overview-identity-grid">
+            <div className="overview-cover-frame">
+              <ProjectCover project={props.project} />
+            </div>
+            <dl className="overview-meta-list">
+              <div>
+                <dt>ID</dt>
+                <dd><code>{props.project.id}</code></dd>
+              </div>
+              <div>
+                <dt>Title</dt>
+                <dd>{props.project.title}</dd>
+              </div>
+              <div>
+                <dt>Version</dt>
+                <dd>{props.project.version}</dd>
+              </div>
+              <div>
+                <dt>Description</dt>
+                <dd>{props.project.description || 'No description configured.'}</dd>
+              </div>
+              <div>
+                <dt>Cover</dt>
+                <dd>{props.project.coverPath || 'No cover configured.'}</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div className="overview-subgrid">
+            <section className="overview-subpanel">
+              <h2>Localization</h2>
+              <dl className="overview-meta-list is-compact">
+                <div>
+                  <dt>Default Locale</dt>
+                  <dd>{props.project.defaultLocale}</dd>
+                </div>
+                <div>
+                  <dt>Locales</dt>
+                  <dd>{props.project.locales.join(', ')}</dd>
+                </div>
+              </dl>
+              <button className="ghost-button" onClick={() => props.setActiveSection('Story')} type="button">
+                Manage Locales
+              </button>
+            </section>
+
+            <section className="overview-subpanel">
+              <h2>Plugins</h2>
+              <dl className="overview-meta-list is-compact">
+                <div>
+                  <dt>Active Plugins</dt>
+                  <dd>{props.project.pluginIds.length ? props.project.pluginIds.join('\n') : 'None declared'}</dd>
+                </div>
+              </dl>
+              <button className="ghost-button" onClick={() => props.setActiveSection('Plugins')} type="button">
+                Manage Plugins
+              </button>
+            </section>
+          </div>
+        </section>
+
+        <section className="studio-panel overview-stats-panel">
+          <div className="studio-panel-heading">
+            <span>Statistics</span>
+          </div>
+          <div className="count-grid">
+            {countItems(props.project).map(([label, value]) => (
+              <div className="count-card" key={label}>
+                <span style={{ color: countColor(label) }}>
+                  <StudioIcon name={countIcon(label)} size={20} />
+                  {label}
+                </span>
+                <strong>{value}</strong>
+                <small>{label === 'Story' ? 'Chapters' : label === 'Plugins' ? 'Active' : label}</small>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      <DiagnosticsPanel
+        isRunning={props.isRunningDoctor}
+        onRun={props.onRunDoctor}
+        project={props.project}
+      />
+    </div>
   )
 }
 
@@ -105,32 +336,14 @@ function ProjectOverview(props: {
   const isSceneLibrary = props.activeSection === 'Scenes' || props.activeSection === 'Assets'
   return (
     <main className="studio-main">
-      <header className="project-header">
-        <div>
-          <span className="eyebrow">Authoring Project</span>
-          <h1>{props.project.title}</h1>
-          <p>{props.project.id} · v{props.project.version}</p>
-        </div>
-        <div className="status-block" data-status={props.project.status}>
-          <span>Status</span>
-          <strong>{statusLabel(props.project)}</strong>
-        </div>
-      </header>
-
-      <nav className="section-tabs" aria-label="Project sections">
-        {sections.map(section => (
-          <button
-            className={section === props.activeSection ? 'is-active' : ''}
-            key={section}
-            onClick={() => props.setActiveSection(section)}
-            type="button"
-          >
-            {section}
-          </button>
-        ))}
-      </nav>
-
-      {isStory ? (
+      {props.activeSection === 'Overview' ? (
+        <OverviewSection
+          isRunningDoctor={props.isRunningDoctor}
+          onRunDoctor={props.onRunDoctor}
+          project={props.project}
+          setActiveSection={props.setActiveSection}
+        />
+      ) : isStory ? (
         <StoryEditor
           isRunningDoctor={props.isRunningDoctor}
           onRunDoctor={props.onRunDoctor}
@@ -179,7 +392,10 @@ function ProjectOverview(props: {
           <div className="count-grid">
             {countItems(props.project).map(([label, value]) => (
               <div className="count-card" key={label}>
-                <span>{label}</span>
+                <span style={{ color: countColor(label) }}>
+                  <StudioIcon name={countIcon(label)} size={20} />
+                  {label}
+                </span>
                 <strong>{value}</strong>
               </div>
             ))}
@@ -231,13 +447,22 @@ export function App() {
 
   return (
     <div className="studio-shell">
-      <ProjectList
+      <StudioTopbar
+        activeSection={activeSection}
+        isRunningDoctor={doctorMutation.isPending}
         onSelect={(id) => {
           setSelectedId(id)
           setActiveSection('Overview')
         }}
+        onRunDoctor={() => selectedProject && doctorMutation.mutate(selectedProject.id)}
         projects={projects}
         selectedId={selectedProject?.id ?? null}
+        selectedProject={selectedProject}
+        setActiveSection={setActiveSection}
+      />
+      <StudioSidebar
+        activeSection={activeSection}
+        setActiveSection={setActiveSection}
       />
       {selectedProject ? (
         <ProjectOverview

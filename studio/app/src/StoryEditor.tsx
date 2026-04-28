@@ -1,6 +1,7 @@
 import Editor from '@monaco-editor/react'
+import { layoutWithLines, prepareWithSegments } from '@chenglou/pretext'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ComponentProps } from 'react'
+import type { ComponentProps, RefObject } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchStoryFile, fetchStoryFiles, saveStoryFile } from './api.ts'
 import type { StudioProjectSummary, StudioStoryPreviewLine } from '../../shared/types.ts'
@@ -17,6 +18,44 @@ function lineClass(line: StudioStoryPreviewLine): string {
   return `preview-line preview-${line.kind}`
 }
 
+function useElementWidth<T extends HTMLElement>(): [RefObject<T | null>, number] {
+  const ref = useRef<T | null>(null)
+  const [width, setWidth] = useState(0)
+
+  useEffect(() => {
+    const element = ref.current
+    if (!element) return
+
+    const updateWidth = () => setWidth(Math.floor(element.clientWidth))
+    updateWidth()
+
+    const observer = new ResizeObserver(updateWidth)
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [])
+
+  return [ref, width]
+}
+
+function PreviewTextLine(props: { line: StudioStoryPreviewLine; maxWidth: number }) {
+  const lines = useMemo(() => {
+    if (props.maxWidth <= 0) return [props.line.text]
+    const prepared = prepareWithSegments(props.line.text, '14px Inter', { whiteSpace: 'pre-wrap' })
+    return layoutWithLines(prepared, props.maxWidth, 22.4).lines.map(line => line.text)
+  }, [props.line.text, props.maxWidth])
+
+  return (
+    <article className={lineClass(props.line)}>
+      <small>{props.line.kind} · line {props.line.line}</small>
+      <p className="preview-text-lines">
+        {lines.map((line, index) => (
+          <span key={`${index}-${line}`}>{line || '\u00a0'}</span>
+        ))}
+      </p>
+    </article>
+  )
+}
+
 export function StoryEditor(props: {
   project: StudioProjectSummary
   onRunDoctor: () => void
@@ -26,6 +65,7 @@ export function StoryEditor(props: {
   const [selectedPath, setSelectedPath] = useState<string | null>(null)
   const [draft, setDraft] = useState('')
   const [savedContent, setSavedContent] = useState('')
+  const [previewMeasureRef, previewMeasureWidth] = useElementWidth<HTMLDivElement>()
   const editorRef = useRef<Parameters<NonNullable<ComponentProps<typeof Editor>['onMount']>>[0] | null>(null)
   const storyFilesQuery = useQuery({
     queryKey: ['story-files', props.project.id],
@@ -147,7 +187,7 @@ export function StoryEditor(props: {
               editorRef.current = editor
             }}
             options={{
-              fontFamily: 'Manrope, ui-monospace, SFMono-Regular, monospace',
+              fontFamily: '"Azeret Mono", "SFMono-Regular", Consolas, monospace',
               fontSize: 14,
               minimap: { enabled: false },
               padding: { top: 16, bottom: 16 },
@@ -173,14 +213,12 @@ export function StoryEditor(props: {
           ) : (
             <div className="preview-list">
               {preview.map(line => (
-                <article className={lineClass(line)} key={`${line.line}-${line.kind}-${line.text}`}>
-                  <small>{line.kind} · line {line.line}</small>
-                  <p>{line.text}</p>
-                </article>
+                <PreviewTextLine key={`${line.line}-${line.kind}-${line.text}`} line={line} maxWidth={Math.max(0, previewMeasureWidth - 30)} />
               ))}
             </div>
           )}
         </div>
+        <div className="preview-measure" ref={previewMeasureRef} aria-hidden="true" />
         <div className="tag-suggestions">
           <span>Core Tags</span>
           {(storyFileQuery.data?.tagSuggestions ?? []).map(tag => (

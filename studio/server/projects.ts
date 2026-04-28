@@ -44,6 +44,17 @@ function countProjectFiles(gameId: string, plugins: number): StudioProjectCounts
   }
 }
 
+function coverAssetPath(gameId: string, cover: unknown): { path: string; url: string | null } {
+  if (typeof cover !== 'string' || cover.length === 0) return { path: '', url: null }
+  const normalized = cover.replace(/\\/g, '/').replace(/^\.\//, '').replace(/^\/+/, '')
+  const assetPath = normalized.startsWith('assets/') ? normalized.slice('assets/'.length) : normalized
+  const fullPath = join(GAMES_DIR, gameId, 'assets', assetPath)
+  return {
+    path: assetPath,
+    url: existsSync(fullPath) ? `/api/projects/${gameId}/assets/file?path=${encodeURIComponent(assetPath)}` : null,
+  }
+}
+
 export function listProjectIds(): string[] {
   if (!existsSync(GAMES_DIR)) return []
   return readdirSync(GAMES_DIR, { withFileTypes: true })
@@ -63,10 +74,14 @@ export async function getProjectSummary(gameId: string): Promise<StudioProjectSu
   const { config, gameDir, issues } = await validateGame(gameId)
   const diagnostics = createDoctorJsonReport(gameId, gameDir, issues)
   const pluginIds = (config.plugins ?? []).map(plugin => plugin.id)
+  const cover = coverAssetPath(config.id, config.cover)
   return {
     id: config.id,
     title: config.title,
     version: config.version,
+    description: config.description ?? '',
+    coverPath: cover.path,
+    coverUrl: cover.url,
     defaultLocale: config.story.defaultLocale,
     locales: Object.keys(config.story.locales),
     pluginIds,

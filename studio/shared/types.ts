@@ -14,6 +14,9 @@ export interface StudioProjectSummary {
   id: string
   title: string
   version: string
+  description: string
+  coverPath: string
+  coverUrl: string | null
   defaultLocale: string
   locales: string[]
   pluginIds: string[]
