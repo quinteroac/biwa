@@ -1,5 +1,6 @@
 import { Elysia } from 'elysia'
 import { getProjectDiagnostics, getProjectSummary, listProjects } from './projects.ts'
+import { listStoryFiles, readStoryFile, writeStoryFile } from './story.ts'
 
 function jsonError(message: string, status = 500): Response {
   return Response.json({ error: message }, { status })
@@ -27,6 +28,34 @@ export const studioApi = new Elysia()
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e))
       return jsonError(err.message, err.message.includes('does not exist') ? 404 : 400)
+    }
+  })
+  .get('/api/projects/:gameId/story', async ({ params }) => {
+    try {
+      return { files: await listStoryFiles(params.gameId) }
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, err.message.includes('does not exist') ? 404 : 400)
+    }
+  })
+  .get('/api/projects/:gameId/story/file', async ({ params, query }) => {
+    try {
+      const path = typeof query['path'] === 'string' ? query['path'] : ''
+      return await readStoryFile(params.gameId, path)
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, err.message.includes('not found') ? 404 : 400)
+    }
+  })
+  .put('/api/projects/:gameId/story/file', async ({ body, params }) => {
+    try {
+      const payload = body as { path?: unknown; content?: unknown }
+      if (typeof payload.path !== 'string') throw new Error('Missing story file path.')
+      if (typeof payload.content !== 'string') throw new Error('Missing story file content.')
+      return await writeStoryFile(params.gameId, payload.path, payload.content)
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, err.message.includes('not found') ? 404 : 400)
     }
   })
 

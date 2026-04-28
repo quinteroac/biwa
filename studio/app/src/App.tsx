@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchProjects, runDoctor } from './api.ts'
+import { StoryEditor } from './StoryEditor.tsx'
 import type { StudioProjectSummary } from '../../shared/types.ts'
 
 const sections = ['Overview', 'Story', 'Characters', 'Scenes', 'Assets', 'Plugins', 'Build/Preview']
@@ -95,6 +96,7 @@ function ProjectOverview(props: {
   isRunningDoctor: boolean
   onRunDoctor: () => void
 }) {
+  const isStory = props.activeSection === 'Story'
   return (
     <main className="studio-main">
       <header className="project-header">
@@ -122,6 +124,13 @@ function ProjectOverview(props: {
         ))}
       </nav>
 
+      {isStory ? (
+        <StoryEditor
+          isRunningDoctor={props.isRunningDoctor}
+          onRunDoctor={props.onRunDoctor}
+          project={props.project}
+        />
+      ) : (
       <div className="studio-grid">
         <section className="studio-panel project-card">
           <div className="studio-panel-heading">
@@ -158,6 +167,7 @@ function ProjectOverview(props: {
           project={props.project}
         />
       </div>
+      )}
     </main>
   )
 }

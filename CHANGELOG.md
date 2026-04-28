@@ -91,6 +91,9 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Framework support roadmap for Studio-facing manager APIs, schemas, Ink tooling, asset tooling and preview contracts.
 - Initial VN Studio shell with Elysia API, React/Vite frontend, project dashboard and doctor diagnostics.
 - `studio`, `studio:api`, `studio:app` and `studio:build` scripts for local authoring tooling.
+- Studio Story section with Monaco Ink editing, story file explorer, safe read/write API and simple text/choice preview.
+- Studio quick insert controls for core Ink tags and common narrative actions.
+- Studio story API tests covering Ink listing, preview generation and path-safety checks.
 
 ### Changed
 

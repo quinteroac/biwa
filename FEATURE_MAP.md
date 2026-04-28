@@ -19,30 +19,6 @@ Roadmaps de referencia:
 
 ## Pendientes
 
-### P1 - Editor Ink Con Preview De Texto
-
-Objetivo: editar historia con Monaco y validar tags/assets mientras se escribe.
-
-Alcance:
-
-- Editor Monaco para archivos `.ink`.
-- Explorador de story por locale y archivo.
-- Preview simple de texto/dialogo y choices.
-- Autocompletado o insercion asistida de tags core.
-- Mostrar tags desconocidos usando la misma validacion del framework.
-- Acciones rapidas para insertar:
-  - cambio de escena.
-  - personaje/expresion.
-  - audio.
-  - efecto.
-  - unlock.
-
-Criterios de salida:
-
-- Se puede editar un Ink y ver preview textual.
-- `doctor` detecta cambios y reporta tags/assets faltantes.
-- El archivo guardado sigue siendo Ink compatible con la CLI.
-
 ### P2 - Biblioteca De Assets Y Escenas
 
 Objetivo: administrar fondos, escenas y assets sin editar metadata manualmente.

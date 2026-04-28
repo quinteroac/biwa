@@ -161,6 +161,7 @@ Esta capa llega despues de tener el Studio base.
 - Abrir/guardar Ink.
 - Preview textual.
 - Insercion de tags.
+- Siguiente mejora: autocompletado contextual y diagnostics inline con ubicacion de linea.
 
 ### Fase 3 - Assets Y Escenas
 

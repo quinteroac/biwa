@@ -33,3 +33,25 @@ export interface StudioProjectResponse {
 export interface StudioDoctorResponse {
   diagnostics: DoctorJsonReport
 }
+
+export interface StudioStoryFile {
+  path: string
+  locale: string
+}
+
+export interface StudioStoryPreviewLine {
+  line: number
+  kind: 'knot' | 'choice' | 'dialogue'
+  text: string
+}
+
+export interface StudioStoryListResponse {
+  files: StudioStoryFile[]
+}
+
+export interface StudioStoryResponse {
+  file: StudioStoryFile
+  content: string
+  preview: StudioStoryPreviewLine[]
+  tagSuggestions: string[]
+}
