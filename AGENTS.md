@@ -1,7 +1,5 @@
 # Project Context
 
-<!-- Created or updated by `bun nvst create project-context`. Cap: 250 lines. -->
-
 ## Conventions
 - Naming: PascalCase for classes and React components (`GameEngine`, `VnApp`); camelCase for methods and variables; `.d.ts` for pure type files
 - File extensions: `.ts` for modules, `.tsx` for React components, `.d.ts` for type declarations

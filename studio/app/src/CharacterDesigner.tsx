@@ -97,22 +97,6 @@ function setAnimationField(draft: StudioCharacterDraft, key: string, value: stri
   }
 }
 
-function atlasPreviewStyle(character: StudioCharacter, draft: StudioCharacterDraft): CSSProperties | null {
-  const frame = character.atlas?.previewFrame
-  const sheet = character.atlas?.sheetSize
-  if (!character.previewUrl || !frame || !sheet || sheet.w <= 0 || sheet.h <= 0) return null
-  const displayScale = Math.min(1, 280 / frame.w, 360 / frame.h)
-  return {
-    width: `${frame.w * displayScale}px`,
-    height: `${frame.h * displayScale}px`,
-    backgroundImage: `url("${character.previewUrl}")`,
-    backgroundRepeat: 'no-repeat',
-    backgroundSize: `${sheet.w * displayScale}px ${sheet.h * displayScale}px`,
-    backgroundPosition: `-${frame.x * displayScale}px -${frame.y * displayScale}px`,
-    transform: `translate(${draft.offset.x ?? 0}px, ${draft.offset.y ?? 0}px) scale(${draft.scale})`,
-  }
-}
-
 function spriteFrameStyle(character: StudioCharacter, frame: NonNullable<StudioCharacter['atlas']>['frames'][number], maxWidth: number, maxHeight: number): CSSProperties {
   const sheet = character.atlas?.sheetSize
   if (!character.previewUrl || !sheet || sheet.w <= 0 || sheet.h <= 0) return {}
@@ -165,7 +149,6 @@ export function CharacterDesigner(props: {
   })
   const activeCharacter = characterQuery.data?.character
   const expressionPreview = useMemo(() => draft?.expressions ?? [], [draft])
-  const previewStyle = activeCharacter && draft ? atlasPreviewStyle(activeCharacter, draft) : null
   const atlasFrames = activeCharacter?.atlas?.frames ?? []
   const atlasTags = activeCharacter?.atlas?.frameTags ?? []
   const activeAnimationName = selectedAnimation ?? atlasTags[0]?.name ?? activeCharacter?.defaultExpression ?? 'Idle'
@@ -489,47 +472,6 @@ export function CharacterDesigner(props: {
         )}
       </section>
 
-      <aside className="character-preview-panel">
-        <div className="character-panel-heading">
-          <strong>Preview</strong>
-          <small>{activeCharacter?.atlas?.frameCount ?? 0} frames</small>
-        </div>
-        <div className="character-preview-frame">
-          {activeCharacter?.previewUrl && draft && previewStyle ? (
-            <div
-              aria-label={`${activeCharacter.displayName} ${activeCharacter.atlas?.previewFrame?.name ?? draft.defaultExpression}`}
-              className="character-preview-crop"
-              role="img"
-              style={previewStyle}
-            />
-          ) : activeCharacter?.previewUrl && draft ? (
-            <img
-              alt={activeCharacter.displayName}
-              className="character-preview-sprite"
-              src={activeCharacter.previewUrl}
-              style={{
-                transform: `translate(${draft.offset.x ?? 0}px, ${draft.offset.y ?? 0}px) scale(${draft.scale})`,
-              }}
-            />
-          ) : (
-            <span>No sprite preview</span>
-          )}
-        </div>
-        <dl className="character-atlas-facts">
-          <div>
-            <dt>Atlas</dt>
-            <dd>{activeCharacter?.atlasPath || 'Not configured'}</dd>
-          </div>
-          <div>
-            <dt>Frames</dt>
-            <dd>{activeCharacter?.atlas?.frameNames.join(', ') || 'No atlas frames read'}</dd>
-          </div>
-          <div>
-            <dt>Tags</dt>
-            <dd>{activeCharacter?.atlas?.tags.join(', ') || 'No frame tags'}</dd>
-          </div>
-        </dl>
-      </aside>
     </div>
   )
 }

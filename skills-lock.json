@@ -31,6 +31,12 @@
       "sourceType": "local",
       "computedHash": "52ae7a4834420364480b997d2cbcdbae645e370b414637e79fcd2e4ea693f0f4"
     },
+    "impeccable": {
+      "source": "pbakaus/impeccable",
+      "sourceType": "github",
+      "skillPath": ".agents/skills/impeccable/SKILL.md",
+      "computedHash": "30e5e2d1717a0a16ae0804575d8bbfacc2baab4abc3fa2467f5819b430a22193"
+    },
     "refactor-prototype": {
       "source": "/tmp/nvst-skills-1776912212732",
       "sourceType": "local",
