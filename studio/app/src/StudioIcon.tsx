@@ -18,6 +18,15 @@ export type StudioIconName =
   | 'error'
   | 'warning'
   | 'info'
+  | 'remove'
+  | 'search'
+  | 'filter'
+  | 'more'
+  | 'rename'
+  | 'move'
+  | 'duplicate'
+  | 'file'
+  | 'add'
 
 interface StudioIconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {
   name: StudioIconName
@@ -142,6 +151,65 @@ const paths: Record<Exclude<StudioIconName, 'app-logo'>, ReactElement> = {
       <path d="M3.8 12c0-5 3.3-8.25 8.25-8.25 5.05 0 8.15 3.25 8.15 8.25s-3.1 8.25-8.15 8.25C7.1 20.25 3.8 17 3.8 12Z" />
       <path d="M12 10.5v6.25" />
       <path d="M12 7.2h.1" />
+    </>
+  ),
+  remove: (
+    <>
+      <path d="M6.2 7.2h11.6" />
+      <path d="M9.3 7.2V4.6h5.35v2.6" />
+      <path d="m7.65 9.35.65 10.05h7.4l.7-10.05" />
+      <path d="M10.65 11.8v5.05M13.35 11.8v5.05" />
+    </>
+  ),
+  search: (
+    <>
+      <path d="M4.2 10.8a6.6 6.6 0 1 0 13.2 0 6.6 6.6 0 0 0-13.2 0Z" />
+      <path d="m15.65 15.7 4.25 4.2" />
+    </>
+  ),
+  filter: (
+    <>
+      <path d="M4.6 5.4h14.8l-5.7 6.55v5.1l-3.4 1.55v-6.65L4.6 5.4Z" />
+    </>
+  ),
+  more: (
+    <>
+      <path d="M12 5.3h.1" />
+      <path d="M12 12h.1" />
+      <path d="M12 18.7h.1" />
+    </>
+  ),
+  rename: (
+    <>
+      <path d="m5.4 16.9-.8 3.1 3.1-.85L18.45 8.4l-2.3-2.3L5.4 16.9Z" />
+      <path d="m14.75 7.5 2.3 2.3" />
+    </>
+  ),
+  move: (
+    <>
+      <path d="M4.2 7.2h6.1l1.8 2h7.7v9.6H4.2V7.2Z" />
+      <path d="M13.1 14.1h6.4" />
+      <path d="m16.8 11.4 2.9 2.7-2.9 2.8" />
+    </>
+  ),
+  duplicate: (
+    <>
+      <path d="M8 8.4h10.8v11H8V8.4Z" />
+      <path d="M5.2 15.6V5.2h10.5" />
+    </>
+  ),
+  file: (
+    <>
+      <path d="M6 3.8h8.5l3.5 3.75V20.2H6V3.8Z" />
+      <path d="M14.5 3.8v3.75H18" />
+      <path d="M8.8 12.2h6.4" />
+      <path d="M8.8 15.6h5.1" />
+    </>
+  ),
+  add: (
+    <>
+      <path d="M12 4.7v14.6" />
+      <path d="M4.7 12h14.6" />
     </>
   ),
 }

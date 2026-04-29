@@ -48,6 +48,11 @@ colors:
   background: '#F2EFE8'
   on-background: '#1b1c19'
   surface-variant: '#e4e2dd'
+  story-explorer-active: '#346288'
+  story-explorer-active-soft: '#cde5ff'
+  story-explorer-hover: '#eae8e3'
+  story-explorer-status: '#b7b9b9'
+  story-explorer-menu-shadow: '#c4c7c7'
 typography:
   headline-xl:
     fontFamily: Newsreader
@@ -94,6 +99,13 @@ spacing:
   xl: 40px
   gutter: 24px
   margin: 32px
+storyExplorer:
+  headerHeight: 64px
+  rowHeight: 44px
+  activeRailWidth: 3px
+  actionSize: 36px
+  statusDotSize: 10px
+  countBadgeMinWidth: 28px
 ---
 
 ## Brand & Style
@@ -146,3 +158,9 @@ Apply a `path-mask` or `border-image` to all standard containers to create a sli
 - **Screentone Chips:** Status indicators or tags use "Manga Screentone" (half-tone dots) as a background fill instead of solid colors.
 - **Editorial Seals:** Large "Red Stamp" components for status like "APPROVED" or "DRAFT," placed at an angle over content.
 - **Sketch Icons:** All icons must have a "rough" quality. No perfect circles or perfectly parallel lines.
+
+## Studio Story Explorer
+
+The Story file explorer follows the same paper-panel language as the Studio while prioritizing fast authoring. It uses a compact header with direct file and folder creation, a ruled search field with a visible filter affordance, collapsible locale folders, inline `ink` type labels, and small status dots for active or modified files.
+
+Folder counts use small outlined badges so creators can scan localization coverage quickly. Active files use a Pencil Blue rail and dot; modified files use the neutral status dot. Contextual actions live behind a three-dot control and render as a Level 2 paper popover with hard-edged depth rather than blur.

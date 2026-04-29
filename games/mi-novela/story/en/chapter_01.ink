@@ -35,7 +35,7 @@ Sara: If it helps, everyone doubts it the first time.
 
 === chapter_01_response ===
 # character: kai, expression: surprised
-# character: sara, expression: happy
+# character: sara, expression: neutral
 
 Kai: I wasn't sure the place was real.
 

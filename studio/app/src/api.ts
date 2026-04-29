@@ -14,6 +14,8 @@ import type {
   StudioScenesResponse,
   StudioPluginMutationResponse,
   StudioPluginsResponse,
+  StudioProjectCoverUploadResponse,
+  StudioProjectIdentityDraft,
   StudioProjectResponse,
   StudioProjectsResponse,
   StudioManifestResponse,
@@ -42,6 +44,23 @@ export function fetchProjects(): Promise<StudioProjectsResponse> {
 
 export function fetchProject(gameId: string): Promise<StudioProjectResponse> {
   return requestJson<StudioProjectResponse>(`/api/projects/${gameId}`)
+}
+
+export function saveProjectIdentity(gameId: string, draft: StudioProjectIdentityDraft): Promise<StudioProjectResponse> {
+  return requestJson<StudioProjectResponse>(`/api/projects/${gameId}/identity`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(draft),
+  })
+}
+
+export function uploadProjectCover(gameId: string, cover: File): Promise<StudioProjectCoverUploadResponse> {
+  const body = new FormData()
+  body.set('cover', cover)
+  return requestJson<StudioProjectCoverUploadResponse>(`/api/projects/${gameId}/cover`, {
+    method: 'POST',
+    body,
+  })
 }
 
 export function runDoctor(gameId: string): Promise<StudioDoctorResponse> {
@@ -77,11 +96,51 @@ export function fetchStoryFile(gameId: string, path: string): Promise<StudioStor
   return requestJson<StudioStoryResponse>(`/api/projects/${gameId}/story/file?path=${encodeURIComponent(path)}`)
 }
 
+export function createStoryFolder(gameId: string, path: string): Promise<StudioStoryListResponse> {
+  return requestJson<StudioStoryListResponse>(`/api/projects/${gameId}/story/folder`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path }),
+  })
+}
+
+export function renameStoryFolder(gameId: string, fromPath: string, toPath: string): Promise<StudioStoryListResponse> {
+  return requestJson<StudioStoryListResponse>(`/api/projects/${gameId}/story/folder`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fromPath, toPath }),
+  })
+}
+
+export function deleteStoryFolder(gameId: string, path: string): Promise<StudioStoryListResponse> {
+  return requestJson<StudioStoryListResponse>(`/api/projects/${gameId}/story/folder`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path }),
+  })
+}
+
 export function saveStoryFile(gameId: string, path: string, content: string): Promise<StudioStoryResponse> {
   return requestJson<StudioStoryResponse>(`/api/projects/${gameId}/story/file`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path, content }),
+  })
+}
+
+export function renameStoryFile(gameId: string, fromPath: string, toPath: string): Promise<StudioStoryResponse> {
+  return requestJson<StudioStoryResponse>(`/api/projects/${gameId}/story/file`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fromPath, toPath }),
+  })
+}
+
+export function deleteStoryFile(gameId: string, path: string): Promise<StudioStoryListResponse> {
+  return requestJson<StudioStoryListResponse>(`/api/projects/${gameId}/story/file`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path }),
   })
 }
 

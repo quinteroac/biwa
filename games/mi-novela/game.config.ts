@@ -6,10 +6,10 @@ const config: GameConfig = {
 
   // — Identity —
   id:          'mi-novela',
-  title:       'The Midnight Cafe',
+  title:       'The Midnight Cafe Story',
   version:     '1.0.0',
   description: 'A story of impossible encounters in a cafe that should not exist.',
-  cover:       './assets/ui/cover.jpg',
+  cover:       './assets/ui/cover.png',
 
   // — Story —
   story: {

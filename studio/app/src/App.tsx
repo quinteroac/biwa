@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchProjects, runDoctor } from './api.ts'
+import { fetchProjects, runDoctor, saveProjectIdentity, uploadProjectCover } from './api.ts'
 import { AuthoringTools } from './AuthoringTools.tsx'
 import { BuildPreview } from './BuildPreview.tsx'
 import { CharacterDesigner } from './CharacterDesigner.tsx'
@@ -9,7 +9,7 @@ import { SceneLibrary } from './SceneLibrary.tsx'
 import { StudioIcon } from './StudioIcon.tsx'
 import { StoryEditor } from './StoryEditor.tsx'
 import type { StudioIconName } from './StudioIcon.tsx'
-import type { StudioProjectSummary } from '../../shared/types.ts'
+import type { StudioProjectIdentityDraft, StudioProjectSummary } from '../../shared/types.ts'
 
 const sections = ['Overview', 'Story', 'Characters', 'Scenes', 'Assets', 'Plugins', 'Tools', 'Build/Preview']
 
@@ -219,6 +219,58 @@ function OverviewSection(props: {
   onRunDoctor: () => void
   setActiveSection: (section: string) => void
 }) {
+  const queryClient = useQueryClient()
+  const [isEditingIdentity, setIsEditingIdentity] = useState(false)
+  const [identityDraft, setIdentityDraft] = useState<StudioProjectIdentityDraft>({
+    title: props.project.title,
+    description: props.project.description,
+    coverPath: props.project.coverPath,
+  })
+  const [coverFile, setCoverFile] = useState<File | null>(null)
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null)
+  const saveIdentityMutation = useMutation({
+    mutationFn: async () => {
+      let coverPath = identityDraft.coverPath
+      if (coverFile) {
+        const uploaded = await uploadProjectCover(props.project.id, coverFile)
+        coverPath = uploaded.coverPath
+      }
+      return saveProjectIdentity(props.project.id, { ...identityDraft, coverPath })
+    },
+    onSuccess: async (response) => {
+      setIdentityDraft({
+        title: response.project.title,
+        description: response.project.description,
+        coverPath: response.project.coverPath,
+      })
+      setCoverFile(null)
+      setCoverPreviewUrl(null)
+      setIsEditingIdentity(false)
+      await queryClient.invalidateQueries({ queryKey: ['studio-projects'] })
+    },
+  })
+
+  useEffect(() => {
+    setIdentityDraft({
+      title: props.project.title,
+      description: props.project.description,
+      coverPath: props.project.coverPath,
+    })
+    setCoverFile(null)
+    setCoverPreviewUrl(null)
+    setIsEditingIdentity(false)
+  }, [props.project.coverPath, props.project.description, props.project.id, props.project.title])
+
+  useEffect(() => {
+    return () => {
+      if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl)
+    }
+  }, [coverPreviewUrl])
+
+  const coverProject = coverPreviewUrl
+    ? { ...props.project, coverUrl: coverPreviewUrl, coverPath: coverFile?.name ?? identityDraft.coverPath }
+    : props.project
+
   return (
     <div className="overview-workspace">
       <div className="overview-content">
@@ -232,16 +284,104 @@ function OverviewSection(props: {
         <section className="studio-panel overview-identity-panel">
           <div className="studio-panel-heading">
             <span>Identity</span>
-            <button className="ghost-button" type="button">
-              Edit
-            </button>
+            <div className="overview-identity-actions">
+              {isEditingIdentity ? (
+                <>
+                  <button
+                    className="ghost-button"
+                    disabled={saveIdentityMutation.isPending}
+                    onClick={() => {
+                      setIdentityDraft({
+                        title: props.project.title,
+                        description: props.project.description,
+                        coverPath: props.project.coverPath,
+                      })
+                      setCoverFile(null)
+                      setCoverPreviewUrl(null)
+                      setIsEditingIdentity(false)
+                    }}
+                    type="button"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="ghost-button"
+                    disabled={saveIdentityMutation.isPending || !identityDraft.title.trim()}
+                    onClick={() => saveIdentityMutation.mutate()}
+                    type="button"
+                  >
+                    {saveIdentityMutation.isPending ? 'Saving' : 'Save'}
+                  </button>
+                </>
+              ) : (
+                <button className="ghost-button" onClick={() => setIsEditingIdentity(true)} type="button">
+                  Edit
+                </button>
+              )}
+            </div>
           </div>
           <p className="muted">Basic information about your visual novel.</p>
           <div className="overview-identity-grid">
-            <div className="overview-cover-frame">
-              <ProjectCover project={props.project} />
+            <div className="overview-cover-editor">
+              <div className="overview-cover-frame">
+                <ProjectCover project={coverProject} />
+              </div>
+              {isEditingIdentity ? (
+                <label className="overview-cover-upload">
+                  <StudioIcon name="assets" size={18} />
+                  <span>{coverFile ? coverFile.name : 'Upload Cover'}</span>
+                  <input
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    onChange={event => {
+                      const file = event.target.files?.[0] ?? null
+                      setCoverFile(file)
+                      setCoverPreviewUrl(previous => {
+                        if (previous) URL.revokeObjectURL(previous)
+                        return file ? URL.createObjectURL(file) : null
+                      })
+                    }}
+                    type="file"
+                  />
+                </label>
+              ) : null}
             </div>
-            <dl className="overview-meta-list">
+            {isEditingIdentity ? (
+              <div className="overview-identity-form">
+                <label>
+                  <span>ID</span>
+                  <input disabled value={props.project.id} />
+                </label>
+                <label>
+                  <span>Title</span>
+                  <input
+                    onChange={event => setIdentityDraft({ ...identityDraft, title: event.target.value })}
+                    value={identityDraft.title}
+                  />
+                </label>
+                <label>
+                  <span>Version</span>
+                  <input disabled value={props.project.version} />
+                </label>
+                <label>
+                  <span>Description</span>
+                  <textarea
+                    onChange={event => setIdentityDraft({ ...identityDraft, description: event.target.value })}
+                    value={identityDraft.description}
+                  />
+                </label>
+                <label>
+                  <span>Cover</span>
+                  <input
+                    disabled={Boolean(coverFile)}
+                    onChange={event => setIdentityDraft({ ...identityDraft, coverPath: event.target.value })}
+                    placeholder="ui/cover.jpg"
+                    value={coverFile ? `ui/${coverFile.name}` : identityDraft.coverPath}
+                  />
+                </label>
+                {saveIdentityMutation.isError ? <p className="form-error">{saveIdentityMutation.error.message}</p> : null}
+              </div>
+            ) : (
+              <dl className="overview-meta-list">
               <div>
                 <dt>ID</dt>
                 <dd><code>{props.project.id}</code></dd>
@@ -262,7 +402,8 @@ function OverviewSection(props: {
                 <dt>Cover</dt>
                 <dd>{props.project.coverPath || 'No cover configured.'}</dd>
               </div>
-            </dl>
+              </dl>
+            )}
           </div>
 
           <div className="overview-subgrid">

@@ -33,11 +33,27 @@ export interface StudioProjectResponse {
   project: StudioProjectSummary
 }
 
+export interface StudioProjectIdentityDraft {
+  title: string
+  description: string
+  coverPath: string
+}
+
+export interface StudioProjectCoverUploadResponse {
+  coverPath: string
+  coverUrl: string | null
+}
+
 export interface StudioDoctorResponse {
   diagnostics: DoctorJsonReport
 }
 
 export interface StudioStoryFile {
+  path: string
+  locale: string
+}
+
+export interface StudioStoryFolder {
   path: string
   locale: string
 }
@@ -50,6 +66,7 @@ export interface StudioStoryPreviewLine {
 
 export interface StudioStoryListResponse {
   files: StudioStoryFile[]
+  folders: StudioStoryFolder[]
 }
 
 export interface StudioStoryResponse {

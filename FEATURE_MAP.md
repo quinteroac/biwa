@@ -19,23 +19,6 @@ Roadmaps de referencia:
 
 ## Pendientes
 
-### P7 - Generacion Asistida De Assets
-
-Objetivo: preparar la integracion futura con modelos de imagen sin bloquear el Studio base.
-
-Alcance:
-
-- Prompts versionados para personajes y escenarios.
-- Export de prompt packs.
-- Integracion futura con API de imagenes.
-- Cola de generacion y revision manual.
-- Asociacion de resultados generados a atlas/fondos existentes.
-
-Criterios de salida:
-
-- La generacion asistida es opcional.
-- El Studio puede operar completamente sin servicios externos.
-
 ## Fuera De Alcance Actual
 
 - Reemplazar el framework o la CLI.

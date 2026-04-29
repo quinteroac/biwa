@@ -1,8 +1,8 @@
 import { Elysia } from 'elysia'
 import { existsSync } from 'fs'
 import { extname } from 'path'
-import { getProjectDiagnostics, getProjectSummary, listProjects } from './projects.ts'
-import { listStoryFiles, readStoryFile, writeStoryFile } from './story.ts'
+import { getProjectDiagnostics, getProjectSummary, listProjects, updateProjectIdentity, uploadProjectCover } from './projects.ts'
+import { createStoryFolder, deleteStoryFile, deleteStoryFolder, listStoryEntries, readStoryFile, renameStoryFile, renameStoryFolder, writeStoryFile } from './story.ts'
 import { listAssets, resolveAssetFile } from './assets.ts'
 import { listScenes, readScene, writeScene } from './scenes.ts'
 import { generateCharacterAtlas, listCharacters, readCharacter, writeCharacter } from './characters.ts'
@@ -45,6 +45,34 @@ export const studioApi = new Elysia()
       return jsonError(err.message, err.message.includes('does not exist') ? 404 : 400)
     }
   })
+  .put('/api/projects/:gameId/identity', async ({ body, params }) => {
+    try {
+      const payload = body as { title?: unknown; description?: unknown; coverPath?: unknown }
+      if (typeof payload.title !== 'string') throw new Error('Missing project title.')
+      if (typeof payload.description !== 'string') throw new Error('Missing project description.')
+      if (typeof payload.coverPath !== 'string') throw new Error('Missing project cover path.')
+      return {
+        project: await updateProjectIdentity(params.gameId, {
+          title: payload.title,
+          description: payload.description,
+          coverPath: payload.coverPath,
+        }),
+      }
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, err.message.includes('not found') ? 404 : 400)
+    }
+  })
+  .post('/api/projects/:gameId/cover', async ({ body, params }) => {
+    try {
+      const payload = body as { cover?: unknown }
+      if (!(payload.cover instanceof File)) throw new Error('Missing cover image.')
+      return await uploadProjectCover(params.gameId, payload.cover)
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, 400)
+    }
+  })
   .post('/api/projects/:gameId/doctor', async ({ params }) => {
     try {
       return { diagnostics: await getProjectDiagnostics(params.gameId) }
@@ -55,10 +83,41 @@ export const studioApi = new Elysia()
   })
   .get('/api/projects/:gameId/story', async ({ params }) => {
     try {
-      return { files: await listStoryFiles(params.gameId) }
+      return await listStoryEntries(params.gameId)
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e))
       return jsonError(err.message, err.message.includes('does not exist') ? 404 : 400)
+    }
+  })
+  .post('/api/projects/:gameId/story/folder', async ({ body, params }) => {
+    try {
+      const payload = body as { path?: unknown }
+      if (typeof payload.path !== 'string') throw new Error('Missing story folder path.')
+      return await createStoryFolder(params.gameId, payload.path)
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, 400)
+    }
+  })
+  .patch('/api/projects/:gameId/story/folder', async ({ body, params }) => {
+    try {
+      const payload = body as { fromPath?: unknown; toPath?: unknown }
+      if (typeof payload.fromPath !== 'string') throw new Error('Missing source story folder path.')
+      if (typeof payload.toPath !== 'string') throw new Error('Missing target story folder path.')
+      return await renameStoryFolder(params.gameId, payload.fromPath, payload.toPath)
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, err.message.includes('not found') ? 404 : 400)
+    }
+  })
+  .delete('/api/projects/:gameId/story/folder', async ({ body, params }) => {
+    try {
+      const payload = body as { path?: unknown }
+      if (typeof payload.path !== 'string') throw new Error('Missing story folder path.')
+      return await deleteStoryFolder(params.gameId, payload.path)
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, err.message.includes('not found') ? 404 : 400)
     }
   })
   .get('/api/projects/:gameId/story/file', async ({ params, query }) => {
@@ -76,6 +135,27 @@ export const studioApi = new Elysia()
       if (typeof payload.path !== 'string') throw new Error('Missing story file path.')
       if (typeof payload.content !== 'string') throw new Error('Missing story file content.')
       return await writeStoryFile(params.gameId, payload.path, payload.content)
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, err.message.includes('not found') ? 404 : 400)
+    }
+  })
+  .patch('/api/projects/:gameId/story/file', async ({ body, params }) => {
+    try {
+      const payload = body as { fromPath?: unknown; toPath?: unknown }
+      if (typeof payload.fromPath !== 'string') throw new Error('Missing source story file path.')
+      if (typeof payload.toPath !== 'string') throw new Error('Missing target story file path.')
+      return await renameStoryFile(params.gameId, payload.fromPath, payload.toPath)
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, err.message.includes('not found') ? 404 : 400)
+    }
+  })
+  .delete('/api/projects/:gameId/story/file', async ({ body, params }) => {
+    try {
+      const payload = body as { path?: unknown }
+      if (typeof payload.path !== 'string') throw new Error('Missing story file path.')
+      return await deleteStoryFile(params.gameId, payload.path)
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e))
       return jsonError(err.message, err.message.includes('not found') ? 404 : 400)
