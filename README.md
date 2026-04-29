@@ -1,6 +1,7 @@
-# Visual Novel Experiment
+# Biwa
 
-A TypeScript visual novel framework built around Ink, React and Bun.
+Biwa is a TypeScript visual novel framework built around Ink, React and Bun.
+Its name is inspired by the Japanese biwa: an instrument traditionally tied to storytelling, performance and memory.
 
 The project includes:
 

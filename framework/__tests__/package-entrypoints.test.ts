@@ -4,12 +4,12 @@ import {
   VN_FRAMEWORK_PACKAGE_ENTRYPOINTS,
   VN_FRAMEWORK_PEER_DEPENDENCIES,
   VN_FRAMEWORK_VERSION,
-} from '@vn-experiment/core'
-import { GameEngine as EngineEntrypoint } from '@vn-experiment/core/engine'
-import { mountVnApp, VnStage } from '@vn-experiment/core/react'
-import { officialPlugins, VN_PLUGIN_API_VERSION } from '@vn-experiment/plugins'
-import { build, doctor, validateGame } from '@vn-experiment/manager'
-import type { GameConfig } from '@vn-experiment/core/types'
+} from '@biwa/core'
+import { GameEngine as EngineEntrypoint } from '@biwa/core/engine'
+import { mountVnApp, VnStage } from '@biwa/core/react'
+import { officialPlugins, VN_PLUGIN_API_VERSION } from '@biwa/plugins'
+import { build, doctor, validateGame } from '@biwa/manager'
+import type { GameConfig } from '@biwa/core/types'
 
 describe('package-style entrypoints', () => {
   it('resolves local aliases for future public packages', () => {
@@ -33,8 +33,8 @@ describe('package-style entrypoints', () => {
     expect(config.id).toBe('package-style-fixture')
     expect(VN_FRAMEWORK_VERSION).toBe('0.1.0')
     expect(VN_PLUGIN_API_VERSION).toBe('vn-plugin-api-v1')
-    expect(VN_FRAMEWORK_PACKAGE_ENTRYPOINTS.core).toBe('@vn-experiment/core')
-    expect(VN_FRAMEWORK_PACKAGE_ENTRYPOINTS.plugins).toBe('@vn-experiment/plugins')
+    expect(VN_FRAMEWORK_PACKAGE_ENTRYPOINTS.core).toBe('@biwa/core')
+    expect(VN_FRAMEWORK_PACKAGE_ENTRYPOINTS.plugins).toBe('@biwa/plugins')
     expect(VN_FRAMEWORK_PEER_DEPENDENCIES.react).toBe('^19.2.5')
     expect(VN_FRAMEWORK_PEER_DEPENDENCIES.inkjs).toBe('^2.3.0')
   })

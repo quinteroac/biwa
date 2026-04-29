@@ -8,10 +8,10 @@ Use scoped packages when the project is ready to publish:
 
 | Package | Contents | Current local source |
 |---|---|---|
-| `@vn-experiment/core` | Engine, React components, renderer registry, save/audio/player services and public types. | `framework/` |
-| `@vn-experiment/manager` | CLI commands: `new`, `dev`, `doctor`, `build`, `preview`, `assets`, `plugins`. | `manager/` |
-| `@vn-experiment/plugins` | Official prebuilt plugin factories and catalog metadata. | `framework/plugins/prebuilt/` |
-| `@vn-experiment/templates` | Starter game templates and smoke fixture seeds. | `games/smoke-fixture/` plus CLI template files |
+| `@biwa/core` | Engine, React components, renderer registry, save/audio/player services and public types. | `framework/` |
+| `@biwa/manager` | CLI commands: `new`, `dev`, `doctor`, `build`, `preview`, `assets`, `plugins`. | `manager/` |
+| `@biwa/plugins` | Official prebuilt plugin factories and catalog metadata. | `framework/plugins/prebuilt/` |
+| `@biwa/templates` | Starter game templates and smoke fixture seeds. | `games/smoke-fixture/` plus CLI template files |
 
 The current local imports stay supported during development:
 
@@ -22,7 +22,7 @@ import { officialPlugins } from '../../framework/plugins.ts'
 Future published-game imports should become:
 
 ```ts
-import { officialPlugins } from '@vn-experiment/plugins'
+import { officialPlugins } from '@biwa/plugins'
 ```
 
 ## Versioning Policy
@@ -99,11 +99,11 @@ Package publishing should be a shallow import migration:
 
 | Today | Future |
 |---|---|
-| `../../framework/index.ts` | `@vn-experiment/core` |
-| `../../framework/engine.ts` | `@vn-experiment/core/engine` |
-| `../../framework/react.ts` | `@vn-experiment/core/react` |
-| `../../framework/plugins.ts` | `@vn-experiment/plugins` |
-| `bun manager/cli.ts build my-game` | `vnx build my-game` or `bunx @vn-experiment/manager build my-game` |
+| `../../framework/index.ts` | `@biwa/core` |
+| `../../framework/engine.ts` | `@biwa/core/engine` |
+| `../../framework/react.ts` | `@biwa/core/react` |
+| `../../framework/plugins.ts` | `@biwa/plugins` |
+| `bun manager/cli.ts build my-game` | `vnx build my-game` or `bunx @biwa/manager build my-game` |
 
 Do not implement a remote marketplace in this step. Official plugins remain explicit imports and local game plugins remain trusted local code.
 
@@ -113,13 +113,13 @@ The repository validates future package names before publishing by using TypeScr
 
 | Future package import | Current local target |
 |---|---|
-| `@vn-experiment/core` | `framework/index.ts` |
-| `@vn-experiment/core/engine` | `framework/engine.ts` |
-| `@vn-experiment/core/react` | `framework/react.ts` |
-| `@vn-experiment/core/plugins` | `framework/plugins.ts` |
-| `@vn-experiment/core/types` | `framework/types.ts` |
-| `@vn-experiment/plugins` | `framework/plugins.ts` |
-| `@vn-experiment/manager` | `manager/index.ts` |
+| `@biwa/core` | `framework/index.ts` |
+| `@biwa/core/engine` | `framework/engine.ts` |
+| `@biwa/core/react` | `framework/react.ts` |
+| `@biwa/core/plugins` | `framework/plugins.ts` |
+| `@biwa/core/types` | `framework/types.ts` |
+| `@biwa/plugins` | `framework/plugins.ts` |
+| `@biwa/manager` | `manager/index.ts` |
 
 The root `package.json` also exposes local entrypoints for the current private monolith:
 
@@ -148,11 +148,11 @@ Build output records the local package contract in `dist/<gameId>/manifest.json`
     "version": "0.1.0",
     "pluginApiVersion": "vn-plugin-api-v1",
     "packageEntrypoints": {
-      "core": "@vn-experiment/core",
-      "engine": "@vn-experiment/core/engine",
-      "react": "@vn-experiment/core/react",
-      "plugins": "@vn-experiment/plugins",
-      "manager": "@vn-experiment/manager"
+      "core": "@biwa/core",
+      "engine": "@biwa/core/engine",
+      "react": "@biwa/core/react",
+      "plugins": "@biwa/plugins",
+      "manager": "@biwa/manager"
     },
     "peerDependencies": {
       "inkjs": "^2.3.0",

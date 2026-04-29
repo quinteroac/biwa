@@ -30,6 +30,9 @@ interface StoryPanelLayout {
   runtime: number
 }
 
+const STORY_EDITOR_FONT_FAMILY = '"Source Code Pro", "SFMono-Regular", Consolas, monospace'
+const STORY_RUNTIME_FONT_FAMILY = '"IBM Plex Serif", Georgia, serif'
+
 interface SimChoice {
   label: string
   target: string | null
@@ -1524,7 +1527,7 @@ export function StoryEditor(props: {
               editorRef.current = editor
             }}
             options={{
-              fontFamily: '"Azeret Mono", "SFMono-Regular", Consolas, monospace',
+              fontFamily: STORY_EDITOR_FONT_FAMILY,
               fontSize: 17,
               minimap: { enabled: false },
               padding: { top: 16, bottom: 16 },
@@ -1653,7 +1656,7 @@ export function StoryEditor(props: {
                     ) : (
                       <strong>
                         <PretextText
-                          font="700 17px Newsreader, Georgia, serif"
+                          font={`700 17px ${STORY_RUNTIME_FONT_FAMILY}`}
                           lineHeight={24}
                           maxLines={1}
                           text={tag.name}
@@ -1683,7 +1686,7 @@ export function StoryEditor(props: {
                         <div className="story-tag-copy">
                           <PretextText
                             className="story-tag-value-text"
-                            font="400 20px Newsreader, Georgia, serif"
+                            font={`400 20px ${STORY_RUNTIME_FONT_FAMILY}`}
                             lineHeight={23}
                             maxLines={1}
                             text={tag.value || '(empty)'}
@@ -1691,7 +1694,7 @@ export function StoryEditor(props: {
                           />
                           <PretextText
                             className="story-tag-meta-text"
-                            font="400 13px Plus Jakarta Sans, Inter, sans-serif"
+                            font={`400 13px ${STORY_RUNTIME_FONT_FAMILY}`}
                             lineHeight={15}
                             maxLines={1}
                             text={`${tag.node} · line ${tag.line}`}

@@ -339,5 +339,5 @@ if (import.meta.main) {
     hostname,
     port,
   })
-  console.log(`VN Studio API listening on http://${hostname}:${port}`)
+  console.log(`Biwa Studio API listening on http://${hostname}:${port}`)
 }

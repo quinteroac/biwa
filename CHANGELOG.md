@@ -78,7 +78,7 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Public entrypoint smoke tests proving `smoke-fixture` can type against framework exports without deep runtime imports.
 - Official prebuilt plugin catalog contract metadata for `runtime` versus `profile` plugins.
 - Minimum official plugin fixture coverage for renderers, effects, player profiles and devtools.
-- Local package-style aliases for future `@vn-experiment/core`, `@vn-experiment/plugins` and `@vn-experiment/manager` imports.
+- Local package-style aliases for future `@biwa/core`, `@biwa/plugins` and `@biwa/manager` imports.
 - Root private export map and package-style smoke tests for core, React, plugins and manager entrypoints.
 - Framework package metadata constants for version, expected entrypoints and peer dependencies.
 - Build manifest framework metadata with framework version, plugin API version, package entrypoints and peer dependencies.
@@ -89,7 +89,7 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Playwright overlay smoke screenshots for save/load, backlog, settings, gallery and music room.
 - Studio authoring roadmap that keeps the framework as runtime/source of truth.
 - Framework support roadmap for Studio-facing manager APIs, schemas, Ink tooling, asset tooling and preview contracts.
-- Initial VN Studio shell with Elysia API, React/Vite frontend, project dashboard and doctor diagnostics.
+- Initial Biwa Studio shell with Elysia API, React/Vite frontend, project dashboard and doctor diagnostics.
 - `studio`, `studio:api`, `studio:app` and `studio:build` scripts for local authoring tooling.
 - Studio Story section with Monaco Ink editing, story file explorer, safe read/write API and simple text/choice preview.
 - Studio quick insert controls for core Ink tags and common narrative actions.
@@ -103,7 +103,7 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Studio Plugins section with official/local plugin catalog filters, capability details and install/remove actions.
 - Studio Elysia APIs for editing official plugin declarations in `game.config.ts` and returning doctor diagnostics.
 - Studio plugin tests covering catalog state, official plugin installation and removal.
-- Framer-inspired `DESIGN.md` refresh for VN Studio with pure black canvas, Framer Blue accents and product-forward authoring rules.
+- Framer-inspired `DESIGN.md` refresh for Biwa Studio with pure black canvas, Framer Blue accents and product-forward authoring rules.
 - SVG Studio icon set based on `icons.png`, used by the app logo, topbar actions, sidebar navigation and overview stat cards.
 - Studio project summaries now expose description and cover metadata, with missing-cover placeholders in the Overview screen.
 - Studio Story preview now uses `@chenglou/pretext` for explicit multiline text layout.
@@ -112,6 +112,7 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 
 ### Changed
 
+- Rebranded the project and Studio surface to Biwa, including local package-style aliases under `@biwa/*`.
 - Build now validates content before writing output and fails on doctor errors.
 - Build compiles configured story entrypoints instead of every included `.ink` file.
 - Build cleans `dist/<gameId>` before writing new output.
@@ -140,7 +141,7 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - `plugins official` now displays each official plugin contract beside category, status, renderers and tags.
 - Devtools inspector now supports keyboard toggling, variable search, recent snapshot entries and copying diagnostics JSON.
 - Backlog, gallery, music room, settings and devtools overlays now share visual tokens and Escape/focus behavior where applicable.
-- VN Studio interface restyled around the Framer-inspired design system with pill controls, blue focus rings, dark product panels and responsive workspaces.
-- VN Studio layout now uses a top project/action header, dedicated section sidebar and dynamic main workspace.
-- VN Studio workspace header title removed so editors and previews have more vertical room; project context now lives in the top selector.
-- VN Studio Overview redesigned around identity, localization, plugin, statistics and diagnostics panels.
+- Biwa Studio interface restyled around the Framer-inspired design system with pill controls, blue focus rings, dark product panels and responsive workspaces.
+- Biwa Studio layout now uses a top project/action header, dedicated section sidebar and dynamic main workspace.
+- Biwa Studio workspace header title removed so editors and previews have more vertical room; project context now lives in the top selector.
+- Biwa Studio Overview redesigned around identity, localization, plugin, statistics and diagnostics panels.

@@ -36,7 +36,7 @@
   --story-explorer-count-badge-min-width: 28px;
   color: var(--studio-text);
   background: var(--studio-bg);
-  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  font-family: "Zen Kaku Gothic New", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   font-feature-settings: "cv01", "cv05", "cv09", "cv11", "ss03", "ss07";
 }
 
@@ -142,7 +142,7 @@ select:focus-visible {
 .studio-mark strong {
   flex: 1;
   color: var(--studio-active);
-  font-family: "GT Walsheim Framer Medium", "GT Walsheim Medium", Inter, system-ui, sans-serif;
+  font-family: "Zen Kaku Gothic New", Inter, system-ui, sans-serif;
   font-size: 24px;
   font-weight: 500;
   letter-spacing: 0;
@@ -307,7 +307,7 @@ select:focus-visible {
   max-width: 920px;
   margin: 8px 0 10px;
   color: var(--studio-active);
-  font-family: "GT Walsheim Framer Medium", "GT Walsheim Medium", Inter, system-ui, sans-serif;
+  font-family: "Zen Kaku Gothic New", Inter, system-ui, sans-serif;
   font-size: 57.6px;
   font-weight: 500;
   letter-spacing: 0;
@@ -1881,7 +1881,7 @@ select:focus-visible {
 .story-dialog-source,
 .story-dialog label span {
   color: #444748;
-  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  font-family: "Zen Kaku Gothic New", Inter, system-ui, sans-serif;
   font-size: 13px;
   line-height: 1.4;
 }
@@ -1917,7 +1917,7 @@ select:focus-visible {
   border-bottom: 2px solid #1b1c19;
   border-radius: 0;
   outline: none;
-  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  font-family: "Zen Kaku Gothic New", Inter, system-ui, sans-serif;
   font-size: 14px;
   color-scheme: light;
 }
@@ -1930,7 +1930,7 @@ select:focus-visible {
 
 .story-dialog-error {
   color: #93000a !important;
-  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif !important;
+  font-family: "Zen Kaku Gothic New", Inter, system-ui, sans-serif !important;
   font-size: 13px !important;
 }
 
@@ -1950,7 +1950,7 @@ select:focus-visible {
   border: 1.5px solid #1b1c19;
   border-radius: 0;
   cursor: pointer;
-  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  font-family: "Zen Kaku Gothic New", Inter, system-ui, sans-serif;
   font-size: 14px;
   font-weight: 600;
 }
@@ -2079,14 +2079,14 @@ select:focus-visible {
   border: 0;
   border-bottom: 2px solid var(--studio-blue);
   box-shadow: none;
-  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  font-family: "Zen Kaku Gothic New", Inter, system-ui, sans-serif;
   font-size: 15px;
 }
 
 .story-file-rename small {
   grid-column: 2;
   color: var(--studio-error);
-  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  font-family: "Zen Kaku Gothic New", Inter, system-ui, sans-serif;
   font-size: 11px;
 }
 
@@ -2113,7 +2113,7 @@ select:focus-visible {
   border: 1px solid var(--studio-line);
   border-radius: 0;
   cursor: pointer;
-  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  font-family: "Zen Kaku Gothic New", Inter, system-ui, sans-serif;
   font-size: 11px;
 }
 
@@ -2512,7 +2512,7 @@ select:focus-visible {
   min-width: 0;
   overflow: hidden;
   color: #1b1c19;
-  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  font-family: "Zen Kaku Gothic New", Inter, system-ui, sans-serif;
   font-size: 14px;
   font-weight: 800;
   text-overflow: ellipsis;
@@ -2533,7 +2533,7 @@ select:focus-visible {
 
 .story-flow-card span {
   color: #346288;
-  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  font-family: "Zen Kaku Gothic New", Inter, system-ui, sans-serif;
   font-size: 13px;
   font-weight: 700;
 }
@@ -3268,7 +3268,7 @@ select:focus-visible {
 .build-subheading strong {
   display: block;
   color: var(--studio-active);
-  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  font-family: "Zen Kaku Gothic New", Inter, system-ui, sans-serif;
   font-size: 16.8px;
   font-weight: 800;
 }
@@ -3279,7 +3279,7 @@ select:focus-visible {
 .build-facts dt,
 .build-history-row small {
   color: var(--studio-muted);
-  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  font-family: "Zen Kaku Gothic New", Inter, system-ui, sans-serif;
   font-size: 14.4px;
 }
 
@@ -3380,13 +3380,13 @@ select:focus-visible {
   gap: 6px;
   align-items: center;
   color: var(--studio-blue);
-  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  font-family: "Zen Kaku Gothic New", Inter, system-ui, sans-serif;
   font-weight: 700;
 }
 
 .build-history-row strong {
   justify-self: end;
-  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  font-family: "Zen Kaku Gothic New", Inter, system-ui, sans-serif;
   font-size: 14.4px;
 }
 
@@ -3504,7 +3504,7 @@ select:focus-visible {
 .authoring-panel-heading strong {
   display: block;
   color: var(--studio-active);
-  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  font-family: "Zen Kaku Gothic New", Inter, system-ui, sans-serif;
   font-size: 16.8px;
   font-weight: 800;
 }
@@ -3521,7 +3521,7 @@ select:focus-visible {
 .authoring-locale-list small,
 .authoring-debug-list dt {
   color: var(--studio-muted);
-  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  font-family: "Zen Kaku Gothic New", Inter, system-ui, sans-serif;
   font-size: 14.4px;
 }
 
@@ -3573,7 +3573,7 @@ select:focus-visible {
 .authoring-note-list strong,
 .authoring-locale-list strong {
   color: var(--studio-active);
-  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  font-family: "Zen Kaku Gothic New", Inter, system-ui, sans-serif;
   font-weight: 800;
   overflow-wrap: anywhere;
 }
@@ -4068,8 +4068,8 @@ select:focus-visible {
   --studio-active: #000000;
   --studio-error: #ba1a1a;
   --studio-error-soft: #ffdad6;
-  --studio-warning: #93000a;
-  --studio-warning-soft: #ffdad7;
+  --studio-warning: #9a6a00;
+  --studio-warning-soft: #fff4bf;
   --studio-info: #346288;
   --studio-info-soft: #cde5ff;
   --studio-radius-card: 0;
@@ -4202,7 +4202,7 @@ select:focus-visible {
 .scene-panel-heading strong,
 .scene-asset-heading strong {
   color: var(--studio-active);
-  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  font-family: "Zen Kaku Gothic New", Inter, system-ui, sans-serif;
   font-weight: 700;
 }
 
@@ -4231,7 +4231,7 @@ select:focus-visible {
 .character-asset-heading span,
 .scene-asset-heading span {
   color: var(--studio-muted);
-  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  font-family: "Zen Kaku Gothic New", Inter, system-ui, sans-serif;
 }
 
 .studio-section-list button,
@@ -4268,7 +4268,7 @@ select:focus-visible {
   border: 1.5px solid var(--studio-line);
   border-radius: 0;
   box-shadow: 2px 2px 0 rgba(27, 28, 25, 0.14);
-  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  font-family: "Zen Kaku Gothic New", Inter, system-ui, sans-serif;
 }
 
 .ghost-button:hover,
@@ -4509,7 +4509,7 @@ textarea::placeholder,
 .character-asset-meta strong,
 .scene-background-grid span,
 .scene-audio-list strong {
-  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  font-family: "Zen Kaku Gothic New", Inter, system-ui, sans-serif;
 }
 
 .simulator-lines p,
@@ -4560,6 +4560,32 @@ textarea::placeholder,
 .simulator-choices button:focus-visible span {
   color: #1b1c19;
   background: #F2EFE8;
+}
+
+.story-flow-panel,
+.story-flow-panel button,
+.story-flow-heading strong,
+.story-flow-heading span,
+.story-flow-card strong,
+.story-flow-card span,
+.story-flow-card small,
+.story-simulator-panel,
+.story-simulator-panel button,
+.story-simulator-panel .story-runtime-heading > strong,
+.story-simulator-panel .story-runtime-tools span,
+.simulator-lines p,
+.simulator-choices button,
+.simulator-choices span,
+.story-tag-grid,
+.story-tag-grid button,
+.story-tag-grid input,
+.story-tag-grid textarea,
+.story-tag-grid strong,
+.story-tag-grid small,
+.story-tag-grid span,
+.story-tag-value-text,
+.story-tag-meta-text {
+  font-family: "IBM Plex Serif", Georgia, serif;
 }
 
 .story-variable-grid > *,
@@ -4666,7 +4692,7 @@ textarea::placeholder,
   align-items: center;
   gap: 5px;
   color: #1b1c19;
-  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  font-family: "Zen Kaku Gothic New", Inter, system-ui, sans-serif;
   font-size: 15px;
   font-weight: 800;
   letter-spacing: 0;
@@ -4813,7 +4839,7 @@ textarea::placeholder,
   background: transparent;
   border: 1px solid rgba(27, 28, 25, 0.26);
   border-radius: 999px;
-  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  font-family: "Zen Kaku Gothic New", Inter, system-ui, sans-serif;
   font-size: 13px;
   font-weight: 600;
 }
@@ -5045,6 +5071,6 @@ textarea::placeholder,
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-family: "Plus Jakarta Sans", Inter, system-ui, sans-serif;
+  font-family: "Zen Kaku Gothic New", Inter, system-ui, sans-serif;
   font-size: 14px;
 }

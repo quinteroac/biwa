@@ -5,13 +5,13 @@
     "moduleResolution": "bundler",
     "baseUrl": ".",
     "paths": {
-      "@vn-experiment/core": ["framework/index.ts"],
-      "@vn-experiment/core/engine": ["framework/engine.ts"],
-      "@vn-experiment/core/react": ["framework/react.ts"],
-      "@vn-experiment/core/plugins": ["framework/plugins.ts"],
-      "@vn-experiment/core/types": ["framework/types.ts"],
-      "@vn-experiment/plugins": ["framework/plugins.ts"],
-      "@vn-experiment/manager": ["manager/index.ts"]
+      "@biwa/core": ["framework/index.ts"],
+      "@biwa/core/engine": ["framework/engine.ts"],
+      "@biwa/core/react": ["framework/react.ts"],
+      "@biwa/core/plugins": ["framework/plugins.ts"],
+      "@biwa/core/types": ["framework/types.ts"],
+      "@biwa/plugins": ["framework/plugins.ts"],
+      "@biwa/manager": ["manager/index.ts"]
     },
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "jsx": "react-jsx",

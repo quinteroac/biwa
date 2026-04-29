@@ -222,14 +222,14 @@ export function StudioIcon({ name, size = 22, ...props }: StudioIconProps) {
         <path d="M8.5 5.5c7.8-.65 14.8-.45 23 .25M5.8 9c-.45 7.2-.25 14.2.2 21.5M34.5 8.8c.45 7.4.3 14.2-.35 22M8.2 34.3c7.7.6 15.1.45 23.6-.15" fill="none" stroke="#F2EFE8" strokeLinecap="round" strokeWidth="1.1" />
         <text
           fill="#F2EFE8"
-          fontFamily="Plus Jakarta Sans, Inter, system-ui, sans-serif"
-          fontSize="14.4"
+          fontFamily="Zen Kaku Gothic New, Inter, system-ui, sans-serif"
+          fontSize="10.5"
           fontWeight="800"
           textAnchor="middle"
           x="20"
           y="24"
         >
-          VN
+          Biwa
         </text>
       </svg>
     )

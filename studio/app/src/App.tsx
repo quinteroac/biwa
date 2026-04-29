@@ -86,7 +86,7 @@ function StudioTopbar(props: {
     <header className="studio-topbar">
       <div className="studio-mark">
         <span><StudioIcon name="app-logo" size={34} /></span>
-        <strong>Studio</strong>
+        <strong>Biwa Studio</strong>
       </div>
       <div className="project-selector-shell">
         <label htmlFor="project-selector">Project</label>
@@ -591,13 +591,13 @@ export function App() {
   }, [projects, selectedId])
 
   if (projectsQuery.isLoading) {
-    return <div className="studio-loading">Loading Studio</div>
+    return <div className="studio-loading">Loading Biwa Studio</div>
   }
 
   if (projectsQuery.isError) {
     return (
       <div className="studio-loading">
-        <span>Studio API unavailable</span>
+        <span>Biwa Studio API unavailable</span>
         <p>{projectsQuery.error.message}</p>
       </div>
     )

@@ -33,6 +33,8 @@ colors:
   on-error: '#F2EFE8'
   error-container: '#ffdad6'
   on-error-container: '#93000a'
+  warning: '#9a6a00'
+  warning-container: '#fff4bf'
   primary-fixed: '#e5e2e1'
   primary-fixed-dim: '#c8c6c5'
   on-primary-fixed: '#1c1b1b'
@@ -81,15 +83,25 @@ typography:
     fontWeight: '400'
     lineHeight: '1.5'
   label-md:
-    fontFamily: Plus Jakarta Sans
+    fontFamily: Zen Kaku Gothic New
     fontSize: 17px
     fontWeight: '500'
     lineHeight: '1.4'
   note-sm:
-    fontFamily: Plus Jakarta Sans
+    fontFamily: Zen Kaku Gothic New
     fontSize: 14px
     fontWeight: '400'
     lineHeight: '1.4'
+  code-editor:
+    fontFamily: Source Code Pro
+    fontSize: 17px
+    fontWeight: '400'
+    lineHeight: 'normal'
+  story-runtime:
+    fontFamily: IBM Plex Serif
+    fontSize: 16.8px
+    fontWeight: '400'
+    lineHeight: '1.65'
 spacing:
   unit: 4px
   xs: 4px
@@ -127,7 +139,11 @@ Accent colors are used sparingly as "functional annotations":
 
 This design system uses a dual-type approach. **Newsreader** provides the "Editorial" voice—used for headings and main body content to evoke the feel of a printed tankobon volume. It feels authoritative yet literary.
 
-**Plus Jakarta Sans** serves as the "Functional" voice. Its clean, modern curves provide a necessary digital contrast, used for labels, navigation, and technical metadata. While a true handwritten font is reserved for specific decorative "notes," the clean sans-serif handles the heavy lifting of legibility in complex studio interfaces. Headlines should utilize tighter letter-spacing to feel like tight-set book titles.
+**Zen Kaku Gothic New** serves as the "Functional" voice. Its precise, readable forms provide a necessary digital contrast, used for labels, navigation, and technical metadata. While a true handwritten font is reserved for specific decorative "notes," the clean sans-serif handles the heavy lifting of legibility in complex studio interfaces. Headlines should utilize tighter letter-spacing to feel like tight-set book titles.
+
+**Source Code Pro** is reserved for the Monaco Ink editor only. It provides the code-writing surface with clearer character distinction while preserving the rest of the Studio's existing typography and mono treatments.
+
+**IBM Plex Serif** is reserved for the Studio's story runtime analysis surfaces: Story Flow, Simulator, and Tags. It gives those reading and inspection panels a literary texture without changing the rest of the authoring shell.
 
 ## Layout & Spacing
 
