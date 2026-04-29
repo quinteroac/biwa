@@ -166,13 +166,40 @@ export interface StudioCharacterAtlasSummary {
   } | null
 }
 
+export interface StudioCharacterSheetAssets {
+  main: string
+  concepts: string[]
+  generated: string[]
+}
+
+export interface StudioCharacterSheetAssetUrls {
+  main: string | null
+  concepts: string[]
+  generated: string[]
+}
+
 export interface StudioCharacterItem {
   path: string
   id: string
   displayName: string
   role: string
+  age: string
+  gender: string
+  tags: string[]
   physicalDescription: string
+  expressionsText: string[]
   personality: string
+  traits: string[]
+  motivations: string
+  fears: string
+  internalConflict: string
+  backstory: string
+  keyEvents: string[]
+  arcInitial: string
+  arcBreak: string
+  arcFinal: string
+  relationships: string[]
+  authorNotes: string
   palette: string
   outfit: string
   prompt: string
@@ -187,6 +214,8 @@ export interface StudioCharacterItem {
   atlasPath: string
   previewUrl: string | null
   atlas: StudioCharacterAtlasSummary | null
+  characterSheet: StudioCharacterSheetAssets
+  characterSheetUrls: StudioCharacterSheetAssetUrls
   body: string
 }
 
@@ -194,8 +223,23 @@ export interface StudioCharacterDraft {
   id: string
   displayName: string
   role: string
+  age?: string
+  gender?: string
+  tags?: string[]
   physicalDescription: string
+  expressionsText?: string[]
   personality: string
+  traits?: string[]
+  motivations?: string
+  fears?: string
+  internalConflict?: string
+  backstory?: string
+  keyEvents?: string[]
+  arcInitial?: string
+  arcBreak?: string
+  arcFinal?: string
+  relationships?: string[]
+  authorNotes?: string
   palette: string
   outfit: string
   prompt: string
@@ -207,6 +251,7 @@ export interface StudioCharacterDraft {
   offset: StudioCharacterOffset
   animation: Record<string, unknown>
   expressions: string[]
+  characterSheet?: StudioCharacterSheetAssets
   body?: string
 }
 
@@ -220,6 +265,17 @@ export interface StudioCharacterResponse {
 
 export interface StudioCharacterAtlasResponse {
   atlas: StudioCharacterAtlasSummary
+  character: StudioCharacterItem
+}
+
+export interface StudioCharacterSheetUploadResponse {
+  path: string
+  url: string | null
+  character: StudioCharacterItem
+}
+
+export interface StudioCharacterSheetDeleteResponse {
+  deletedPath: string
   character: StudioCharacterItem
 }
 

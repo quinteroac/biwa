@@ -5,7 +5,7 @@ import { getProjectDiagnostics, getProjectSummary, listProjects, updateProjectId
 import { createStoryFolder, deleteStoryFile, deleteStoryFolder, listStoryEntries, readStoryFile, renameStoryFile, renameStoryFolder, writeStoryFile } from './story.ts'
 import { listAssets, resolveAssetFile } from './assets.ts'
 import { listScenes, readScene, writeScene } from './scenes.ts'
-import { generateCharacterAtlas, listCharacters, readCharacter, writeCharacter } from './characters.ts'
+import { deleteCharacterSheetConcept, generateCharacterAtlas, listCharacters, readCharacter, uploadCharacterSheetConcept, writeCharacter } from './characters.ts'
 import { installOfficialPlugin, listStudioPlugins, removeOfficialPlugin } from './plugins.ts'
 import { getBuildManifest, getBuilds, previewFileExists, previewMime, resolvePreviewFile, runStudioBuild } from './builds.ts'
 import { analyzeAuthoring } from './authoring.ts'
@@ -282,6 +282,42 @@ export const studioApi = new Elysia()
         throw new Error('Missing character payload.')
       }
       return await generateCharacterAtlas(params.gameId, payload.path, payload.character as Parameters<typeof generateCharacterAtlas>[2])
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, err.message.includes('not found') ? 404 : 400)
+    }
+  })
+  .post('/api/projects/:gameId/characters/character-sheet/concepts', async ({ body, params }) => {
+    try {
+      const payload = body as { path?: unknown; character?: unknown; image?: unknown }
+      if (typeof payload.path !== 'string') throw new Error('Missing character file path.')
+      if (!(payload.image instanceof File)) throw new Error('Missing character sheet image.')
+      const parsed = typeof payload.character === 'string'
+        ? JSON.parse(payload.character) as unknown
+        : payload.character
+      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+        throw new Error('Invalid character payload.')
+      }
+      return await uploadCharacterSheetConcept(params.gameId, payload.path, parsed as Parameters<typeof uploadCharacterSheetConcept>[2], payload.image)
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, err.message.includes('not found') ? 404 : 400)
+    }
+  })
+  .delete('/api/projects/:gameId/characters/character-sheet/concepts', async ({ body, params }) => {
+    try {
+      const payload = body as { path?: unknown; character?: unknown; assetPath?: unknown }
+      if (typeof payload.path !== 'string') throw new Error('Missing character file path.')
+      if (typeof payload.character !== 'object' || payload.character === null || Array.isArray(payload.character)) {
+        throw new Error('Missing character payload.')
+      }
+      if (typeof payload.assetPath !== 'string') throw new Error('Missing character sheet asset path.')
+      return await deleteCharacterSheetConcept(
+        params.gameId,
+        payload.path,
+        payload.character as Parameters<typeof deleteCharacterSheetConcept>[2],
+        payload.assetPath,
+      )
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e))
       return jsonError(err.message, err.message.includes('not found') ? 404 : 400)

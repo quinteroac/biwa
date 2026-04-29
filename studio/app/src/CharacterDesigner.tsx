@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchCharacter, fetchCharacters, generateCharacterAtlas, saveCharacter } from './api.ts'
+import { deleteCharacterSheetConcept, fetchCharacter, fetchCharacters, generateCharacterAtlas, saveCharacter, uploadCharacterSheetConcept } from './api.ts'
+import { StudioIcon } from './StudioIcon.tsx'
 import type { StudioCharacterDraft, StudioCharacterItem, StudioProjectSummary } from '../../shared/types.ts'
 
-const positionOptions = ['left', 'center', 'right']
+const genderOptions = ['Male', 'Female', 'Transgender', 'Non-binary', 'Other']
 const NEW_CHARACTER_PATH = '__new_character__.md'
 const characterTabs = ['Character Sheet', 'Spritesheet', 'Sprites', 'Animations'] as const
 
@@ -13,11 +14,26 @@ type StudioCharacter = NonNullable<Awaited<ReturnType<typeof fetchCharacter>>['c
 
 function newCharacterDraft(): StudioCharacterDraft {
   return {
-    id: 'new_character',
+    id: 'new-character',
     displayName: 'New Character',
     role: '',
+    age: '',
+    gender: '',
+    tags: [],
     physicalDescription: '',
+    expressionsText: ['neutral'],
     personality: '',
+    traits: [],
+    motivations: '',
+    fears: '',
+    internalConflict: '',
+    backstory: '',
+    keyEvents: [],
+    arcInitial: '',
+    arcBreak: '',
+    arcFinal: '',
+    relationships: [],
+    authorNotes: '',
     palette: '',
     outfit: '',
     prompt: '',
@@ -29,17 +45,30 @@ function newCharacterDraft(): StudioCharacterDraft {
     offset: { x: 0, y: 0 },
     animation: {
       type: 'spritesheet',
-      file: 'characters/new_character/new_character_spritesheet.png',
-      atlas: 'characters/new_character/new_character_atlas.json',
+      file: 'characters/new-character/new-character_spritesheet.png',
+      atlas: 'characters/new-character/new-character_atlas.json',
     },
     expressions: ['neutral', 'happy', 'sad', 'angry'],
+    characterSheet: {
+      main: '',
+      concepts: [],
+      generated: [],
+    },
     body: '',
   }
 }
 
+function sanitizeCharacterId(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
 function characterPathForDraft(draft: StudioCharacterDraft, activePath: string | null): string {
   if (activePath && activePath !== NEW_CHARACTER_PATH) return activePath
-  const id = draft.id.trim().replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '') || 'new_character'
+  const id = sanitizeCharacterId(draft.id) || 'new-character'
   return `${id}.md`
 }
 
@@ -48,8 +77,23 @@ function draftFromCharacter(character: StudioCharacter): StudioCharacterDraft {
     id: character.id,
     displayName: character.displayName,
     role: character.role,
+    age: character.age,
+    gender: character.gender,
+    tags: character.tags,
     physicalDescription: character.physicalDescription,
+    expressionsText: character.expressionsText,
     personality: character.personality,
+    traits: character.traits,
+    motivations: character.motivations,
+    fears: character.fears,
+    internalConflict: character.internalConflict,
+    backstory: character.backstory,
+    keyEvents: character.keyEvents,
+    arcInitial: character.arcInitial,
+    arcBreak: character.arcBreak,
+    arcFinal: character.arcFinal,
+    relationships: character.relationships,
+    authorNotes: character.authorNotes,
     palette: character.palette,
     outfit: character.outfit,
     prompt: character.prompt,
@@ -61,6 +105,7 @@ function draftFromCharacter(character: StudioCharacter): StudioCharacterDraft {
     offset: character.offset,
     animation: character.animation,
     expressions: character.expressions,
+    characterSheet: character.characterSheet,
     body: character.body,
   }
 }
@@ -74,27 +119,37 @@ function updateExpressionText(draft: StudioCharacterDraft, text: string): Studio
   return { ...draft, expressions }
 }
 
-function numericValue(value: string, fallback: number): number {
-  const parsed = Number(value)
-  return Number.isFinite(parsed) ? parsed : fallback
+function listText(items: string[] | undefined): string {
+  return (items ?? []).join(', ')
+}
+
+function listFromText(text: string): string[] {
+  return text.split(',').map(item => item.trim()).filter(Boolean)
+}
+
+function updateStringList(items: string[] | undefined, index: number, value: string): string[] {
+  const next = [...(items ?? [])]
+  next[index] = value
+  return next.map(item => item.trim()).filter(Boolean)
+}
+
+function appendStringList(items: string[] | undefined, fallback: string): string[] {
+  return [...(items ?? []), fallback]
+}
+
+function paletteColors(draft: StudioCharacterDraft): string[] {
+  const colors = listFromText(draft.palette)
+  return [...colors, '#1b1c19', '#444748', '#747878', '#c4c7c7', '#ba1a1a'].slice(0, 5)
+}
+
+function updatePaletteColor(draft: StudioCharacterDraft, index: number, color: string): StudioCharacterDraft {
+  const colors = paletteColors(draft)
+  colors[index] = color
+  return { ...draft, palette: colors.join(', ') }
 }
 
 function animationFile(draft: StudioCharacterDraft): string {
   return typeof draft.animation['file'] === 'string' ? draft.animation['file'] : ''
-}
-
-function animationAtlas(draft: StudioCharacterDraft): string {
-  return typeof draft.animation['atlas'] === 'string' ? draft.animation['atlas'] : ''
-}
-
-function setAnimationField(draft: StudioCharacterDraft, key: string, value: string): StudioCharacterDraft {
-  return {
-    ...draft,
-    animation: {
-      ...draft.animation,
-      [key]: value,
-    },
-  }
 }
 
 function spriteFrameStyle(character: StudioCharacter, frame: NonNullable<StudioCharacter['atlas']>['frames'][number], maxWidth: number, maxHeight: number): CSSProperties {
@@ -125,6 +180,19 @@ function characterGroup(character: Pick<StudioCharacterItem, 'role'>): string {
   return character.role || 'Supporting'
 }
 
+function characterConceptPreviewUrl(character: Pick<StudioCharacterItem, 'characterSheetUrls' | 'previewUrl'>): string | null {
+  return character.characterSheetUrls.concepts[0] ?? character.characterSheetUrls.main ?? character.previewUrl
+}
+
+function characterSheetTags(draft: StudioCharacterDraft, fallbackRole: string | null): string[] {
+  return [draft.role || fallbackRole || '', ...(draft.tags ?? []), ...draft.expressions].map(tag => tag.trim()).filter(Boolean).slice(0, 5)
+}
+
+function initials(name: string): string {
+  const parts = name.split(/\s+/).map(part => part.trim()).filter(Boolean)
+  return (parts[0]?.[0] ?? 'C') + (parts[1]?.[0] ?? 'H')
+}
+
 export function CharacterDesigner(props: {
   project: StudioProjectSummary
   onRunDoctor: () => void
@@ -133,8 +201,10 @@ export function CharacterDesigner(props: {
   const queryClient = useQueryClient()
   const [selectedPath, setSelectedPath] = useState<string | null>(null)
   const [draft, setDraft] = useState<StudioCharacterDraft | null>(null)
-  const [activeTab, setActiveTab] = useState<CharacterTab>('Spritesheet')
+  const [activeTab, setActiveTab] = useState<CharacterTab>('Character Sheet')
   const [selectedAnimation, setSelectedAnimation] = useState<string | null>(null)
+  const [selectedConceptIndex, setSelectedConceptIndex] = useState(0)
+  const [searchText, setSearchText] = useState('')
   const charactersQuery = useQuery({
     queryKey: ['studio-characters', props.project.id],
     queryFn: () => fetchCharacters(props.project.id),
@@ -148,11 +218,27 @@ export function CharacterDesigner(props: {
     enabled: Boolean(activePath) && !isNewCharacter,
   })
   const activeCharacter = characterQuery.data?.character
+  const visibleCharacters = characters.filter(character => {
+    const needle = searchText.trim().toLowerCase()
+    if (!needle) return true
+    return [character.displayName, character.role, character.id, ...character.tags]
+      .join(' ')
+      .toLowerCase()
+      .includes(needle)
+  })
   const expressionPreview = useMemo(() => draft?.expressions ?? [], [draft])
   const atlasFrames = activeCharacter?.atlas?.frames ?? []
   const atlasTags = activeCharacter?.atlas?.frameTags ?? []
   const activeAnimationName = selectedAnimation ?? atlasTags[0]?.name ?? activeCharacter?.defaultExpression ?? 'Idle'
   const activeAnimationFrames = activeCharacter ? animationFrames(activeCharacter, activeAnimationName) : []
+  const fallbackRole = activeCharacter?.role || activeCharacter?.id || null
+  const sheetTags = draft ? characterSheetTags(draft, fallbackRole) : []
+  const characterSheetMainUrl = activeCharacter?.characterSheetUrls.main ?? null
+  const characterConceptUrls = activeCharacter?.characterSheetUrls.concepts ?? []
+  const selectedConceptPath = activeCharacter?.characterSheet.concepts[selectedConceptIndex] ?? ''
+  const selectedConceptUrl = characterConceptUrls[selectedConceptIndex] ?? null
+  const displayedCharacterSheetUrl = selectedConceptUrl ?? characterSheetMainUrl
+  const activeCharacterPreviewUrl = activeCharacter ? characterConceptPreviewUrl(activeCharacter) : null
   const saveMutation = useMutation({
     mutationFn: () => {
       const currentDraft = draft as StudioCharacterDraft
@@ -179,10 +265,47 @@ export function CharacterDesigner(props: {
       queryClient.invalidateQueries({ queryKey: ['studio-projects'] })
     },
   })
+  const conceptUploadMutation = useMutation({
+    mutationFn: (file: File) => {
+      const currentDraft = draft as StudioCharacterDraft
+      return uploadCharacterSheetConcept(props.project.id, characterPathForDraft(currentDraft, activePath), currentDraft, file)
+    },
+    onSuccess: data => {
+      setDraft(draftFromCharacter(data.character))
+      setSelectedPath(data.character.path)
+      setSelectedConceptIndex(Math.max(0, data.character.characterSheet.concepts.length - 1))
+      queryClient.setQueryData(['studio-character', props.project.id, data.character.path], { character: data.character })
+      void queryClient.invalidateQueries({ queryKey: ['studio-characters', props.project.id] })
+      void queryClient.invalidateQueries({ queryKey: ['studio-character', props.project.id, data.character.path] })
+      void queryClient.invalidateQueries({ queryKey: ['studio-assets', props.project.id] })
+    },
+  })
+  const conceptDeleteMutation = useMutation({
+    mutationFn: (assetPath: string) => {
+      const currentDraft = draft as StudioCharacterDraft
+      return deleteCharacterSheetConcept(props.project.id, characterPathForDraft(currentDraft, activePath), currentDraft, assetPath)
+    },
+    onSuccess: data => {
+      setDraft(draftFromCharacter(data.character))
+      setSelectedConceptIndex(0)
+      queryClient.setQueryData(['studio-character', props.project.id, data.character.path], { character: data.character })
+      void queryClient.invalidateQueries({ queryKey: ['studio-characters', props.project.id] })
+      void queryClient.invalidateQueries({ queryKey: ['studio-character', props.project.id, data.character.path] })
+      void queryClient.invalidateQueries({ queryKey: ['studio-assets', props.project.id] })
+    },
+  })
 
   useEffect(() => {
     if (!selectedPath && characters[0]) setSelectedPath(characters[0].path)
   }, [characters, selectedPath])
+
+  useEffect(() => {
+    setSelectedConceptIndex(0)
+  }, [activePath])
+
+  useEffect(() => {
+    if (selectedConceptIndex >= characterConceptUrls.length) setSelectedConceptIndex(Math.max(0, characterConceptUrls.length - 1))
+  }, [characterConceptUrls.length, selectedConceptIndex])
 
   useEffect(() => {
     if (isNewCharacter) return
@@ -204,12 +327,19 @@ export function CharacterDesigner(props: {
             }}
             type="button"
           >
+            <StudioIcon name="add" size={16} />
             New
           </button>
         </div>
         <label className="character-search">
           <span>Search characters</span>
-          <input placeholder="Search characters..." type="search" />
+          <StudioIcon name="search" size={17} />
+          <input
+            onChange={event => setSearchText(event.target.value)}
+            placeholder="Search characters..."
+            type="search"
+            value={searchText}
+          />
         </label>
         <div className="character-list">
           {isNewCharacter ? (
@@ -219,34 +349,44 @@ export function CharacterDesigner(props: {
               <small>unsaved</small>
             </button>
           ) : null}
-          {characters.map(character => (
-            <button
-              className={character.path === activePath ? 'is-active' : ''}
-              key={character.path}
-              onClick={() => setSelectedPath(character.path)}
-              type="button"
-            >
-              <span className="character-list-avatar">
-                {character.previewUrl ? <img alt="" src={character.previewUrl} /> : character.displayName.slice(0, 2)}
-              </span>
-              <span>{character.displayName}</span>
-              <small>{characterGroup(character)}</small>
-            </button>
-          ))}
+          {visibleCharacters.map(character => {
+            const characterPreviewUrl = characterConceptPreviewUrl(character)
+            return (
+              <button
+                className={character.path === activePath ? 'is-active' : ''}
+                key={character.path}
+                onClick={() => setSelectedPath(character.path)}
+                type="button"
+              >
+                <span className="character-list-avatar">
+                  {characterPreviewUrl ? <img alt="" src={characterPreviewUrl} /> : character.displayName.slice(0, 2)}
+                </span>
+                <span>{character.displayName}</span>
+                <small>{characterGroup(character)}</small>
+              </button>
+            )
+          })}
         </div>
       </aside>
 
       <section className="character-editor-panel">
         <header className="character-editor-header">
-          <div>
-            <h2>{draft?.displayName ?? activeCharacter?.displayName ?? 'Character'}</h2>
-            <p>{draft?.role || activeCharacter?.role || activeCharacter?.id || 'No role configured'}</p>
+          <div className="character-editor-title">
+            <span className="character-editor-portrait">
+              {activeCharacterPreviewUrl ? <img alt="" src={activeCharacterPreviewUrl} /> : initials(draft?.displayName ?? 'Character')}
+            </span>
+            <div>
+              <h2>{draft?.displayName ?? activeCharacter?.displayName ?? 'Character'}</h2>
+              {sheetTags.length ? (
+                <div className="character-hero-tags" aria-label="Character tags">
+                  {sheetTags.map((tag, index) => <span className={index === 0 ? 'is-primary' : ''} key={`${tag}-${index}`}>{tag}</span>)}
+                </div>
+              ) : null}
+            </div>
           </div>
           <div className="character-header-actions">
-            <button className="ghost-button" disabled={props.isRunningDoctor} onClick={props.onRunDoctor} type="button">
-              Doctor
-            </button>
             <button className="ghost-button" disabled={!draft || saveMutation.isPending} onClick={() => saveMutation.mutate()} type="button">
+              <StudioIcon name="build" size={16} />
               {saveMutation.isPending ? 'Saving' : 'Save Character'}
             </button>
           </div>
@@ -261,120 +401,309 @@ export function CharacterDesigner(props: {
         </nav>
 
         {draft && activeTab === 'Character Sheet' ? (
-          <div className="scene-form">
-            <div className="scene-form-grid">
-              <label>
-                <span>Display Name</span>
-                <input value={draft.displayName} onChange={event => setDraft({ ...draft, displayName: event.target.value })} />
-              </label>
-              <label>
-                <span>Role</span>
-                <input value={draft.role} onChange={event => setDraft({ ...draft, role: event.target.value })} />
-              </label>
-            </div>
-            <label>
-              <span>Physical Description</span>
-              <textarea value={draft.physicalDescription} onChange={event => setDraft({ ...draft, physicalDescription: event.target.value })} />
-            </label>
-            <label>
-              <span>Personality</span>
-              <textarea value={draft.personality} onChange={event => setDraft({ ...draft, personality: event.target.value })} />
-            </label>
-            <div className="scene-form-grid">
-              <label>
-                <span>Palette</span>
-                <input value={draft.palette} onChange={event => setDraft({ ...draft, palette: event.target.value })} />
-              </label>
-              <label>
-                <span>Outfit</span>
-                <input value={draft.outfit} onChange={event => setDraft({ ...draft, outfit: event.target.value })} />
-              </label>
-            </div>
-            <label>
-              <span>Prompt Base</span>
-              <textarea value={draft.prompt} onChange={event => setDraft({ ...draft, prompt: event.target.value })} />
-            </label>
+          <div className="character-sheet-workspace scene-form">
+            <div className="character-sheet-editor">
+              <section className="character-sheet-card">
+                <div className="character-sheet-card-heading">
+                  <strong>Identity</strong>
+                </div>
+                <div className="character-identity-grid">
+                  <label>
+                    <span>ID</span>
+                    <input
+                      readOnly={!isNewCharacter}
+                      value={draft.id}
+                      onChange={event => setDraft({ ...draft, id: sanitizeCharacterId(event.target.value) })}
+                    />
+                  </label>
+                  <label>
+                    <span>Name</span>
+                    <input value={draft.displayName} onChange={event => setDraft({ ...draft, displayName: event.target.value })} />
+                  </label>
+                  <label>
+                    <span>Role</span>
+                    <select value={draft.role} onChange={event => setDraft({ ...draft, role: event.target.value })}>
+                      <option value="">No role</option>
+                      <option value="Protagonist">Protagonist</option>
+                      <option value="Antagonist">Antagonist</option>
+                      <option value="Supporting">Supporting</option>
+                      <option value="Narrator">Narrator</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Age</span>
+                    <input value={draft.age ?? ''} onChange={event => setDraft({ ...draft, age: event.target.value })} />
+                  </label>
+                  <label>
+                    <span>Gender</span>
+                    <select value={draft.gender ?? ''} onChange={event => setDraft({ ...draft, gender: event.target.value })}>
+                      <option value="">Unset</option>
+                      {genderOptions.map(gender => <option key={gender} value={gender}>{gender}</option>)}
+                    </select>
+                  </label>
+                </div>
+                <span className="character-tags-label">Tags</span>
+                <div className="expression-list" aria-label="Expression map">
+                  {(draft.tags ?? []).map((tag, index) => (
+                    <span key={`${tag}-${index}`}>
+                      {tag}
+                      <button
+                        aria-label={`Remove ${tag}`}
+                        onClick={() => setDraft({ ...draft, tags: (draft.tags ?? []).filter((_, tagIndex) => tagIndex !== index) })}
+                        type="button"
+                      >
+                        x
+                      </button>
+                    </span>
+                  ))}
+                  <button
+                    className="character-chip-add"
+                    onClick={() => setDraft({ ...draft, tags: appendStringList(draft.tags, 'New tag') })}
+                    type="button"
+                  >
+                    +
+                  </button>
+                </div>
+              </section>
 
-            <div className="character-fieldset">
-              <div className="studio-panel-heading">
-                <span>Runtime Metadata</span>
-                <small>VnCharacter</small>
-              </div>
-              <div className="scene-form-grid">
-                <label>
-                  <span>Default Position</span>
-                  <select value={draft.defaultPosition} onChange={event => setDraft({ ...draft, defaultPosition: event.target.value })}>
-                    {positionOptions.map(position => <option key={position} value={position}>{position}</option>)}
-                  </select>
-                </label>
-                <label>
-                  <span>Default Expression</span>
-                  <input value={draft.defaultExpression} onChange={event => setDraft({ ...draft, defaultExpression: event.target.value })} />
-                </label>
-                <label>
-                  <span>Scale</span>
-                  <input
-                    step="0.01"
-                    type="number"
-                    value={draft.scale}
-                    onChange={event => setDraft({ ...draft, scale: numericValue(event.target.value, draft.scale) })}
-                  />
-                </label>
-                <label>
-                  <span>Name Color</span>
-                  <input value={draft.nameColor} onChange={event => setDraft({ ...draft, nameColor: event.target.value })} />
-                </label>
-                <label>
-                  <span>Offset X</span>
-                  <input
-                    type="number"
-                    value={draft.offset.x ?? 0}
-                    onChange={event => setDraft({ ...draft, offset: { ...draft.offset, x: numericValue(event.target.value, 0) } })}
-                  />
-                </label>
-                <label>
-                  <span>Offset Y</span>
-                  <input
-                    type="number"
-                    value={draft.offset.y ?? 0}
-                    onChange={event => setDraft({ ...draft, offset: { ...draft.offset, y: numericValue(event.target.value, 0) } })}
-                  />
-                </label>
-              </div>
+              <section className="character-sheet-card">
+                <div className="character-sheet-card-heading">
+                  <strong><StudioIcon name="preview" size={16} /> Appearance</strong>
+                </div>
+                <div className="character-appearance-grid">
+                  <label>
+                    <span>Physical description</span>
+                    <textarea value={draft.physicalDescription} onChange={event => setDraft({ ...draft, physicalDescription: event.target.value })} />
+                  </label>
+                  <label>
+                    <span>Expressions</span>
+                    <input value={listText(draft.expressionsText?.length ? draft.expressionsText : draft.expressions)} onChange={event => setDraft({ ...draft, expressionsText: listFromText(event.target.value) })} />
+                  </label>
+                  <label>
+                    <span>Outfit</span>
+                    <input value={draft.outfit} onChange={event => setDraft({ ...draft, outfit: event.target.value })} />
+                  </label>
+                  <div className="character-palette-control" aria-label="Color palette">
+                    <span>Color palette</span>
+                    <div>
+                      {paletteColors(draft).map((color, index) => (
+                        <input
+                          aria-label={`Palette color ${index + 1}`}
+                          key={`${index}-${color}`}
+                          onChange={event => setDraft(updatePaletteColor(draft, index, event.target.value))}
+                          type="color"
+                          value={color}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <section className="character-sheet-card">
+                <div className="character-sheet-card-heading">
+                  <strong><StudioIcon name="story" size={16} /> Personality and Narrative</strong>
+                </div>
+                <div className="character-narrative-compact">
+                  <div className="character-narrative-column">
+                    <strong>Personality</strong>
+                    <label>
+                      <span>Short description</span>
+                      <textarea value={draft.personality} onChange={event => setDraft({ ...draft, personality: event.target.value })} />
+                    </label>
+                    <div className="character-trait-control">
+                      <span>Traits</span>
+                      <div className="expression-list" aria-label="Character traits">
+                        {(draft.traits ?? []).map((trait, index) => (
+                          <span key={`${trait}-${index}`}>
+                            {trait}
+                            <button
+                              aria-label={`Remove ${trait}`}
+                              onClick={() => setDraft({ ...draft, traits: (draft.traits ?? []).filter((_, traitIndex) => traitIndex !== index) })}
+                              type="button"
+                            >
+                              x
+                            </button>
+                          </span>
+                        ))}
+                        <button
+                          className="character-chip-add"
+                          onClick={() => setDraft({ ...draft, traits: appendStringList(draft.traits, 'New trait') })}
+                          type="button"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                    <label>
+                      <span>Motivations</span>
+                      <textarea value={draft.motivations ?? ''} onChange={event => setDraft({ ...draft, motivations: event.target.value })} />
+                    </label>
+                    <label>
+                      <span>Fears</span>
+                      <input value={draft.fears ?? ''} onChange={event => setDraft({ ...draft, fears: event.target.value })} />
+                    </label>
+                    <label>
+                      <span>Internal conflict</span>
+                      <textarea value={draft.internalConflict ?? ''} onChange={event => setDraft({ ...draft, internalConflict: event.target.value })} />
+                    </label>
+                  </div>
+
+                  <div className="character-narrative-column">
+                    <strong>History</strong>
+                    <label>
+                      <span>Backstory</span>
+                      <textarea value={draft.backstory ?? ''} onChange={event => setDraft({ ...draft, backstory: event.target.value })} />
+                    </label>
+                    <div className="character-event-list">
+                      <span>Key events</span>
+                      {(draft.keyEvents ?? []).map((eventItem, index) => (
+                        <label className="character-event-row" key={`${eventItem}-${index}`}>
+                          <StudioIcon name="characters" size={14} />
+                          <input
+                            value={eventItem}
+                            onChange={event => setDraft({ ...draft, keyEvents: updateStringList(draft.keyEvents, index, event.target.value) })}
+                          />
+                        </label>
+                      ))}
+                      <button
+                        className="ghost-button"
+                        onClick={() => setDraft({ ...draft, keyEvents: appendStringList(draft.keyEvents, 'New event') })}
+                        type="button"
+                      >
+                        <StudioIcon name="add" size={15} />
+                        Add event
+                      </button>
+                    </div>
+                    <div className="character-arc-compact">
+                      <strong>Character arc</strong>
+                      <div>
+                        <label>
+                          <span><StudioIcon name="preview" size={14} /> Initial state</span>
+                          <textarea value={draft.arcInitial ?? ''} onChange={event => setDraft({ ...draft, arcInitial: event.target.value })} />
+                        </label>
+                        <label>
+                          <span><StudioIcon name="warning" size={14} /> Turning point</span>
+                          <textarea value={draft.arcBreak ?? ''} onChange={event => setDraft({ ...draft, arcBreak: event.target.value })} />
+                        </label>
+                        <label>
+                          <span><StudioIcon name="build" size={14} /> Final state</span>
+                          <textarea value={draft.arcFinal ?? ''} onChange={event => setDraft({ ...draft, arcFinal: event.target.value })} />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
             </div>
 
-            <div className="character-fieldset">
-              <div className="studio-panel-heading">
-                <span>Atlas Mapping</span>
-                <button
-                  className="ghost-button"
-                  disabled={!draft || atlasMutation.isPending}
-                  onClick={() => atlasMutation.mutate()}
-                  type="button"
-                >
-                  {atlasMutation.isPending ? 'Generating' : 'Generate Atlas'}
-                </button>
+            <aside className="character-sheet-preview-card" aria-label="Character sheet preview">
+              <div className="character-sheet-card-heading">
+                <strong><StudioIcon name="file" size={16} /> Character Sheet</strong>
               </div>
-              <label>
-                <span>Expressions</span>
-                <input value={expressionText(draft)} onChange={event => setDraft(updateExpressionText(draft, event.target.value))} />
-              </label>
-              <div className="scene-form-grid">
-                <label>
-                  <span>Spritesheet</span>
-                  <input value={animationFile(draft)} onChange={event => setDraft(setAnimationField(draft, 'file', event.target.value))} />
-                </label>
-                <label>
-                  <span>Atlas JSON</span>
-                  <input value={animationAtlas(draft)} onChange={event => setDraft(setAnimationField(draft, 'atlas', event.target.value))} />
-                </label>
+              <span className="character-sheet-preview-label">Main image</span>
+              <div className="character-concept-preview">
+                {displayedCharacterSheetUrl ? (
+                  <img alt={`${draft.displayName} character sheet`} src={displayedCharacterSheetUrl} />
+                ) : (
+                  <span>
+                    <StudioIcon name="assets" size={34} />
+                    No concept image
+                  </span>
+                )}
+                {displayedCharacterSheetUrl ? (
+                  <div className="character-concept-preview-actions">
+                    <button disabled type="button" title="AI editing is not connected yet">
+                      <StudioIcon name="rename" size={15} />
+                      Edit with AI
+                    </button>
+                    <button
+                      className="is-danger"
+                      disabled={!selectedConceptPath || conceptDeleteMutation.isPending}
+                      onClick={() => {
+                        if (selectedConceptPath) conceptDeleteMutation.mutate(selectedConceptPath)
+                      }}
+                      type="button"
+                    >
+                      <StudioIcon name="remove" size={15} />
+                      {conceptDeleteMutation.isPending ? 'Deleting' : 'Delete'}
+                    </button>
+                  </div>
+                ) : null}
               </div>
-              <div className="expression-list" aria-label="Expression map">
-                {expressionPreview.map(expression => (
-                  <span key={expression}>{expression}</span>
-                ))}
+
+              <div className="character-sheet-gallery">
+                <strong>Uploaded concept images</strong>
+                <div>
+                  {[0, 1, 2, 3].map(index => (
+                    <button
+                      className={characterConceptUrls[index] && index === selectedConceptIndex ? 'is-active' : ''}
+                      key={index}
+                      onClick={() => {
+                        if (characterConceptUrls[index]) setSelectedConceptIndex(index)
+                      }}
+                      type="button"
+                    >
+                      {characterConceptUrls[index] ? (
+                        <span className="character-sheet-thumb-image">
+                          <img alt="" src={characterConceptUrls[index]} />
+                        </span>
+                      ) : (
+                        <span className="character-concept-thumb-placeholder">
+                          <StudioIcon name="assets" size={20} />
+                          <small>Concept</small>
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                  <button className="character-sheet-gallery-add" type="button">
+                    <StudioIcon name="add" size={22} />
+                  </button>
+                </div>
               </div>
-            </div>
+
+              <div className="character-sheet-manage">
+                <strong>Manage concept images</strong>
+                <div>
+                  <label className="character-sheet-upload">
+                    <StudioIcon name="assets" size={22} />
+                    <span>
+                      <strong>{conceptUploadMutation.isPending ? 'Uploading image' : 'Upload concept image'}</strong>
+                      <small>PNG, JPG o WebP</small>
+                    </span>
+                    <input
+                      accept="image/png,image/jpeg,image/webp,image/gif"
+                      disabled={!draft || conceptUploadMutation.isPending}
+                      onChange={event => {
+                        const file = event.currentTarget.files?.[0]
+                        event.currentTarget.value = ''
+                        if (file) conceptUploadMutation.mutate(file)
+                      }}
+                      type="file"
+                    />
+                  </label>
+                  <button
+                    className="character-sheet-generate"
+                    disabled={!draft || atlasMutation.isPending}
+                    onClick={() => atlasMutation.mutate()}
+                    type="button"
+                  >
+                    <StudioIcon name="add" size={22} />
+                    <span>
+                      <strong>{atlasMutation.isPending ? 'Generating image' : 'Generate with AI'}</strong>
+                      <small>Create concept art</small>
+                    </span>
+                  </button>
+                </div>
+                {conceptUploadMutation.error ? (
+                  <p className="character-sheet-upload-error">{conceptUploadMutation.error.message}</p>
+                ) : null}
+                {conceptDeleteMutation.error ? (
+                  <p className="character-sheet-upload-error">{conceptDeleteMutation.error.message}</p>
+                ) : null}
+              </div>
+            </aside>
           </div>
         ) : draft && activeTab === 'Spritesheet' ? (
           <div className="character-asset-grid">

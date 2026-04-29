@@ -1,6 +1,28 @@
 ---
 id: kirk
 displayName: Kirk
+role: ''
+age: ''
+gender: ''
+tags: []
+physicalDescription: ''
+expressionsText: []
+outfit: ''
+palette: ''
+personality: ''
+traits: []
+motivations: ''
+fears: ''
+internalConflict: ''
+backstory: ''
+keyEvents: []
+arcInitial: ''
+arcBreak: ''
+arcFinal: ''
+characterSheet:
+  main: ''
+  concepts: []
+  generated: []
 nameColor: "#fde68a"
 defaultPosition: center
 defaultExpression: neutral

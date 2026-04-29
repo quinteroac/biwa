@@ -1,6 +1,28 @@
 ---
 id: kai
 displayName: Kai
+role: ''
+age: ''
+gender: ''
+tags: []
+physicalDescription: ''
+expressionsText: []
+outfit: ''
+palette: ''
+personality: ''
+traits: []
+motivations: ''
+fears: ''
+internalConflict: ''
+backstory: ''
+keyEvents: []
+arcInitial: ''
+arcBreak: ''
+arcFinal: ''
+characterSheet:
+  main: ''
+  concepts: []
+  generated: []
 nameColor: "#7dd3fc"
 defaultPosition: right
 defaultExpression: neutral

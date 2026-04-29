@@ -1,6 +1,28 @@
 ---
 id: sara
 displayName: Sara
+role: ''
+age: ''
+gender: ''
+tags: []
+physicalDescription: ''
+expressionsText: []
+outfit: ''
+palette: ''
+personality: ''
+traits: []
+motivations: ''
+fears: ''
+internalConflict: ''
+backstory: ''
+keyEvents: []
+arcInitial: ''
+arcBreak: ''
+arcFinal: ''
+characterSheet:
+  main: ''
+  concepts: []
+  generated: []
 nameColor: '#f9a8d4'
 defaultPosition: left
 animation:
@@ -12,11 +34,6 @@ animation:
     happy: happy
     wink: wink
     school: school
-role: ''
-physicalDescription: ''
-personality: ''
-palette: ''
-outfit: ''
 prompt: ''
 isNarrator: false
 defaultExpression: neutral

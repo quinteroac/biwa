@@ -75,6 +75,30 @@ const BUILT_IN_RENDERERS: Record<RendererKind, Set<string>> = {
   transition: new Set(['fade', 'fade-color', 'slide', 'wipe', 'cut']),
 }
 
+const RECOMMENDED_CHARACTER_EDITORIAL_FIELDS = Object.freeze([
+  'role',
+  'age',
+  'gender',
+  'tags',
+  'physicalDescription',
+  'expressionsText',
+  'outfit',
+  'palette',
+  'personality',
+  'traits',
+  'motivations',
+  'fears',
+  'internalConflict',
+  'backstory',
+  'keyEvents',
+  'arcInitial',
+  'arcBreak',
+  'arcFinal',
+  'characterSheet',
+])
+
+const DATA_ID_PATTERN = /^[a-z0-9-]+$/
+
 function detectGameId(): string | null {
   const gamesDir = join(ROOT, 'games')
   try {
@@ -228,6 +252,7 @@ function validateExpressionReferences(filePath: string, atlas: unknown, expressi
 }
 
 function addDataFile(
+  kind: keyof DataMaps,
   map: Map<string, Record<string, unknown>>,
   filePath: string,
   data: Record<string, unknown>,
@@ -240,6 +265,16 @@ function addDataFile(
       path: filePath,
       message: 'Missing required string field: id.',
       suggestion: `Add id: ${expectedIdFromPath(filePath)} to the frontmatter.`,
+    })
+    return
+  }
+  if (kind === 'characters' && !DATA_ID_PATTERN.test(id)) {
+    issues.push({
+      severity: 'error',
+      path: filePath,
+      code: 'data_id_invalid',
+      message: `Invalid id "${id}". Use lowercase letters, numbers, and hyphens only.`,
+      suggestion: `Rename the id to something like "${expectedIdFromPath(filePath).replace(/_/g, '-')}".`,
     })
     return
   }
@@ -346,7 +381,7 @@ function loadDataMaps(gameDir: string, config: GameConfig, issues: Issue[]): Dat
     for (const filePath of walkFiles(dir, '.md')) {
       const data = parseFrontmatter(filePath, issues)
       if (!data) continue
-      addDataFile(maps[kind as keyof DataMaps], filePath, data, issues)
+      addDataFile(kind as keyof DataMaps, maps[kind as keyof DataMaps], filePath, data, issues)
       validateDataFile(kind as keyof DataMaps, gameDir, filePath, data, issues, maps, rendererDeclarations)
     }
   }
@@ -364,6 +399,8 @@ function validateDataFile(
   rendererDeclarations: RendererDeclarations,
 ): void {
   if (kind === 'characters') {
+    validateCharacterEditorialFields(filePath, data, issues)
+    validateCharacterSheetAssets(gameDir, filePath, data, issues)
     const animation = asRecord(data['animation'])
     if (!animation && !Array.isArray(data['layers'])) {
       issues.push({ severity: 'warning', path: filePath, code: 'character_no_renderer', message: 'Character has no animation or layers.' })
@@ -498,6 +535,28 @@ function validateDataFile(
       })
     }
   }
+}
+
+function validateCharacterSheetAssets(gameDir: string, filePath: string, data: Record<string, unknown>, issues: Issue[]): void {
+  const characterSheet = asRecord(data['characterSheet'])
+  if (!characterSheet) return
+  checkAsset(gameDir, filePath, characterSheet['main'], issues, 'Character sheet main image')
+  const concepts = Array.isArray(characterSheet['concepts']) ? characterSheet['concepts'] : []
+  concepts.forEach((ref, index) => checkAsset(gameDir, filePath, ref, issues, `Character sheet concept image ${index + 1}`))
+  const generated = Array.isArray(characterSheet['generated']) ? characterSheet['generated'] : []
+  generated.forEach((ref, index) => checkAsset(gameDir, filePath, ref, issues, `Character sheet generated image ${index + 1}`))
+}
+
+function validateCharacterEditorialFields(filePath: string, data: Record<string, unknown>, issues: Issue[]): void {
+  const missing = RECOMMENDED_CHARACTER_EDITORIAL_FIELDS.filter(field => !(field in data))
+  if (missing.length === 0) return
+  issues.push({
+    severity: 'info',
+    path: filePath,
+    code: 'character_editorial_fields_missing',
+    message: `Character is missing Studio editorial fields: ${missing.join(', ')}.`,
+    suggestion: 'Open and save the character in Biwa Studio, or add the editorial metadata block from framework/docs/characters.schema.md.',
+  })
 }
 
 function validateStoryReferences(gameDir: string, config: GameConfig, maps: DataMaps, issues: Issue[]): void {

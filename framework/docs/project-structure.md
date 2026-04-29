@@ -279,13 +279,24 @@ Raw media files — images, audio, and UI elements. Referenced by paths declared
 
 ```
 assets/
-├── characters/     ← sprite PNGs organized by character id
+├── characters/     ← sprite PNGs and Studio concept art organized by character id
 ├── scenes/         ← background images organized by scene id
 ├── audio/          ← audio files mirroring the data/audio/ category structure
 └── ui/             ← cover image, logo, custom cursor, loading screen
 ```
 
 **Naming convention:** paths in `.md` files are relative to the novel root. Example: `assets/characters/kai/happy.png`.
+
+Studio character-sheet art lives beside runtime character assets, under a dedicated authoring folder:
+
+```
+assets/characters/kai/character-sheet/
+├── main.png
+├── concepts/
+└── generated/
+```
+
+In `data/characters/*.md`, `characterSheet` references these files relative to `assets/`, for example `characters/kai/character-sheet/main.png`. These images are for authoring and concept review only; runtime sprites still use `animation` or `layers`.
 
 For adaptive audio tracks with multiple layers, each layer gets its own subfolder:
 

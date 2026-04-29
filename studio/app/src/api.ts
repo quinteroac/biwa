@@ -8,6 +8,8 @@ import type {
   StudioCharacterAtlasResponse,
   StudioCharacterDraft,
   StudioCharacterResponse,
+  StudioCharacterSheetDeleteResponse,
+  StudioCharacterSheetUploadResponse,
   StudioCharactersResponse,
   StudioSceneDraft,
   StudioSceneResponse,
@@ -189,6 +191,35 @@ export function generateCharacterAtlas(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path, character }),
+  })
+}
+
+export function uploadCharacterSheetConcept(
+  gameId: string,
+  path: string,
+  character: StudioCharacterDraft,
+  image: File,
+): Promise<StudioCharacterSheetUploadResponse> {
+  const body = new FormData()
+  body.set('path', path)
+  body.set('character', JSON.stringify(character))
+  body.set('image', image)
+  return requestJson<StudioCharacterSheetUploadResponse>(`/api/projects/${gameId}/characters/character-sheet/concepts`, {
+    method: 'POST',
+    body,
+  })
+}
+
+export function deleteCharacterSheetConcept(
+  gameId: string,
+  path: string,
+  character: StudioCharacterDraft,
+  assetPath: string,
+): Promise<StudioCharacterSheetDeleteResponse> {
+  return requestJson<StudioCharacterSheetDeleteResponse>(`/api/projects/${gameId}/characters/character-sheet/concepts`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path, character, assetPath }),
   })
 }
 

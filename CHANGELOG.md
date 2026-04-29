@@ -100,6 +100,9 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Studio Characters section with character sheet editing, runtime metadata controls, sprite preview and atlas summaries.
 - Studio Elysia APIs for character frontmatter read/write and GameAssetsMaker-compatible atlas generation.
 - Studio character tests covering metadata persistence, preview URLs and atlas mapping updates.
+- Studio character-sheet concept art contract with `characterSheet.main`, `concepts` and `generated` markdown fields.
+- Studio character-sheet concept image upload/delete APIs backed by `assets/characters/<character_id>/character-sheet/`.
+- Studio concept image uploads with normalized filenames such as `concept-001.png` and markdown persistence.
 - Studio Plugins section with official/local plugin catalog filters, capability details and install/remove actions.
 - Studio Elysia APIs for editing official plugin declarations in `game.config.ts` and returning doctor diagnostics.
 - Studio plugin tests covering catalog state, official plugin installation and removal.
@@ -145,3 +148,5 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Biwa Studio layout now uses a top project/action header, dedicated section sidebar and dynamic main workspace.
 - Biwa Studio workspace header title removed so editors and previews have more vertical room; project context now lives in the top selector.
 - Biwa Studio Overview redesigned around identity, localization, plugin, statistics and diagnostics panels.
+- Biwa Studio Character Sheet redesigned around compact Identity, Appearance and Narrative panels plus a concept-art preview/gallery workflow.
+- Studio character thumbnails now prefer the first uploaded concept image before falling back to runtime sprite previews.

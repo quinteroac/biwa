@@ -26,6 +26,93 @@ data/characters/
 
 ---
 
+### Studio editorial metadata
+
+These fields are optional for the runtime, but Biwa Studio reads and writes them in the Character Sheet. They are useful for authoring, concept-art prompts, consistency checks, and LLM context. New Studio-authored character files should include the full block, even when values are initially empty.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `role` | `string` | — | Story role shown in Studio, such as `Protagonist`, `Antagonist`, `Supporting`, or `Narrator`. |
+| `age` | `string` | — | Freeform age value. Kept as a string so authors can use ranges or unknown values. |
+| `gender` | `string` | — | Studio options include `Male`, `Female`, `Transgender`, `Non-binary`, and `Other`, but custom text is allowed. |
+| `tags` | `string[]` | — | Short organizational labels shown as chips in Studio. |
+| `physicalDescription` | `string` | — | Brief visual description for reference and generation prompts. |
+| `expressionsText` | `string[]` | — | Human-readable expression names used by the Character Sheet; separate from runtime `animation.expressions`. |
+| `outfit` | `string` | — | Clothing or costume notes. |
+| `palette` | `string` | — | Comma-separated color palette values, usually hex colors. |
+| `personality` | `string` | — | Short personality description. |
+| `traits` | `string[]` | — | Personality trait chips. |
+| `motivations` | `string` | — | Goals and driving wants. |
+| `fears` | `string` | — | Fears or vulnerabilities. |
+| `internalConflict` | `string` | — | Central contradiction or emotional tension. |
+| `backstory` | `string` | — | Condensed history used by writers and Studio. |
+| `keyEvents` | `string[]` | — | Important past events or turning points. |
+| `arcInitial` | `string` | — | Character state at the beginning of the arc. |
+| `arcBreak` | `string` | — | Turning point or midpoint transformation. |
+| `arcFinal` | `string` | — | Character state at the end of the arc. |
+| `characterSheet` | `object` | — | Studio-only concept-art and character-sheet image references. Paths are relative to the game's `assets/` directory. |
+
+```yaml
+role: Supporting
+age: "17"
+gender: Female
+tags: [school, energetic]
+physicalDescription: "Short red hair, bright expression, casual school hoodie."
+expressionsText: [neutral, happy, wink, school]
+outfit: "White hoodie, jeans, and school uniform variant."
+palette: "#1b1c19, #444748, #747878, #c4c7c7, #ba1a1a"
+personality: "Outgoing, perceptive, and quick to defuse tension."
+traits: [Warm, Observant, Impulsive]
+motivations: "Keep her friends together and uncover what is being hidden."
+fears: "Being left behind."
+internalConflict: "She jokes to avoid admitting when she is afraid."
+backstory: "A long-time friend whose cheerfulness hides family pressure."
+keyEvents:
+  - "Transferred schools before the story begins."
+arcInitial: "Acts carefree and avoids serious conflict."
+arcBreak: "Chooses to confront the truth directly."
+arcFinal: "Learns to ask for help without hiding behind humor."
+characterSheet:
+  main: characters/sara/character-sheet/main.png
+  concepts:
+    - characters/sara/character-sheet/concepts/concept-001.png
+  generated:
+    - characters/sara/character-sheet/generated/sheet-001.png
+```
+
+---
+
+### Character Sheet Art
+
+`characterSheet` stores Studio authoring images only. These files are concept art, model sheets, generated references, or design exploration; they are not runtime sprites and are not used by `VnCharacter`.
+
+Store the files under the character's asset folder:
+
+```txt
+games/<gameId>/assets/characters/<character_id>/character-sheet/
+  main.png
+  concepts/
+    concept-001.png
+    concept-002.png
+  generated/
+    sheet-001.png
+```
+
+Reference those files in markdown relative to `assets/`:
+
+```yaml
+characterSheet:
+  main: characters/kai/character-sheet/main.png
+  concepts:
+    - characters/kai/character-sheet/concepts/concept-001.png
+  generated:
+    - characters/kai/character-sheet/generated/sheet-001.png
+```
+
+`main` is the large preview shown in Studio. `concepts` are images uploaded by the author. `generated` are AI-generated sheets or explorations. Keeping uploaded and generated images separate lets Studio show provenance clearly without changing runtime animation data.
+
+---
+
 ### Position
 
 | Field | Type | Required | Description |
@@ -400,7 +487,7 @@ The engine resolves each tag against the character's config in `CharacterRegistr
 
 ## Validation rules
 
-The engine runs these checks at startup via `SchemaValidator`. A failed check throws an error with the offending file path and field.
+`bun manager/cli.ts doctor <gameId>` checks character files during authoring. Runtime uses the same frontmatter data, but Studio editorial fields are non-fatal metadata and do not block the game from running.
 
 - `id` must match `/^[a-z0-9-]+$/`
 - `id` must be unique across all files in `data/characters/`
@@ -410,3 +497,4 @@ The engine runs these checks at startup via `SchemaValidator`. A failed check th
 - `defaultExpression` must exist as a key in `animation.sprites`, `animation.expressions`, or at least one layer's animation
 - `voice.volume` must be between `0.0` and `1.0`
 - `scale` must be a positive number
+- Missing Studio editorial fields are reported as informational diagnostics so older projects can keep running while authors migrate files.
