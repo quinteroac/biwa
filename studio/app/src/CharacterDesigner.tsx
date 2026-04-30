@@ -1,13 +1,19 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { deleteCharacterSheetConcept, fetchCharacter, fetchCharacters, generateCharacterAtlas, saveCharacter, uploadCharacterSheetConcept } from './api.ts'
+import { deleteCharacterSheetConcept, editCharacterSheetConcept, fetchCharacter, fetchCharacters, generateCharacterAtlas, generateCharacterSheetConcept, saveCharacter, uploadCharacterSheetConcept } from './api.ts'
 import { StudioIcon } from './StudioIcon.tsx'
-import type { StudioCharacterDraft, StudioCharacterItem, StudioProjectSummary } from '../../shared/types.ts'
+import type { StudioCharacterDraft, StudioCharacterItem, StudioCharacterSheetArtType, StudioProjectSummary } from '../../shared/types.ts'
 
 const genderOptions = ['Male', 'Female', 'Transgender', 'Non-binary', 'Other']
 const NEW_CHARACTER_PATH = '__new_character__.md'
 const characterTabs = ['Character Sheet', 'Spritesheet', 'Sprites', 'Animations'] as const
+const characterSheetArtOptions = Object.freeze([
+  { id: 'conceptArt', label: 'Concept Art', uploadLabel: 'Upload concept art', icon: 'assets', slug: 'concept-art' },
+  { id: 'silhouetteSketch', label: 'Silhouette Sketch', uploadLabel: 'Upload silhouette sketch', icon: 'characters', slug: 'silhouette-sketch' },
+  { id: 'characterSheet', label: 'Character Sheet', uploadLabel: 'Upload character sheet', icon: 'file', slug: 'character-sheet' },
+  { id: 'actionPoses', label: 'Action Poses', uploadLabel: 'Upload action poses', icon: 'run-doctor', slug: 'action-poses' },
+] satisfies Array<{ id: StudioCharacterSheetArtType; label: string; uploadLabel: string; icon: 'characters' | 'assets' | 'file' | 'run-doctor'; slug: string }>)
 
 type CharacterTab = typeof characterTabs[number]
 type StudioCharacter = NonNullable<Awaited<ReturnType<typeof fetchCharacter>>['character']>
@@ -204,6 +210,15 @@ export function CharacterDesigner(props: {
   const [activeTab, setActiveTab] = useState<CharacterTab>('Character Sheet')
   const [selectedAnimation, setSelectedAnimation] = useState<string | null>(null)
   const [selectedConceptIndex, setSelectedConceptIndex] = useState(0)
+  const [generationMessage, setGenerationMessage] = useState('')
+  const [generationMenuOpen, setGenerationMenuOpen] = useState(false)
+  const [selectedArtTypes, setSelectedArtTypes] = useState<StudioCharacterSheetArtType[]>(['conceptArt'])
+  const [editPrompt, setEditPrompt] = useState('')
+  const [editPanelOpen, setEditPanelOpen] = useState(false)
+  const [previewModalOpen, setPreviewModalOpen] = useState(false)
+  const [previewZoom, setPreviewZoom] = useState(1)
+  const [previewPan, setPreviewPan] = useState({ x: 0, y: 0 })
+  const [previewDragStart, setPreviewDragStart] = useState<{ pointerId: number; x: number; y: number; panX: number; panY: number } | null>(null)
   const [searchText, setSearchText] = useState('')
   const charactersQuery = useQuery({
     queryKey: ['studio-characters', props.project.id],
@@ -234,9 +249,38 @@ export function CharacterDesigner(props: {
   const fallbackRole = activeCharacter?.role || activeCharacter?.id || null
   const sheetTags = draft ? characterSheetTags(draft, fallbackRole) : []
   const characterSheetMainUrl = activeCharacter?.characterSheetUrls.main ?? null
-  const characterConceptUrls = activeCharacter?.characterSheetUrls.concepts ?? []
-  const selectedConceptPath = activeCharacter?.characterSheet.concepts[selectedConceptIndex] ?? ''
-  const selectedConceptUrl = characterConceptUrls[selectedConceptIndex] ?? null
+  const characterSheetSlots = characterSheetArtOptions.map(option => {
+    const generatedPaths = activeCharacter?.characterSheet.generated ?? []
+    const generatedUrls = activeCharacter?.characterSheetUrls.generated ?? []
+    let matchedIndex = -1
+    for (let index = generatedPaths.length - 1; index >= 0; index -= 1) {
+      const filename = generatedPaths[index]?.split('/').pop() ?? ''
+      if (filename.startsWith(`${option.slug}-`)) {
+        matchedIndex = index
+        break
+      }
+    }
+    if (matchedIndex >= 0) {
+      return {
+        ...option,
+        path: generatedPaths[matchedIndex] ?? '',
+        url: generatedUrls[matchedIndex] ?? null,
+      }
+    }
+    if (option.id === 'conceptArt') {
+      const conceptPaths = activeCharacter?.characterSheet.concepts ?? []
+      const conceptUrls = activeCharacter?.characterSheetUrls.concepts ?? []
+      const conceptIndex = Math.max(0, conceptPaths.length - 1)
+      return {
+        ...option,
+        path: conceptPaths[conceptIndex] ?? '',
+        url: conceptUrls[conceptIndex] ?? null,
+      }
+    }
+    return { ...option, path: '', url: null }
+  })
+  const selectedConceptPath = characterSheetSlots[selectedConceptIndex]?.path ?? ''
+  const selectedConceptUrl = characterSheetSlots[selectedConceptIndex]?.url ?? null
   const displayedCharacterSheetUrl = selectedConceptUrl ?? characterSheetMainUrl
   const activeCharacterPreviewUrl = activeCharacter ? characterConceptPreviewUrl(activeCharacter) : null
   const saveMutation = useMutation({
@@ -266,14 +310,14 @@ export function CharacterDesigner(props: {
     },
   })
   const conceptUploadMutation = useMutation({
-    mutationFn: (file: File) => {
+    mutationFn: (payload: { file: File; artType: StudioCharacterSheetArtType }) => {
       const currentDraft = draft as StudioCharacterDraft
-      return uploadCharacterSheetConcept(props.project.id, characterPathForDraft(currentDraft, activePath), currentDraft, file)
+      return uploadCharacterSheetConcept(props.project.id, characterPathForDraft(currentDraft, activePath), currentDraft, payload.file, payload.artType)
     },
-    onSuccess: data => {
+    onSuccess: (data, variables) => {
       setDraft(draftFromCharacter(data.character))
       setSelectedPath(data.character.path)
-      setSelectedConceptIndex(Math.max(0, data.character.characterSheet.concepts.length - 1))
+      setSelectedConceptIndex(Math.max(0, characterSheetArtOptions.findIndex(option => option.id === variables.artType)))
       queryClient.setQueryData(['studio-character', props.project.id, data.character.path], { character: data.character })
       void queryClient.invalidateQueries({ queryKey: ['studio-characters', props.project.id] })
       void queryClient.invalidateQueries({ queryKey: ['studio-character', props.project.id, data.character.path] })
@@ -294,6 +338,66 @@ export function CharacterDesigner(props: {
       void queryClient.invalidateQueries({ queryKey: ['studio-assets', props.project.id] })
     },
   })
+  const conceptGenerateMutation = useMutation({
+    mutationFn: () => {
+      const currentDraft = draft as StudioCharacterDraft
+      return generateCharacterSheetConcept(
+        props.project.id,
+        characterPathForDraft(currentDraft, activePath),
+        currentDraft,
+        '',
+        selectedArtTypes,
+      )
+    },
+    onMutate: () => {
+      setGenerationMenuOpen(false)
+      setGenerationMessage('Sending request to OpenAI Images...')
+    },
+    onSuccess: data => {
+      setDraft(draftFromCharacter(data.character))
+      setSelectedPath(data.character.path)
+      setSelectedConceptIndex(Math.max(0, data.character.characterSheet.concepts.length + data.character.characterSheet.generated.length - 1))
+      setGenerationMessage(data.generated.length > 1 ? `Generated ${data.generated.length} images` : `Generated ${data.path}`)
+      queryClient.setQueryData(['studio-character', props.project.id, data.character.path], { character: data.character })
+      void queryClient.invalidateQueries({ queryKey: ['studio-characters', props.project.id] })
+      void queryClient.invalidateQueries({ queryKey: ['studio-character', props.project.id, data.character.path] })
+      void queryClient.invalidateQueries({ queryKey: ['studio-assets', props.project.id] })
+    },
+    onError: error => {
+      setGenerationMessage(error.message)
+    },
+  })
+  const conceptEditMutation = useMutation({
+    mutationFn: (payload: { assetPath: string; prompt: string }) => {
+      const currentDraft = draft as StudioCharacterDraft
+      return editCharacterSheetConcept(
+        props.project.id,
+        characterPathForDraft(currentDraft, activePath),
+        currentDraft,
+        payload.assetPath,
+        payload.prompt,
+      )
+    },
+    onMutate: () => {
+      setGenerationMessage('Sending edit request to OpenAI Images...')
+    },
+    onSuccess: data => {
+      setDraft(draftFromCharacter(data.character))
+      setSelectedPath(data.character.path)
+      setSelectedConceptIndex(Math.max(0, data.character.characterSheet.concepts.length + data.character.characterSheet.generated.length - 1))
+      setEditPrompt('')
+      setEditPanelOpen(false)
+      setGenerationMessage(`Edited ${data.path}`)
+      queryClient.setQueryData(['studio-character', props.project.id, data.character.path], { character: data.character })
+      void queryClient.invalidateQueries({ queryKey: ['studio-characters', props.project.id] })
+      void queryClient.invalidateQueries({ queryKey: ['studio-character', props.project.id, data.character.path] })
+      void queryClient.invalidateQueries({ queryKey: ['studio-assets', props.project.id] })
+    },
+    onError: error => {
+      setGenerationMessage(error.message)
+    },
+  })
+  const isGeneratingConcept = conceptGenerateMutation.isPending || conceptEditMutation.isPending
 
   useEffect(() => {
     if (!selectedPath && characters[0]) setSelectedPath(characters[0].path)
@@ -301,11 +405,33 @@ export function CharacterDesigner(props: {
 
   useEffect(() => {
     setSelectedConceptIndex(0)
+    setPreviewModalOpen(false)
+    setPreviewZoom(1)
+    setPreviewPan({ x: 0, y: 0 })
+    setPreviewDragStart(null)
+    setEditPanelOpen(false)
+    setEditPrompt('')
   }, [activePath])
 
   useEffect(() => {
-    if (selectedConceptIndex >= characterConceptUrls.length) setSelectedConceptIndex(Math.max(0, characterConceptUrls.length - 1))
-  }, [characterConceptUrls.length, selectedConceptIndex])
+    if (!previewModalOpen) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setPreviewModalOpen(false)
+    }
+    setPreviewZoom(1)
+    setPreviewPan({ x: 0, y: 0 })
+    setPreviewDragStart(null)
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [previewModalOpen])
+
+  useEffect(() => {
+    if (previewZoom <= 1) setPreviewPan({ x: 0, y: 0 })
+  }, [previewZoom])
+
+  useEffect(() => {
+    if (selectedConceptIndex >= characterSheetSlots.length) setSelectedConceptIndex(Math.max(0, characterSheetSlots.length - 1))
+  }, [characterSheetSlots.length, selectedConceptIndex])
 
   useEffect(() => {
     if (isNewCharacter) return
@@ -314,12 +440,13 @@ export function CharacterDesigner(props: {
   }, [characterQuery.data, isNewCharacter])
 
   return (
-    <div className="character-workspace">
+    <div className={`character-workspace ${isGeneratingConcept ? 'is-generating-concept' : ''}`} aria-busy={isGeneratingConcept}>
       <aside className="character-list-panel">
         <div className="character-panel-heading">
           <strong>Characters</strong>
           <button
             className="ghost-button"
+            disabled={isGeneratingConcept}
             onClick={() => {
               setSelectedPath(NEW_CHARACTER_PATH)
               setDraft(newCharacterDraft())
@@ -355,6 +482,7 @@ export function CharacterDesigner(props: {
               <button
                 className={character.path === activePath ? 'is-active' : ''}
                 key={character.path}
+                disabled={isGeneratingConcept}
                 onClick={() => setSelectedPath(character.path)}
                 type="button"
               >
@@ -385,7 +513,7 @@ export function CharacterDesigner(props: {
             </div>
           </div>
           <div className="character-header-actions">
-            <button className="ghost-button" disabled={!draft || saveMutation.isPending} onClick={() => saveMutation.mutate()} type="button">
+            <button className="ghost-button" disabled={!draft || saveMutation.isPending || isGeneratingConcept} onClick={() => saveMutation.mutate()} type="button">
               <StudioIcon name="build" size={16} />
               {saveMutation.isPending ? 'Saving' : 'Save Character'}
             </button>
@@ -605,7 +733,18 @@ export function CharacterDesigner(props: {
               <span className="character-sheet-preview-label">Main image</span>
               <div className="character-concept-preview">
                 {displayedCharacterSheetUrl ? (
-                  <img alt={`${draft.displayName} character sheet`} src={displayedCharacterSheetUrl} />
+                  <>
+                    <img alt={`${draft.displayName} character sheet`} src={displayedCharacterSheetUrl} />
+                    <button
+                      aria-label="Open full size preview"
+                      className="character-concept-zoom"
+                      onClick={() => setPreviewModalOpen(true)}
+                      title="Open full size preview"
+                      type="button"
+                    >
+                      <StudioIcon name="zoom" size={22} />
+                    </button>
+                  </>
                 ) : (
                   <span>
                     <StudioIcon name="assets" size={34} />
@@ -614,7 +753,11 @@ export function CharacterDesigner(props: {
                 )}
                 {displayedCharacterSheetUrl ? (
                   <div className="character-concept-preview-actions">
-                    <button disabled type="button" title="AI editing is not connected yet">
+                    <button
+                      disabled={!selectedConceptPath || isGeneratingConcept}
+                      onClick={() => setEditPanelOpen(open => !open)}
+                      type="button"
+                    >
                       <StudioIcon name="rename" size={15} />
                       Edit with AI
                     </button>
@@ -631,73 +774,132 @@ export function CharacterDesigner(props: {
                     </button>
                   </div>
                 ) : null}
+                {displayedCharacterSheetUrl && editPanelOpen ? (
+                  <form
+                    className="character-concept-edit-panel"
+                    onSubmit={event => {
+                      event.preventDefault()
+                      const prompt = editPrompt.trim()
+                      if (selectedConceptPath && prompt) conceptEditMutation.mutate({ assetPath: selectedConceptPath, prompt })
+                    }}
+                  >
+                    <textarea
+                      aria-label="Edit intention"
+                      disabled={isGeneratingConcept}
+                      onChange={event => setEditPrompt(event.target.value)}
+                      placeholder="Type here your edition instructions."
+                      rows={3}
+                      value={editPrompt}
+                    />
+                    <div>
+                      <button disabled={isGeneratingConcept} onClick={() => setEditPanelOpen(false)} type="button">Cancel</button>
+                      <button disabled={!selectedConceptPath || !editPrompt.trim() || isGeneratingConcept} type="submit">
+                        {conceptEditMutation.isPending ? 'Editing' : 'Apply edit'}
+                      </button>
+                    </div>
+                  </form>
+                ) : null}
               </div>
 
               <div className="character-sheet-gallery">
-                <strong>Uploaded concept images</strong>
+                <strong>Concept images</strong>
                 <div>
-                  {[0, 1, 2, 3].map(index => (
-                    <button
-                      className={characterConceptUrls[index] && index === selectedConceptIndex ? 'is-active' : ''}
-                      key={index}
-                      onClick={() => {
-                        if (characterConceptUrls[index]) setSelectedConceptIndex(index)
-                      }}
-                      type="button"
-                    >
-                      {characterConceptUrls[index] ? (
+                  {characterSheetSlots.map((slot, index) => (
+                    slot.url ? (
+                      <button
+                        className={index === selectedConceptIndex ? 'is-active' : ''}
+                        key={slot.id}
+                        onClick={() => setSelectedConceptIndex(index)}
+                        type="button"
+                      >
                         <span className="character-sheet-thumb-image">
-                          <img alt="" src={characterConceptUrls[index]} />
+                          <img alt="" src={slot.url} />
                         </span>
-                      ) : (
+                      </button>
+                    ) : (
+                      <label className="character-sheet-gallery-upload" key={slot.id}>
                         <span className="character-concept-thumb-placeholder">
-                          <StudioIcon name="assets" size={20} />
-                          <small>Concept</small>
+                          <StudioIcon name={slot.icon} size={20} />
+                          <small>{conceptUploadMutation.isPending && conceptUploadMutation.variables?.artType === slot.id ? 'Uploading image' : slot.uploadLabel}</small>
                         </span>
-                      )}
-                    </button>
+                        <input
+                          accept="image/png,image/jpeg,image/webp,image/gif"
+                          disabled={!draft || conceptUploadMutation.isPending || isGeneratingConcept}
+                          onChange={event => {
+                            const file = event.currentTarget.files?.[0]
+                            event.currentTarget.value = ''
+                            if (file) conceptUploadMutation.mutate({ file, artType: slot.id })
+                          }}
+                          type="file"
+                        />
+                      </label>
+                    )
                   ))}
-                  <button className="character-sheet-gallery-add" type="button">
-                    <StudioIcon name="add" size={22} />
-                  </button>
                 </div>
               </div>
 
               <div className="character-sheet-manage">
                 <strong>Manage concept images</strong>
                 <div>
-                  <label className="character-sheet-upload">
-                    <StudioIcon name="assets" size={22} />
-                    <span>
-                      <strong>{conceptUploadMutation.isPending ? 'Uploading image' : 'Upload concept image'}</strong>
-                      <small>PNG, JPG o WebP</small>
-                    </span>
-                    <input
-                      accept="image/png,image/jpeg,image/webp,image/gif"
-                      disabled={!draft || conceptUploadMutation.isPending}
-                      onChange={event => {
-                        const file = event.currentTarget.files?.[0]
-                        event.currentTarget.value = ''
-                        if (file) conceptUploadMutation.mutate(file)
-                      }}
-                      type="file"
-                    />
-                  </label>
-                  <button
-                    className="character-sheet-generate"
-                    disabled={!draft || atlasMutation.isPending}
-                    onClick={() => atlasMutation.mutate()}
-                    type="button"
-                  >
-                    <StudioIcon name="add" size={22} />
-                    <span>
-                      <strong>{atlasMutation.isPending ? 'Generating image' : 'Generate with AI'}</strong>
-                      <small>Create concept art</small>
-                    </span>
-                  </button>
+                  <div className="character-sheet-generate-menu">
+                    <button
+                      aria-expanded={generationMenuOpen}
+                      className="character-sheet-generate"
+                      disabled={!draft || isGeneratingConcept}
+                      onClick={() => setGenerationMenuOpen(open => !open)}
+                      type="button"
+                    >
+                      <span>
+                        <strong>{conceptGenerateMutation.isPending ? 'Generating image' : 'Generate with AI'}</strong>
+                        <small>{selectedArtTypes.length > 0 ? `${selectedArtTypes.length} art type${selectedArtTypes.length === 1 ? '' : 's'} selected` : 'Select art types'}</small>
+                      </span>
+                      <span className="character-sheet-generate-count">{selectedArtTypes.length}</span>
+                      <span className="character-sheet-generate-caret">{generationMenuOpen ? '^' : 'v'}</span>
+                    </button>
+                    {generationMenuOpen ? (
+                      <div className="character-sheet-generate-popover">
+                        {characterSheetArtOptions.map(option => {
+                          const checked = selectedArtTypes.includes(option.id)
+                          return (
+                            <label className={checked ? 'is-selected' : ''} key={option.id}>
+                              <input
+                                checked={checked}
+                                onChange={() => setSelectedArtTypes(current => (
+                                  current.includes(option.id)
+                                    ? current.filter(item => item !== option.id)
+                                    : [...current, option.id]
+                                ))}
+                                type="checkbox"
+                              />
+                              <StudioIcon name={option.icon} size={18} />
+                              <span>{option.label}</span>
+                            </label>
+                          )
+                        })}
+                        <button
+                          disabled={!draft || selectedArtTypes.length === 0 || isGeneratingConcept}
+                          onClick={() => conceptGenerateMutation.mutate()}
+                          type="button"
+                        >
+                          Generate
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
+                {generationMessage ? (
+                  <p className={conceptGenerateMutation.isError ? 'character-sheet-upload-error' : 'character-sheet-generate-status'}>
+                    {generationMessage}
+                  </p>
+                ) : null}
                 {conceptUploadMutation.error ? (
                   <p className="character-sheet-upload-error">{conceptUploadMutation.error.message}</p>
+                ) : null}
+                {conceptGenerateMutation.error ? (
+                  <p className="character-sheet-upload-error">{conceptGenerateMutation.error.message}</p>
+                ) : null}
+                {conceptEditMutation.error ? (
+                  <p className="character-sheet-upload-error">{conceptEditMutation.error.message}</p>
                 ) : null}
                 {conceptDeleteMutation.error ? (
                   <p className="character-sheet-upload-error">{conceptDeleteMutation.error.message}</p>
@@ -800,6 +1002,87 @@ export function CharacterDesigner(props: {
           <p className="muted">Select a character to edit its sheet and runtime metadata.</p>
         )}
       </section>
+      {isGeneratingConcept ? (
+        <div className="character-generation-blocker" role="status" aria-live="polite">
+          <div>
+            <StudioIcon name="add" size={24} />
+            <strong>{conceptEditMutation.isPending ? 'Editing concept art' : 'Generating concept art'}</strong>
+            <span>{generationMessage || 'Waiting for OpenAI Images...'}</span>
+          </div>
+        </div>
+      ) : null}
+      {previewModalOpen && displayedCharacterSheetUrl && draft ? (
+        <div
+          aria-label={`${draft.displayName} full size character sheet preview`}
+          aria-modal="true"
+          className="character-preview-modal"
+          onClick={() => setPreviewModalOpen(false)}
+          onWheel={event => {
+            event.preventDefault()
+            event.stopPropagation()
+            setPreviewZoom(current => {
+              const next = current + (event.deltaY < 0 ? 0.2 : -0.2)
+              return Math.min(4, Math.max(0.5, Number(next.toFixed(2))))
+            })
+          }}
+          role="dialog"
+        >
+          <div className="character-preview-modal-tools" onClick={event => event.stopPropagation()}>
+            <button aria-label="Zoom out" onClick={() => setPreviewZoom(current => Math.max(0.5, Number((current - 0.25).toFixed(2))))} type="button">-</button>
+            <button
+              aria-label="Reset zoom"
+              onClick={() => {
+                setPreviewZoom(1)
+                setPreviewPan({ x: 0, y: 0 })
+              }}
+              type="button"
+            >
+              {Math.round(previewZoom * 100)}%
+            </button>
+            <button aria-label="Zoom in" onClick={() => setPreviewZoom(current => Math.min(4, Number((current + 0.25).toFixed(2))))} type="button">+</button>
+          </div>
+          <button
+            aria-label="Close full size preview"
+            className="character-preview-modal-close"
+            onClick={() => setPreviewModalOpen(false)}
+            type="button"
+          >
+            x
+          </button>
+          <img
+            alt={`${draft.displayName} character sheet full size`}
+            onClick={event => event.stopPropagation()}
+            onPointerCancel={() => setPreviewDragStart(null)}
+            onPointerDown={event => {
+              event.preventDefault()
+              event.stopPropagation()
+              if (previewZoom <= 1) return
+              event.currentTarget.setPointerCapture(event.pointerId)
+              setPreviewDragStart({
+                pointerId: event.pointerId,
+                x: event.clientX,
+                y: event.clientY,
+                panX: previewPan.x,
+                panY: previewPan.y,
+              })
+            }}
+            onPointerMove={event => {
+              if (!previewDragStart || previewDragStart.pointerId !== event.pointerId) return
+              event.preventDefault()
+              event.stopPropagation()
+              setPreviewPan({
+                x: previewDragStart.panX + event.clientX - previewDragStart.x,
+                y: previewDragStart.panY + event.clientY - previewDragStart.y,
+              })
+            }}
+            onPointerUp={event => {
+              if (previewDragStart?.pointerId === event.pointerId) setPreviewDragStart(null)
+            }}
+            src={displayedCharacterSheetUrl}
+            style={{ transform: `translate(${previewPan.x}px, ${previewPan.y}px) scale(${previewZoom})` }}
+          />
+        </div>
+      ) : null}
 
     </div>
   )

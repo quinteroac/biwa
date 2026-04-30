@@ -6,12 +6,13 @@ import { BuildPreview } from './BuildPreview.tsx'
 import { CharacterDesigner } from './CharacterDesigner.tsx'
 import { PluginManager } from './PluginManager.tsx'
 import { SceneLibrary } from './SceneLibrary.tsx'
+import { StudioSettings } from './StudioSettings.tsx'
 import { StudioIcon } from './StudioIcon.tsx'
 import { StoryEditor } from './StoryEditor.tsx'
 import type { StudioIconName } from './StudioIcon.tsx'
 import type { StudioProjectIdentityDraft, StudioProjectSummary } from '../../shared/types.ts'
 
-const sections = ['Overview', 'Story', 'Characters', 'Scenes', 'Assets', 'Plugins', 'Tools', 'Build/Preview']
+const sections = ['Overview', 'Story', 'Characters', 'Scenes', 'Assets', 'Plugins', 'Tools', 'Settings', 'Build/Preview']
 
 function sectionLabel(section: string): string {
   return section === 'Build/Preview' ? 'Build' : section
@@ -26,6 +27,7 @@ function sectionIcon(section: string): StudioIconName {
     Assets: 'assets',
     Plugins: 'plugins',
     Tools: 'settings',
+    Settings: 'settings',
     'Build/Preview': 'build',
   } as Record<string, StudioIconName>)[section] ?? 'overview'
 }
@@ -478,6 +480,7 @@ function ProjectOverview(props: {
   const isCharacters = props.activeSection === 'Characters'
   const isPlugins = props.activeSection === 'Plugins'
   const isTools = props.activeSection === 'Tools'
+  const isSettings = props.activeSection === 'Settings'
   const isBuildPreview = props.activeSection === 'Build/Preview'
   const isSceneLibrary = props.activeSection === 'Scenes' || props.activeSection === 'Assets'
   return (
@@ -509,6 +512,12 @@ function ProjectOverview(props: {
         />
       ) : isTools ? (
         <AuthoringTools
+          isRunningDoctor={props.isRunningDoctor}
+          onRunDoctor={props.onRunDoctor}
+          project={props.project}
+        />
+      ) : isSettings ? (
+        <StudioSettings
           isRunningDoctor={props.isRunningDoctor}
           onRunDoctor={props.onRunDoctor}
           project={props.project}

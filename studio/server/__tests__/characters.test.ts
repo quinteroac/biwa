@@ -1,11 +1,13 @@
 import { afterEach, describe, expect, it } from 'bun:test'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { deleteCharacterSheetConcept, generateCharacterAtlas, listCharacters, readCharacter, uploadCharacterSheetConcept, writeCharacter } from '../characters.ts'
+import { deleteCharacterSheetConcept, editCharacterSheetConcept, generateCharacterAtlas, generateCharacterSheetConcept, listCharacters, readCharacter, uploadCharacterSheetConcept, writeCharacter } from '../characters.ts'
 import { studioApi } from '../index.ts'
+import { writeStudioSettings } from '../settings.ts'
 
 const ROOT = new URL('../../../', import.meta.url).pathname.replace(/\/$/, '')
 const createdGames: string[] = []
+const originalFetch = globalThis.fetch
 
 function makeCharacterFixture(gameId: string): void {
   createdGames.push(gameId)
@@ -55,6 +57,7 @@ Original body.
 }
 
 afterEach(() => {
+  globalThis.fetch = originalFetch
   for (const gameId of createdGames.splice(0)) {
     rmSync(join(ROOT, 'games', gameId), { recursive: true, force: true })
   }
@@ -135,6 +138,25 @@ describe('studio character API helpers', () => {
     expect(readFileSync(join(ROOT, 'games', gameId, 'data', 'characters', 'hero.md'), 'utf8')).toContain(result.path)
   })
 
+  it('uploads character-sheet art into generated slots by art type', async () => {
+    const gameId = `studio-character-typed-upload-${Date.now()}`
+    makeCharacterFixture(gameId)
+    const current = await readCharacter(gameId, 'hero.md')
+
+    const result = await uploadCharacterSheetConcept(
+      gameId,
+      'hero.md',
+      current.character,
+      new File(['poses'], 'Action Sheet.PNG', { type: 'image/png' }),
+      'actionPoses',
+    )
+
+    expect(result.path).toBe('characters/hero/character-sheet/generated/action-poses-001.png')
+    expect(result.character.characterSheet.concepts).toEqual(['characters/hero/character-sheet/concepts/concept-001.png'])
+    expect(result.character.characterSheet.generated).toContain(result.path)
+    expect(existsSync(join(ROOT, 'games', gameId, 'assets', result.path))).toBe(true)
+  })
+
   it('deletes character-sheet concept art and updates markdown', async () => {
     const gameId = `studio-character-concept-delete-${Date.now()}`
     makeCharacterFixture(gameId)
@@ -173,6 +195,134 @@ describe('studio character API helpers', () => {
     expect(payload.error).toBeUndefined()
     expect(payload.path).toBe('characters/hero/character-sheet/concepts/concept-002.webp')
     expect(payload.character?.characterSheet?.concepts).toContain(payload.path)
+  })
+
+  it('generates character-sheet concept art through OpenAI Images settings', async () => {
+    const gameId = `studio-character-concept-generate-${Date.now()}`
+    makeCharacterFixture(gameId)
+    const current = await readCharacter(gameId, 'hero.md')
+    await writeStudioSettings(gameId, {
+      openaiImages: {
+        apiKey: 'test-key',
+        apiKeyConfigured: false,
+        baseUrl: 'https://api.example.test/v1',
+        imageGenerationPath: '/images/generations',
+        model: 'gpt-image-1.5',
+        quality: 'high',
+        outputFormat: 'png',
+        moderation: 'low',
+        characterSheetResolution: '1024x1536',
+        imageGenerationTimeoutSeconds: 180,
+      },
+    })
+    const calls: Array<{ url: string; body: Record<string, unknown>; authorization: string | null }> = []
+    const fakeFetch = async (input: URL | RequestInfo, init?: RequestInit | BunFetchRequestInit): Promise<Response> => {
+      const body = init?.body instanceof FormData
+        ? Object.fromEntries([...init.body.entries()].map(([key, value]) => [
+          key,
+          typeof value === 'object'
+            && value !== null
+            && 'name' in value
+            && typeof (value as { name?: unknown }).name === 'string'
+            ? (value as { name: string }).name
+            : value,
+        ]))
+        : JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>
+      calls.push({
+        url: String(input),
+        body,
+        authorization: new Headers(init?.headers).get('authorization'),
+      })
+      return Response.json({
+        data: [{
+          b64_json: Buffer.from('generated-image').toString('base64'),
+          revised_prompt: 'Revised concept prompt.',
+        }],
+      })
+    }
+    globalThis.fetch = Object.assign(fakeFetch, { preconnect: originalFetch.preconnect })
+
+    const result = await generateCharacterSheetConcept(gameId, 'hero.md', current.character, '', ['silhouetteSketch', 'conceptArt'])
+
+    expect(calls[0]?.url).toBe('https://api.example.test/v1/images/edits')
+    expect(calls[0]?.authorization).toBe('Bearer test-key')
+    expect(calls[0]?.body['model']).toBe('gpt-image-1.5')
+    expect(calls[0]?.body['moderation']).toBe('low')
+    expect(calls[0]?.body['size']).toBe('1024x1536')
+    expect(String(calls[0]?.body['prompt'])).toContain('Concept Art')
+    expect(calls[0]?.body['image']).toBe('main.png')
+    expect(String(calls[1]?.body['prompt'])).toContain('Silhouette Sketch')
+    expect(result.path).toBe('characters/hero/character-sheet/generated/concept-art-001.png')
+    expect(result.generated).toHaveLength(2)
+    expect(result.generated[1]?.path).toBe('characters/hero/character-sheet/generated/silhouette-sketch-001.png')
+    expect(result.revisedPrompt).toBe('Revised concept prompt.')
+    expect(result.character.characterSheet.generated).toContain(result.path)
+    expect(existsSync(join(ROOT, 'games', gameId, 'assets', result.path))).toBe(true)
+  })
+
+  it('edits a character-sheet image with only the user edit instruction as prompt', async () => {
+    const gameId = `studio-character-concept-edit-${Date.now()}`
+    makeCharacterFixture(gameId)
+    const current = await readCharacter(gameId, 'hero.md')
+    await writeStudioSettings(gameId, {
+      openaiImages: {
+        apiKey: 'test-key',
+        apiKeyConfigured: false,
+        baseUrl: 'https://api.example.test/v1',
+        imageGenerationPath: '/images/generations',
+        model: 'gpt-image-1.5',
+        quality: 'high',
+        outputFormat: 'png',
+        moderation: 'low',
+        characterSheetResolution: '1024x1536',
+        imageGenerationTimeoutSeconds: 180,
+      },
+    })
+    const calls: Array<{ url: string; body: Record<string, unknown>; authorization: string | null }> = []
+    const fakeFetch = async (input: URL | RequestInfo, init?: RequestInit | BunFetchRequestInit): Promise<Response> => {
+      const body = init?.body instanceof FormData
+        ? Object.fromEntries([...init.body.entries()].map(([key, value]) => [
+          key,
+          typeof value === 'object'
+            && value !== null
+            && 'name' in value
+            && typeof (value as { name?: unknown }).name === 'string'
+            ? (value as { name: string }).name
+            : value,
+        ]))
+        : JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>
+      calls.push({
+        url: String(input),
+        body,
+        authorization: new Headers(init?.headers).get('authorization'),
+      })
+      return Response.json({
+        data: [{
+          b64_json: Buffer.from('edited-image').toString('base64'),
+          revised_prompt: 'Revised edit prompt.',
+        }],
+      })
+    }
+    globalThis.fetch = Object.assign(fakeFetch, { preconnect: originalFetch.preconnect })
+
+    const result = await editCharacterSheetConcept(
+      gameId,
+      'hero.md',
+      current.character,
+      'characters/hero/character-sheet/main.png',
+      'cambia el color del cabello a rojo',
+    )
+
+    expect(calls).toHaveLength(1)
+    expect(calls[0]?.url).toBe('https://api.example.test/v1/images/edits')
+    expect(calls[0]?.authorization).toBe('Bearer test-key')
+    expect(calls[0]?.body['prompt']).toBe('cambia el color del cabello a rojo')
+    expect(calls[0]?.body['image']).toBe('main.png')
+    expect(result.path).toBe('characters/hero/character-sheet/generated/edit-001.png')
+    expect(result.sourcePath).toBe('characters/hero/character-sheet/main.png')
+    expect(result.revisedPrompt).toBe('Revised edit prompt.')
+    expect(result.character.characterSheet.generated).toContain(result.path)
+    expect(existsSync(join(ROOT, 'games', gameId, 'assets', result.path))).toBe(true)
   })
 
   it('creates a new character Markdown file from Studio payloads', async () => {

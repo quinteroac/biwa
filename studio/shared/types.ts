@@ -274,9 +274,71 @@ export interface StudioCharacterSheetUploadResponse {
   character: StudioCharacterItem
 }
 
+export interface StudioCharacterSheetGenerateRequest {
+  path: string
+  character: StudioCharacterDraft
+  prompt?: string
+  artTypes?: StudioCharacterSheetArtType[]
+}
+
+export type StudioCharacterSheetArtType = 'silhouetteSketch' | 'conceptArt' | 'characterSheet' | 'actionPoses'
+
+export interface StudioGeneratedCharacterSheetImage {
+  artType: StudioCharacterSheetArtType
+  path: string
+  url: string | null
+  revisedPrompt: string
+  referencePath: string | null
+}
+
+export interface StudioCharacterSheetGenerateResponse {
+  path: string
+  url: string | null
+  revisedPrompt: string
+  generated: StudioGeneratedCharacterSheetImage[]
+  character: StudioCharacterItem
+}
+
+export interface StudioCharacterSheetEditResponse {
+  path: string
+  url: string | null
+  revisedPrompt: string
+  sourcePath: string
+  character: StudioCharacterItem
+}
+
 export interface StudioCharacterSheetDeleteResponse {
   deletedPath: string
   character: StudioCharacterItem
+}
+
+export type StudioOpenAiImageQuality = 'low' | 'medium' | 'high' | 'auto'
+export type StudioOpenAiImageFormat = 'png' | 'webp' | 'jpeg'
+export type StudioOpenAiImageModeration = 'auto' | 'low'
+export type StudioOpenAiImageResolution = '1024x1024' | '1024x1536' | '1536x1024' | 'auto'
+
+export interface StudioOpenAiImagesSettings {
+  apiKey: string
+  baseUrl: string
+  imageGenerationPath: string
+  model: string
+  quality: StudioOpenAiImageQuality
+  outputFormat: StudioOpenAiImageFormat
+  moderation: StudioOpenAiImageModeration
+  characterSheetResolution: StudioOpenAiImageResolution
+  imageGenerationTimeoutSeconds: number
+}
+
+export interface StudioOpenAiImagesSettingsView extends StudioOpenAiImagesSettings {
+  apiKeyConfigured: boolean
+}
+
+export interface StudioSettings {
+  openaiImages: StudioOpenAiImagesSettingsView
+}
+
+export interface StudioSettingsResponse {
+  settings: StudioSettings
 }
 
 export type StudioPluginCategory = 'renderer' | 'effects' | 'player' | 'devtools' | 'asset'

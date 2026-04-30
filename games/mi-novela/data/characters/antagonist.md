@@ -1,6 +1,6 @@
 ---
 id: antagonist
-displayName: Unknown
+displayName: '???'
 nameColor: '#f87171'
 defaultPosition: center
 defaultExpression: neutral
@@ -16,11 +16,11 @@ animation:
     neutral: neutral
     menacing: angry
     surprised: sad
-role: ''
-age: ''
-gender: ''
+role: Antagonist
+age: '1000'
+gender: Non-binary
 tags: []
-physicalDescription: ''
+physicalDescription: 'A narcissistic with skinny body, long black hair and '
 expressionsText: []
 personality: ''
 traits: []
@@ -34,17 +34,17 @@ arcBreak: ''
 arcFinal: ''
 relationships: []
 authorNotes: ''
-palette: ''
-outfit: ''
+palette: '#1b1c19, #444748, #747878, #6de3e3, #ba1a1a'
+outfit: tight clothes.
 prompt: ''
 characterSheet:
-  main: >-
-    characters/antagonist/character-sheet/concepts/paralaif-black-monster-alien-thin-with-black-eye.png
-  concepts:
-    - >-
-      characters/antagonist/character-sheet/concepts/paralaif-black-monster-alien-thin-with-black-eye.png
-    - characters/antagonist/character-sheet/concepts/comfyui-temp-flvps-00001.png
-  generated: []
+  main: characters/antagonist/character-sheet/generated/concept-art-001.png
+  concepts: []
+  generated:
+    - characters/antagonist/character-sheet/generated/concept-art-001.png
+    - characters/antagonist/character-sheet/generated/silhouette-sketch-001.png
+    - characters/antagonist/character-sheet/generated/character-sheet-001.png
+    - characters/antagonist/character-sheet/generated/action-poses-001.png
 isNarrator: false
 ---
 

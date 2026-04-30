@@ -4,6 +4,7 @@ node_modules/
 # Build output
 dist/
 .studio/
+games/*/.studio/
 test-results/
 
 # Bun

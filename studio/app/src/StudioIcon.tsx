@@ -27,6 +27,7 @@ export type StudioIconName =
   | 'duplicate'
   | 'file'
   | 'add'
+  | 'zoom'
 
 interface StudioIconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {
   name: StudioIconName
@@ -210,6 +211,14 @@ const paths: Record<Exclude<StudioIconName, 'app-logo'>, ReactElement> = {
     <>
       <path d="M12 4.7v14.6" />
       <path d="M4.7 12h14.6" />
+    </>
+  ),
+  zoom: (
+    <>
+      <path d="M4.2 10.7a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Z" />
+      <path d="m15.55 15.6 4.25 4.2" />
+      <path d="M10.7 7.9v5.6" />
+      <path d="M7.9 10.7h5.6" />
     </>
   ),
 }

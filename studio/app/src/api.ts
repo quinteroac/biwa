@@ -7,8 +7,11 @@ import type {
   StudioBuildsResponse,
   StudioCharacterAtlasResponse,
   StudioCharacterDraft,
+  StudioCharacterSheetEditResponse,
   StudioCharacterResponse,
+  StudioCharacterSheetArtType,
   StudioCharacterSheetDeleteResponse,
+  StudioCharacterSheetGenerateResponse,
   StudioCharacterSheetUploadResponse,
   StudioCharactersResponse,
   StudioSceneDraft,
@@ -20,6 +23,8 @@ import type {
   StudioProjectIdentityDraft,
   StudioProjectResponse,
   StudioProjectsResponse,
+  StudioSettings,
+  StudioSettingsResponse,
   StudioManifestResponse,
   StudioStoryListResponse,
   StudioStoryResponse,
@@ -72,6 +77,18 @@ export function runDoctor(gameId: string): Promise<StudioDoctorResponse> {
 export function fetchAuthoringAnalysis(gameId: string, query = ''): Promise<StudioAuthoringAnalysisResponse> {
   const suffix = query.trim() ? `?q=${encodeURIComponent(query.trim())}` : ''
   return requestJson<StudioAuthoringAnalysisResponse>(`/api/projects/${gameId}/authoring${suffix}`)
+}
+
+export function fetchStudioSettings(gameId: string): Promise<StudioSettingsResponse> {
+  return requestJson<StudioSettingsResponse>(`/api/projects/${gameId}/settings`)
+}
+
+export function saveStudioSettings(gameId: string, settings: StudioSettings): Promise<StudioSettingsResponse> {
+  return requestJson<StudioSettingsResponse>(`/api/projects/${gameId}/settings`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ settings }),
+  })
 }
 
 export function fetchBuilds(gameId: string): Promise<StudioBuildsResponse> {
@@ -199,14 +216,44 @@ export function uploadCharacterSheetConcept(
   path: string,
   character: StudioCharacterDraft,
   image: File,
+  artType?: StudioCharacterSheetArtType,
 ): Promise<StudioCharacterSheetUploadResponse> {
   const body = new FormData()
   body.set('path', path)
   body.set('character', JSON.stringify(character))
   body.set('image', image)
+  if (artType) body.set('artType', artType)
   return requestJson<StudioCharacterSheetUploadResponse>(`/api/projects/${gameId}/characters/character-sheet/concepts`, {
     method: 'POST',
     body,
+  })
+}
+
+export function generateCharacterSheetConcept(
+  gameId: string,
+  path: string,
+  character: StudioCharacterDraft,
+  prompt: string,
+  artTypes: StudioCharacterSheetArtType[],
+): Promise<StudioCharacterSheetGenerateResponse> {
+  return requestJson<StudioCharacterSheetGenerateResponse>(`/api/projects/${gameId}/characters/character-sheet/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path, character, prompt, artTypes }),
+  })
+}
+
+export function editCharacterSheetConcept(
+  gameId: string,
+  path: string,
+  character: StudioCharacterDraft,
+  assetPath: string,
+  prompt: string,
+): Promise<StudioCharacterSheetEditResponse> {
+  return requestJson<StudioCharacterSheetEditResponse>(`/api/projects/${gameId}/characters/character-sheet/edit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path, character, assetPath, prompt }),
   })
 }
 

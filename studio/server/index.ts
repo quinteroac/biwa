@@ -5,10 +5,11 @@ import { getProjectDiagnostics, getProjectSummary, listProjects, updateProjectId
 import { createStoryFolder, deleteStoryFile, deleteStoryFolder, listStoryEntries, readStoryFile, renameStoryFile, renameStoryFolder, writeStoryFile } from './story.ts'
 import { listAssets, resolveAssetFile } from './assets.ts'
 import { listScenes, readScene, writeScene } from './scenes.ts'
-import { deleteCharacterSheetConcept, generateCharacterAtlas, listCharacters, readCharacter, uploadCharacterSheetConcept, writeCharacter } from './characters.ts'
+import { deleteCharacterSheetConcept, editCharacterSheetConcept, generateCharacterAtlas, generateCharacterSheetConcept, listCharacters, readCharacter, uploadCharacterSheetConcept, writeCharacter } from './characters.ts'
 import { installOfficialPlugin, listStudioPlugins, removeOfficialPlugin } from './plugins.ts'
 import { getBuildManifest, getBuilds, previewFileExists, previewMime, resolvePreviewFile, runStudioBuild } from './builds.ts'
 import { analyzeAuthoring } from './authoring.ts'
+import { readStudioSettings, writeStudioSettings } from './settings.ts'
 
 function jsonError(message: string, status = 500): Response {
   return Response.json({ error: message }, { status })
@@ -214,6 +215,26 @@ export const studioApi = new Elysia()
       return jsonError(err.message, 400)
     }
   })
+  .get('/api/projects/:gameId/settings', async ({ params }) => {
+    try {
+      return { settings: await readStudioSettings(params.gameId) }
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, err.message.includes('does not exist') ? 404 : 400)
+    }
+  })
+  .put('/api/projects/:gameId/settings', async ({ body, params }) => {
+    try {
+      const payload = body as { settings?: unknown }
+      if (typeof payload.settings !== 'object' || payload.settings === null || Array.isArray(payload.settings)) {
+        throw new Error('Missing Studio settings payload.')
+      }
+      return { settings: await writeStudioSettings(params.gameId, payload.settings as Parameters<typeof writeStudioSettings>[1]) }
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, err.message.includes('does not exist') ? 404 : 400)
+    }
+  })
   .get('/api/projects/:gameId/scenes', async ({ params }) => {
     try {
       return { scenes: await listScenes(params.gameId) }
@@ -289,7 +310,7 @@ export const studioApi = new Elysia()
   })
   .post('/api/projects/:gameId/characters/character-sheet/concepts', async ({ body, params }) => {
     try {
-      const payload = body as { path?: unknown; character?: unknown; image?: unknown }
+      const payload = body as { path?: unknown; character?: unknown; image?: unknown; artType?: unknown }
       if (typeof payload.path !== 'string') throw new Error('Missing character file path.')
       if (!(payload.image instanceof File)) throw new Error('Missing character sheet image.')
       const parsed = typeof payload.character === 'string'
@@ -298,9 +319,63 @@ export const studioApi = new Elysia()
       if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
         throw new Error('Invalid character payload.')
       }
-      return await uploadCharacterSheetConcept(params.gameId, payload.path, parsed as Parameters<typeof uploadCharacterSheetConcept>[2], payload.image)
+      return await uploadCharacterSheetConcept(
+        params.gameId,
+        payload.path,
+        parsed as Parameters<typeof uploadCharacterSheetConcept>[2],
+        payload.image,
+        typeof payload.artType === 'string' ? payload.artType as Parameters<typeof uploadCharacterSheetConcept>[4] : undefined,
+      )
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, err.message.includes('not found') ? 404 : 400)
+    }
+  })
+  .post('/api/projects/:gameId/characters/character-sheet/generate', async ({ body, params }) => {
+    try {
+      const payload = body as { path?: unknown; character?: unknown; prompt?: unknown; artTypes?: unknown }
+      if (typeof payload.path !== 'string') throw new Error('Missing character file path.')
+      if (typeof payload.character !== 'object' || payload.character === null || Array.isArray(payload.character)) {
+        throw new Error('Missing character payload.')
+      }
+      console.info(`[studio] character-sheet generate requested: game=${params.gameId} path=${payload.path}`)
+      const result = await generateCharacterSheetConcept(
+        params.gameId,
+        payload.path,
+        payload.character as Parameters<typeof generateCharacterSheetConcept>[2],
+        typeof payload.prompt === 'string' ? payload.prompt : '',
+        Array.isArray(payload.artTypes) ? payload.artTypes as Parameters<typeof generateCharacterSheetConcept>[4] : undefined,
+      )
+      console.info(`[studio] character-sheet generate completed: ${result.path}`)
+      return result
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      console.warn(`[studio] character-sheet generate failed: ${err.message}`)
+      return jsonError(err.message, err.message.includes('not found') ? 404 : 400)
+    }
+  })
+  .post('/api/projects/:gameId/characters/character-sheet/edit', async ({ body, params }) => {
+    try {
+      const payload = body as { path?: unknown; character?: unknown; assetPath?: unknown; prompt?: unknown }
+      if (typeof payload.path !== 'string') throw new Error('Missing character file path.')
+      if (typeof payload.character !== 'object' || payload.character === null || Array.isArray(payload.character)) {
+        throw new Error('Missing character payload.')
+      }
+      if (typeof payload.assetPath !== 'string') throw new Error('Missing character sheet asset path.')
+      if (typeof payload.prompt !== 'string') throw new Error('Missing edit prompt.')
+      console.info(`[studio] character-sheet edit requested: game=${params.gameId} path=${payload.path} asset=${payload.assetPath}`)
+      const result = await editCharacterSheetConcept(
+        params.gameId,
+        payload.path,
+        payload.character as Parameters<typeof editCharacterSheetConcept>[2],
+        payload.assetPath,
+        payload.prompt,
+      )
+      console.info(`[studio] character-sheet edit completed: ${result.path}`)
+      return result
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      console.warn(`[studio] character-sheet edit failed: ${err.message}`)
       return jsonError(err.message, err.message.includes('not found') ? 404 : 400)
     }
   })
