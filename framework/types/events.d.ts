@@ -30,6 +30,8 @@ export interface EngineSceneEvent extends TagCommand {
 
 export interface EngineCharacterEvent extends TagCommand {
   type: 'character'
+  sheet?: string
+  animation?: string
 }
 
 export interface EngineAudioEvent extends TagCommand {

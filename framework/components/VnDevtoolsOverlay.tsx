@@ -90,7 +90,7 @@ export function VnDevtoolsOverlay({ snapshot, onRefresh, defaultOpen = false }: 
               </Section>
               <Section title="Characters">
                 {snapshot.characters.length === 0 ? <p style={mutedStyle}>none</p> : snapshot.characters.map(character => (
-                  <Row key={character.id} label={character.id} value={`${character.position} / ${character.expression}`} />
+                  <Row key={character.id} label={character.id} value={`${character.position} / ${character.sheet}/${character.animation}`} />
                 ))}
               </Section>
               <Section title="Audio">

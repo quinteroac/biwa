@@ -34,7 +34,8 @@ export interface CharacterState {
   id: string
   charData: Record<string, unknown> | null
   position: 'left' | 'center' | 'right'
-  expression: string
+  sheet: string
+  animation: string
   exiting: boolean
 }
 
@@ -305,7 +306,7 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
         if (ambSfx) audio.playAmbience(ambSfx, null)
       }),
 
-      bus.on<{ id: string; position?: string; expression?: string; exit?: boolean }>('engine:character', ({ id, position, expression, exit: shouldExit }) => {
+      bus.on<{ id: string; position?: string; sheet?: string; animation?: string; expression?: string; exit?: boolean }>('engine:character', ({ id, position, sheet, animation, expression, exit: shouldExit }) => {
         setCharacters(prev => {
           const next = new Map(prev)
           if (shouldExit) {
@@ -316,12 +317,19 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
           const charData = (engine.data?.characters?.[id.toLowerCase()] as Record<string, unknown>) ?? null
           const existing = next.get(id)
           const defaultPosition = charData?.['defaultPosition'] as 'left' | 'center' | 'right' | undefined
-          const defaultExpression = charData?.['defaultExpression'] as string | undefined
+          const characterAnimation = charData?.['animation'] as Record<string, unknown> | undefined
+          const defaultSheet = typeof characterAnimation?.['defaultStateSheet'] === 'string' ? characterAnimation['defaultStateSheet'] : 'Main'
+          const defaultAnimation = typeof characterAnimation?.['defaultState'] === 'string'
+            ? characterAnimation['defaultState']
+            : typeof characterAnimation?.['defaultAction'] === 'string'
+              ? characterAnimation['defaultAction']
+            : charData?.['defaultExpression'] as string | undefined
           next.set(id, {
             id,
             charData: charData ?? existing?.charData ?? null,
             position: (position ?? existing?.position ?? defaultPosition ?? 'center') as 'left' | 'center' | 'right',
-            expression: expression ?? existing?.expression ?? defaultExpression ?? 'neutral',
+            sheet: sheet ?? existing?.sheet ?? defaultSheet,
+            animation: animation ?? expression ?? existing?.animation ?? defaultAnimation ?? 'neutral',
             exiting: false,
           })
           return next
@@ -606,7 +614,8 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
                 id={char.id}
                 charData={char.charData as Parameters<typeof VnCharacter>[0]['charData']}
                 position={char.position}
-                expression={char.expression}
+                sheet={char.sheet}
+                animation={char.animation}
                 exiting={char.exiting}
                 onExited={handleCharacterExited}
               />

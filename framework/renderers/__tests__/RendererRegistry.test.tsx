@@ -38,8 +38,8 @@ describe('RendererRegistry', () => {
   })
 
   it('dispatches external character renderers by animation type', () => {
-    defaultRendererRegistry.register('character', 'spine', ({ id, expression }) => (
-      createElement('div', { 'data-testid': 'custom-character' }, `${id}:${expression}`)
+    defaultRendererRegistry.register('character', 'spine', ({ id, sheet, animationName }) => (
+      createElement('div', { 'data-testid': 'custom-character' }, `${id}:${sheet}/${animationName}`)
     ))
 
     const html = renderToString(createElement(VnCharacter, {
@@ -48,13 +48,14 @@ describe('RendererRegistry', () => {
         animation: { type: 'spine' },
       },
       position: 'center',
-      expression: 'smile',
+      sheet: 'Chapter_01',
+      animation: 'smile',
       exiting: false,
       onExited: () => {},
     }))
 
     expect(html).toContain('custom-character')
-    expect(html).toContain('kai:smile')
+    expect(html).toContain('kai:Chapter_01/smile')
     expect(html).not.toContain('Unsupported character renderer')
   })
 

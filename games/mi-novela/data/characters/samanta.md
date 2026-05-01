@@ -32,14 +32,23 @@ offset:
   x: 0
   'y': 0
 animation:
-  type: spritesheet
-  file: characters/new-character/new-character_spritesheet.png
-  atlas: characters/new-character/new-character_atlas.json
-  expressions:
-    neutral: neutral
-    happy: happy
-    sad: sad
-    angry: angry
+  type: spritesheet-library
+  defaultStateSheet: Main
+  defaultAnimationSheet: Main
+  defaultState: neutral
+  defaultAction: angry
+  states:
+    Main:
+      file: ''
+      atlas: ''
+      sprites:
+        neutral: neutral
+  animationSheets:
+    Main:
+      file: characters/samanta/spritesheets/Main/samanta_spritesheet_002.png
+      atlas: characters/samanta/spritesheets/Main/samanta_spritesheet_002_map.json
+      actions:
+        angry: angry
 characterSheet:
   main: characters/samanta/character-sheet/generated/concept-art-001.png
   concepts: []

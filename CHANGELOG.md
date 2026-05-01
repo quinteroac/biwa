@@ -112,6 +112,9 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Studio Story preview now uses `@chenglou/pretext` for explicit multiline text layout.
 - Studio Build/Preview section with manager-backed builds, embedded playable preview, local build history, manifest access and distribution diagnostics.
 - Studio Tools section for advanced authoring with Ink graph analysis, global search, route coverage, branch samples, script notes, localization readiness and debug state.
+- Studio spritesheet authoring now distinguishes Visual Novel state atlases from Animation atlases, including generation metadata, atlas summaries and physical spritesheet discovery.
+- Studio Sprites and Animations tabs now provide inspector-style side selectors with fit-to-view previews, zoom controls and mouse pan navigation.
+- Studio Animations preview now plays live multi-frame Aseprite frame tags, supports playback-speed control and lists animations across every generated animation spritesheet.
 
 ### Changed
 
@@ -150,3 +153,6 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Biwa Studio Overview redesigned around identity, localization, plugin, statistics and diagnostics panels.
 - Biwa Studio Character Sheet redesigned around compact Identity, Appearance and Narrative panels plus a concept-art preview/gallery workflow.
 - Studio character thumbnails now prefer the first uploaded concept image before falling back to runtime sprite previews.
+- Character spritesheet runtime metadata now separates `states.*.sprites` from `animationSheets.*.actions` instead of mixing still sprites and multi-frame actions in one `sheets.*.animations` map.
+- `VnCharacter`, the official Aseprite character atlas renderer, Studio character APIs and `doctor` validation now resolve state sprites and live animation actions through the new separated spritesheet-library schema.
+- Studio spritesheet image generation prompts now treat Animation atlases as action groups with fixed frame ranges instead of still sprite/expression sheets.

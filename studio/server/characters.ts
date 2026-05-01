@@ -1,17 +1,26 @@
-import { existsSync, mkdirSync, readFileSync, readdirSync, unlinkSync, writeFileSync } from 'fs'
+import { spawnSync } from 'child_process'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, unlinkSync, writeFileSync } from 'fs'
+import { tmpdir } from 'os'
 import { basename, dirname, extname, join, normalize, relative } from 'path'
 import yaml from 'js-yaml'
 import { validateGame } from '../../manager/commands/doctor.ts'
 import { createCharacterAtlas } from '../../manager/commands/assets.ts'
-import { getAsepriteFrameItems, getAsepriteFrameTags } from '../../framework/engine/AsepriteAtlas.ts'
+import { buildAsepriteAnimationAtlas, buildAsepriteAtlas, getAsepriteAtlasKind, getAsepriteFrameItems, getAsepriteFrameTags } from '../../framework/engine/AsepriteAtlas.ts'
 import { imageExtension, readOpenAiImagesSettingsForGeneration } from './settings.ts'
 import type { AsepriteAtlas } from '../../framework/engine/AsepriteAtlas.ts'
 import type {
+  StudioAsepriteAtlasKind,
   StudioCharacterAtlasResponse,
   StudioCharacterAtlasSummary,
   StudioCharacterDraft,
   StudioCharacterItem,
   StudioCharacterResponse,
+  StudioCharacterSpritesheetAsset,
+  StudioCharacterSpritesheetDeleteResponse,
+  StudioCharacterSpritesheetFolderResponse,
+  StudioCharacterSpritesheetGenerateRequest,
+  StudioCharacterSpritesheetGenerateResponse,
+  StudioCharacterSpritesheetUploadResponse,
   StudioCharacterSheetArtType,
   StudioCharacterSheetDeleteResponse,
   StudioCharacterSheetEditResponse,
@@ -115,6 +124,47 @@ function stringArrayValue(value: unknown): string[] {
   return []
 }
 
+function atlasKindValue(value: unknown): StudioAsepriteAtlasKind {
+  return value === 'Animation' ? 'Animation' : 'Visual Novel'
+}
+
+function animationDirectionValue(value: unknown): 'forward' | 'reverse' | 'pingpong' {
+  return value === 'reverse' || value === 'pingpong' ? value : 'forward'
+}
+
+function animationTagsValue(
+  value: StudioCharacterSpritesheetGenerateRequest['animationTags'],
+  frameCount: number,
+  fallbackNames: string[],
+  framesPerTag: number,
+) {
+  const tags = (value ?? []).map((tag, index) => {
+    const rawFrom = Math.floor(Number(tag.from))
+    const rawTo = Math.floor(Number(tag.to))
+    const from = Math.max(0, Math.min(frameCount - 1, Number.isFinite(rawFrom) ? rawFrom : 0))
+    const to = Math.max(from, Math.min(frameCount - 1, Number.isFinite(rawTo) ? rawTo : from))
+    return {
+      name: (tag.name || `${fallbackNames[0] || 'animation'}_${index + 1}`).trim(),
+      from,
+      to,
+      direction: animationDirectionValue(tag.direction),
+      color: tag.color || '#000000ff',
+    }
+  }).filter(tag => tag.name.length > 0)
+  if (tags.length > 0) return tags
+  const names = fallbackNames.length > 0 ? fallbackNames : ['idle']
+  return names.map((name, index) => {
+    const from = Math.min(frameCount - 1, index * framesPerTag)
+    return {
+      name: name || `animation_${index + 1}`,
+      from,
+      to: Math.min(frameCount - 1, from + framesPerTag - 1),
+      direction: 'forward' as const,
+      color: '#000000ff',
+    }
+  })
+}
+
 function characterSheetAssets(value: unknown): StudioCharacterSheetAssets {
   const record = recordValue(value)
   return {
@@ -132,12 +182,30 @@ function animationRecord(data: Record<string, unknown>): Record<string, unknown>
   return recordValue(data['animation']) ?? {}
 }
 
+function sheetCollection(animation: Record<string, unknown>, atlasKind: StudioAsepriteAtlasKind): Record<string, unknown> {
+  return recordValue(animation[atlasKind === 'Animation' ? 'animationSheets' : 'states']) ?? {}
+}
+
+function defaultSheetKey(animation: Record<string, unknown>, atlasKind: StudioAsepriteAtlasKind): string {
+  const key = atlasKind === 'Animation' ? 'defaultAnimationSheet' : 'defaultStateSheet'
+  return typeof animation[key] === 'string' ? animation[key] : 'Main'
+}
+
+function activeSpritesheet(animation: Record<string, unknown>, atlasKind: StudioAsepriteAtlasKind): Record<string, unknown> | null {
+  const sheets = sheetCollection(animation, atlasKind)
+  const defaultSheet = defaultSheetKey(animation, atlasKind)
+  return recordValue(sheets[defaultSheet]) ?? recordValue(sheets['Main']) ?? recordValue(Object.values(sheets)[0])
+}
+
 function expressionNames(data: Record<string, unknown>): string[] {
   const animation = animationRecord(data)
-  const mapped = stringMapKeys(animation['expressions'])
-  if (mapped.length > 0) return mapped
-  const sprites = stringMapKeys(animation['sprites'])
-  if (sprites.length > 0) return sprites
+  const sheets = sheetCollection(animation, 'Visual Novel')
+  const defaultSheet = defaultSheetKey(animation, 'Visual Novel')
+  const activeSheet = recordValue(sheets[defaultSheet]) ?? recordValue(sheets['Main']) ?? recordValue(Object.values(sheets)[0])
+  const activeAnimations = stringMapKeys(activeSheet?.['sprites'])
+  if (activeAnimations.length > 0) return activeAnimations
+  const allAnimations = Object.values(sheets).flatMap(sheet => stringMapKeys(recordValue(sheet)?.['sprites']))
+  if (allAnimations.length > 0) return [...new Set(allAnimations)]
   const defaultExpression = typeof data['defaultExpression'] === 'string' ? data['defaultExpression'] : ''
   return defaultExpression ? [defaultExpression] : []
 }
@@ -151,13 +219,8 @@ function firstStringFromRecord(value: unknown): string | null {
 
 function previewAssetPath(data: Record<string, unknown>): string | null {
   const animation = animationRecord(data)
-  const defaultExpression = typeof data['defaultExpression'] === 'string' ? data['defaultExpression'] : ''
-  const sprites = recordValue(animation['sprites'])
-  if (sprites) {
-    const sprite = typeof sprites[defaultExpression] === 'string' ? sprites[defaultExpression] : firstStringFromRecord(sprites)
-    if (sprite) return sprite
-  }
-  if (typeof animation['file'] === 'string') return animation['file']
+  const sheet = activeSpritesheet(animation, 'Visual Novel') ?? activeSpritesheet(animation, 'Animation')
+  if (typeof sheet?.['file'] === 'string') return sheet['file']
   const layers = data['layers']
   if (Array.isArray(layers)) {
     for (const layer of layers) {
@@ -173,11 +236,81 @@ function previewAssetPath(data: Record<string, unknown>): string | null {
 
 function atlasPath(data: Record<string, unknown>): string {
   const animation = animationRecord(data)
-  return typeof animation['atlas'] === 'string' ? animation['atlas'] : ''
+  const sheet = activeSpritesheet(animation, 'Visual Novel') ?? activeSpritesheet(animation, 'Animation')
+  return typeof sheet?.['atlas'] === 'string' ? sheet['atlas'] : ''
 }
 
 function assetUrl(gameId: string, path: string): string {
   return `/api/projects/${gameId}/assets/file?path=${encodeURIComponent(path)}`
+}
+
+function spritesheetRootDir(gameId: string, characterId: string): string {
+  return join(GAMES_DIR, gameId, 'assets', 'characters', characterId, 'spritesheets')
+}
+
+function safeSpritesheetFolderName(name: string): string {
+  const trimmed = name.trim()
+  if (!trimmed) throw new Error('Spritesheet folder name is required.')
+  if (trimmed.includes('/') || trimmed.includes('\\') || trimmed.includes('..')) throw new Error('Spritesheet folder name is invalid.')
+  return trimmed
+}
+
+function spritesheetFolderFromPath(path: string): string {
+  const normalized = path.replace(/\\/g, '/').replace(/^assets\//, '').replace(/^\/+/, '')
+  const match = normalized.match(/^characters\/[^/]+\/spritesheets\/([^/]+)\//)
+  return match?.[1] ? safeSpritesheetFolderName(match[1]) : 'Main'
+}
+
+function spritesheetFolders(gameId: string, characterId: string): string[] {
+  const root = spritesheetRootDir(gameId, characterId)
+  const folders = new Set<string>(['Main'])
+  if (existsSync(root)) {
+    for (const entry of readdirSync(root, { withFileTypes: true })) {
+      if (entry.isDirectory()) folders.add(entry.name)
+    }
+  }
+  return [...folders].sort((a, b) => a === 'Main' ? -1 : b === 'Main' ? 1 : a.localeCompare(b))
+}
+
+function isSpritesheetImage(filename: string): boolean {
+  return ['.png', '.jpg', '.jpeg', '.webp', '.gif'].includes(extname(filename).toLowerCase())
+}
+
+function findAtlasForSpritesheet(dir: string, imageFilename: string): string {
+  const stem = basename(imageFilename, extname(imageFilename))
+  const preferred = `${stem}_map.json`
+  if (existsSync(join(dir, preferred))) return preferred
+  if (!existsSync(dir)) return ''
+  const candidates = readdirSync(dir)
+    .filter(filename => filename.startsWith(`${stem}_map`) && filename.endsWith('.json'))
+    .sort((a, b) => a.localeCompare(b))
+  return candidates[0] ?? ''
+}
+
+function spritesheetAssets(gameId: string, characterId: string, data: Record<string, unknown>): StudioCharacterSpritesheetAsset[] {
+  const root = spritesheetRootDir(gameId, characterId)
+  if (!existsSync(root)) return []
+  const activeFile = previewAssetPath(data) ?? ''
+  const assets: StudioCharacterSpritesheetAsset[] = []
+  for (const folder of spritesheetFolders(gameId, characterId)) {
+    const dir = join(root, folder)
+    if (!existsSync(dir)) continue
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (!entry.isFile() || !isSpritesheetImage(entry.name)) continue
+      const path = `characters/${characterId}/spritesheets/${folder}/${entry.name}`
+      const atlasFilename = findAtlasForSpritesheet(dir, entry.name)
+      const atlasPath = atlasFilename ? `characters/${characterId}/spritesheets/${folder}/${atlasFilename}` : ''
+      assets.push({
+        folder,
+        path,
+        atlasPath,
+        url: assetUrl(gameId, path),
+        atlas: atlasPath ? readAtlasSummary(gameId, atlasPath, data) : null,
+        isActive: path === activeFile,
+      })
+    }
+  }
+  return assets.sort((a, b) => a.folder === b.folder ? a.path.localeCompare(b.path) : a.folder === 'Main' ? -1 : b.folder === 'Main' ? 1 : a.folder.localeCompare(b.folder))
 }
 
 function characterSheetAssetUrls(gameId: string, sheet: StudioCharacterSheetAssets): StudioCharacterSheetAssetUrls {
@@ -193,21 +326,33 @@ function readAtlasSummary(gameId: string, path: string, data: Record<string, unk
   const filePath = resolveAssetPath(gameId, path)
   if (!existsSync(filePath)) return null
   const parsed = JSON.parse(readFileSync(filePath, 'utf8')) as AsepriteAtlas
+  const atlasKind = getAsepriteAtlasKind(parsed)
   const frameItems = getAsepriteFrameItems(parsed)
   const frameTags = getAsepriteFrameTags(parsed)
   const tags = frameTags.map(tag => tag.name)
   const animation = animationRecord(data)
-  const expression = typeof data['defaultExpression'] === 'string' ? data['defaultExpression'] : 'neutral'
-  const expressions = recordValue(animation['expressions'])
-  const targetName = typeof expressions?.[expression] === 'string'
-    ? expressions[expression]
-    : typeof expressions?.['neutral'] === 'string'
-      ? expressions['neutral']
-      : expression
+  const defaultAnimationKey = atlasKind === 'Animation' ? 'defaultAction' : 'defaultState'
+  const defaultAnimationValue = animation[defaultAnimationKey]
+  const defaultAnimation = typeof defaultAnimationValue === 'string'
+    ? defaultAnimationValue
+    : typeof data['defaultExpression'] === 'string'
+      ? data['defaultExpression']
+      : 'neutral'
+  const previewSheet = atlasKind === 'Animation'
+    ? activeSpritesheet(animation, 'Animation')
+    : activeSpritesheet(animation, 'Visual Novel')
+  const animations = recordValue(previewSheet?.[atlasKind === 'Animation' ? 'actions' : 'sprites'])
+  const targetName = typeof animations?.[defaultAnimation] === 'string'
+    ? animations[defaultAnimation]
+    : typeof animations?.['neutral'] === 'string'
+      ? animations['neutral']
+      : defaultAnimation
   const tag = frameTags.find(item => item.name === targetName) ?? frameTags[0]
   const frameItem = typeof tag?.from === 'number' ? frameItems[tag.from] : frameItems[0]
   return {
     path,
+    atlasKind,
+    spritesheetType: typeof parsed.meta?.spritesheetType === 'string' ? parsed.meta.spritesheetType : atlasKind,
     frameCount: frameItems.length,
     frameNames: frameItems.map(item => item.name),
     tags,
@@ -291,6 +436,8 @@ function characterFromFile(gameId: string, filePath: string, baseDir: string): S
     atlasPath: atlas,
     previewUrl: assetPath ? assetUrl(gameId, assetPath) : null,
     atlas: readAtlasSummary(gameId, atlas, data),
+    spritesheetFolders: spritesheetFolders(gameId, String(data['id'] ?? path.replace(/\.md$/, ''))),
+    spritesheets: spritesheetAssets(gameId, String(data['id'] ?? path.replace(/\.md$/, '')), data),
     characterSheet: sheetAssets,
     characterSheetUrls: characterSheetAssetUrls(gameId, sheetAssets),
     body,
@@ -318,6 +465,91 @@ function expressionMap(names: string[], existing: Record<string, unknown>): Reco
     result[name] = typeof current === 'string' && current.length > 0 ? current : name
   }
   return result
+}
+
+function stringRecord(value: unknown): Record<string, string> {
+  const record = recordValue(value)
+  if (!record) return {}
+  const result: Record<string, string> = {}
+  for (const [key, item] of Object.entries(record)) {
+    if (typeof item === 'string' && item.length > 0) result[key] = item
+  }
+  return result
+}
+
+function spritesheetLibrary(animation: Record<string, unknown>, fallbackAnimation: string): Record<string, unknown> {
+  const normalizeSheets = (value: unknown, mappingKey: 'sprites' | 'actions'): Record<string, unknown> => {
+    const rawSheets = recordValue(value) ?? {}
+    const sheets: Record<string, unknown> = {}
+    for (const [name, rawSheet] of Object.entries(rawSheets)) {
+      const sheet = recordValue(rawSheet)
+      if (!sheet) continue
+      const file = typeof sheet['file'] === 'string' ? sheet['file'] : ''
+      const atlas = typeof sheet['atlas'] === 'string' ? sheet['atlas'] : ''
+      sheets[name] = {
+        file,
+        atlas,
+        [mappingKey]: stringRecord(sheet[mappingKey]),
+      }
+    }
+    return sheets
+  }
+  return {
+    type: 'spritesheet-library',
+    defaultStateSheet: typeof animation['defaultStateSheet'] === 'string' ? animation['defaultStateSheet'] : 'Main',
+    defaultAnimationSheet: typeof animation['defaultAnimationSheet'] === 'string' ? animation['defaultAnimationSheet'] : 'Main',
+    defaultState: typeof animation['defaultState'] === 'string' ? animation['defaultState'] : fallbackAnimation,
+    defaultAction: typeof animation['defaultAction'] === 'string' ? animation['defaultAction'] : '',
+    states: normalizeSheets(animation['states'], 'sprites'),
+    animationSheets: normalizeSheets(animation['animationSheets'], 'actions'),
+  }
+}
+
+function updateSpritesheetLibrary(
+  animation: Record<string, unknown>,
+  atlasKind: StudioAsepriteAtlasKind,
+  folder: string,
+  file: string,
+  atlas: string,
+  names: string[],
+  fallbackAnimation: string,
+): Record<string, unknown> {
+  const library = spritesheetLibrary(animation, fallbackAnimation)
+  const collectionKey = atlasKind === 'Animation' ? 'animationSheets' : 'states'
+  const mappingKey = atlasKind === 'Animation' ? 'actions' : 'sprites'
+  const defaultSheetKeyName = atlasKind === 'Animation' ? 'defaultAnimationSheet' : 'defaultStateSheet'
+  const defaultAnimationKeyName = atlasKind === 'Animation' ? 'defaultAction' : 'defaultState'
+  const sheets = { ...(recordValue(library[collectionKey]) ?? {}) }
+  const currentSheet = recordValue(sheets[folder])
+  sheets[folder] = {
+    file,
+    atlas,
+    [mappingKey]: expressionMap(names, recordValue(currentSheet?.[mappingKey]) ?? {}),
+  }
+  return {
+    ...library,
+    [defaultSheetKeyName]: folder,
+    [defaultAnimationKeyName]: names[0] ?? fallbackAnimation,
+    [collectionKey]: sheets,
+  }
+}
+
+function applyDraftAnimationNames(library: Record<string, unknown>, names: string[]): Record<string, unknown> {
+  const trimmed = names.map(name => name.trim()).filter(Boolean)
+  if (trimmed.length === 0) return library
+  const folder = typeof library['defaultStateSheet'] === 'string' ? library['defaultStateSheet'] : 'Main'
+  const states = { ...(recordValue(library['states']) ?? {}) }
+  const currentSheet = recordValue(states[folder])
+  states[folder] = {
+    file: typeof currentSheet?.['file'] === 'string' ? currentSheet['file'] : '',
+    atlas: typeof currentSheet?.['atlas'] === 'string' ? currentSheet['atlas'] : '',
+    sprites: expressionMap(trimmed, recordValue(currentSheet?.['sprites']) ?? {}),
+  }
+  return {
+    ...library,
+    defaultState: typeof library['defaultState'] === 'string' ? library['defaultState'] : trimmed[0] ?? 'neutral',
+    states,
+  }
 }
 
 function atlasRelativePath(atlas: string): string {
@@ -348,6 +580,29 @@ function nextConceptFilename(dir: string, originalName: string): string {
   throw new Error('Could not allocate a unique concept image filename.')
 }
 
+function nextSpritesheetFilename(dir: string, characterId: string, originalName: string): string {
+  const ext = safeImageExtension(originalName || 'spritesheet.png')
+  const stem = `${characterId}_spritesheet`
+  const first = `${stem}${ext}`
+  if (!existsSync(join(dir, first))) return first
+  for (let index = 2; index < 1000; index += 1) {
+    const next = `${stem}_${String(index).padStart(3, '0')}${ext}`
+    if (!existsSync(join(dir, next))) return next
+  }
+  throw new Error('Could not allocate a unique spritesheet image filename.')
+}
+
+function atlasFilenameForSpritesheet(dir: string, spritesheetFilename: string): string {
+  const stem = basename(spritesheetFilename, extname(spritesheetFilename))
+  const first = `${stem}_map.json`
+  if (!existsSync(join(dir, first))) return first
+  for (let index = 2; index < 1000; index += 1) {
+    const next = `${stem}_map_${String(index).padStart(3, '0')}.json`
+    if (!existsSync(join(dir, next))) return next
+  }
+  throw new Error('Could not allocate a unique spritesheet atlas filename.')
+}
+
 function nextGeneratedFilenameForPrefix(dir: string, extension: string, prefix: string): string {
   const safeExtension = extension.replace(/^\./, '').toLowerCase()
   if (!['png', 'jpg', 'jpeg', 'webp'].includes(safeExtension)) throw new Error('Generated image format must be PNG, JPG or WebP.')
@@ -374,6 +629,13 @@ function assertCharacterSheetAssetPath(characterId: string, path: string): void 
   const prefix = `characters/${characterId}/character-sheet/`
   if (!normalized.startsWith(prefix) || normalized.includes('..')) {
     throw new Error('Character sheet asset path must stay inside the character-sheet folder.')
+  }
+}
+
+function assertSpritesheetAssetPath(path: string): void {
+  const normalized = path.replace(/\\/g, '/').replace(/^assets\//, '').replace(/^\/+/, '')
+  if (!normalized.startsWith('characters/') || normalized.includes('..')) {
+    throw new Error('Spritesheet asset path must stay inside the characters assets folder.')
   }
 }
 
@@ -472,13 +734,68 @@ function imageMimeFromPath(path: string): string {
   return 'image/png'
 }
 
+function shellQuote(value: string): string {
+  return `'${value.replace(/'/g, `'\\''`)}'`
+}
+
+function runSpritesheetBackgroundRemoval(
+  bytes: Uint8Array,
+  settings: Awaited<ReturnType<typeof readOpenAiImagesSettingsForGeneration>>,
+): Uint8Array {
+  if (!settings.spritesheetBackgroundRemovalEnabled) return bytes
+  const commandTemplate = settings.spritesheetBackgroundRemovalCommand.trim()
+  if (!commandTemplate) throw new Error('Spritesheet background removal command is not configured.')
+
+  const tempDir = mkdtempSync(join(tmpdir(), 'biwa-background-removal-'))
+  try {
+    const inputPath = join(tempDir, 'input.png')
+    const outputPath = join(tempDir, 'output.png')
+    writeFileSync(inputPath, bytes)
+    const command = commandTemplate
+      .replaceAll('{input}', shellQuote(inputPath))
+      .replaceAll('{output}', shellQuote(outputPath))
+    const result = spawnSync(command, {
+      cwd: ROOT,
+      encoding: 'utf8',
+      shell: true,
+      timeout: settings.spritesheetBackgroundRemovalTimeoutSeconds * 1000,
+    })
+    if (result.error) throw result.error
+    if (result.status !== 0) {
+      const detail = result.stderr.trim() || result.stdout.trim() || `exit code ${result.status ?? 'unknown'}`
+      throw new Error(`Spritesheet background removal failed: ${detail}`)
+    }
+    if (!existsSync(outputPath)) throw new Error('Spritesheet background removal did not create an output image.')
+    return new Uint8Array(readFileSync(outputPath))
+  } finally {
+    rmSync(tempDir, { force: true, recursive: true })
+  }
+}
+
 async function createOpenAiImagePayload(
   gameId: string,
   settings: Awaited<ReturnType<typeof readOpenAiImagesSettingsForGeneration>>,
   prompt: string,
   referencePathValue: string | null,
+  options: {
+    size?: string
+    background?: 'transparent' | 'opaque' | 'auto'
+    outputFormat?: 'png' | 'webp' | 'jpeg'
+  } = {},
 ): Promise<{ url: string; init: RequestInit }> {
+  const size = options.size ?? settings.characterSheetResolution
+  const outputFormat = options.outputFormat ?? settings.outputFormat
   if (!referencePathValue) {
+    const body: Record<string, unknown> = {
+      model: settings.model,
+      prompt,
+      n: 1,
+      size,
+      quality: settings.quality,
+      output_format: outputFormat,
+      moderation: settings.moderation,
+    }
+    if (options.background) body['background'] = options.background
     return {
       url: apiUrl(settings.baseUrl, settings.imageGenerationPath),
       init: {
@@ -487,15 +804,7 @@ async function createOpenAiImagePayload(
           Authorization: `Bearer ${settings.apiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model: settings.model,
-          prompt,
-          n: 1,
-          size: settings.characterSheetResolution,
-          quality: settings.quality,
-          output_format: settings.outputFormat,
-          moderation: settings.moderation,
-        }),
+        body: JSON.stringify(body),
       },
     }
   }
@@ -505,10 +814,11 @@ async function createOpenAiImagePayload(
   form.set('model', settings.model)
   form.set('prompt', prompt)
   form.set('n', '1')
-  form.set('size', settings.characterSheetResolution)
+  form.set('size', size)
   form.set('quality', settings.quality)
-  form.set('output_format', settings.outputFormat)
+  form.set('output_format', outputFormat)
   form.set('moderation', settings.moderation)
+  if (options.background) form.set('background', options.background)
   form.set('image', new File([await image.arrayBuffer()], referencePathValue.split('/').pop() ?? 'reference.png', { type: imageMimeFromPath(referencePathValue) }))
   return {
     url: apiUrl(settings.baseUrl, editsPathFromGenerationPath(settings.imageGenerationPath)),
@@ -537,12 +847,14 @@ export async function writeCharacter(gameId: string, path: string, draft: Studio
   const filePath = resolveCharacterFile(gameId, path)
   if (!existsSync(dirname(filePath))) throw new Error(`Character directory not found for: ${path}`)
   const existing = existsSync(filePath) ? frontmatterFromMarkdown(readFileSync(filePath, 'utf8')) : { data: {}, body: '' }
-  const animation = {
+  const rawAnimation = {
     ...animationRecord(existing.data),
     ...draft.animation,
   }
-  const expressions = expressionMap(draft.expressions, recordValue(animation['expressions']) ?? {})
-  if (Object.keys(expressions).length > 0) animation['expressions'] = expressions
+  const animation = applyDraftAnimationNames(
+    spritesheetLibrary(rawAnimation, draft.defaultExpression || draft.expressions[0] || 'neutral'),
+    draft.expressions,
+  )
   const data = {
     ...existing.data,
     id: draft.id,
@@ -590,9 +902,11 @@ export async function generateCharacterAtlas(
 ): Promise<StudioCharacterAtlasResponse> {
   await validateGame(gameId)
   const characterId = draft.id.trim() || path.replace(/\.md$/, '')
+  const folder = typeof draft.animation['defaultStateSheet'] === 'string' ? draft.animation['defaultStateSheet'] : 'Main'
   const names = draft.expressions.length > 0 ? draft.expressions : [draft.defaultExpression || 'neutral']
-  const image = typeof draft.animation['file'] === 'string'
-    ? draft.animation['file'].split('/').pop() ?? `${characterId}_spritesheet.png`
+  const activeSheet = activeSpritesheet(draft.animation, 'Visual Novel')
+  const image = typeof activeSheet?.['file'] === 'string' && activeSheet['file']
+    ? activeSheet['file'].split('/').pop() ?? `${characterId}_spritesheet.png`
     : `${characterId}_spritesheet.png`
   const result = createCharacterAtlas(gameId, characterId, {
     names: names.join(','),
@@ -600,18 +914,23 @@ export async function generateCharacterAtlas(
     width: String(Math.max(1, names.length) * 512),
     height: '512',
     image,
-    out: `assets/characters/${characterId}/${characterId}_atlas.json`,
+    out: `assets/characters/${characterId}/spritesheets/${folder}/${characterId}_atlas.json`,
   })
-  const animation = {
-    ...draft.animation,
-    type: typeof draft.animation['type'] === 'string' ? draft.animation['type'] : 'spritesheet',
-    file: typeof draft.animation['file'] === 'string' ? draft.animation['file'] : `characters/${characterId}/${image}`,
-    atlas: atlasRelativePath(result.atlasPath),
-    expressions: expressionMap(names, recordValue(draft.animation['expressions']) ?? {}),
-  }
+  const animation = updateSpritesheetLibrary(
+    draft.animation,
+    'Visual Novel',
+    folder,
+    typeof activeSheet?.['file'] === 'string' && activeSheet['file'] ? activeSheet['file'] : `characters/${characterId}/spritesheets/${folder}/${image}`,
+    atlasRelativePath(result.atlasPath),
+    names,
+    draft.defaultExpression || 'neutral',
+  )
   const saved = await writeCharacter(gameId, path, { ...draft, animation, expressions: names })
+  const savedAtlasPath = atlasPath(saved.character.animation as Record<string, unknown>)
   const summary = saved.character.atlas ?? {
-    path: String(animation['atlas']),
+    path: savedAtlasPath,
+    atlasKind: 'Visual Novel' as const,
+    spritesheetType: 'Half Body',
     frameCount: result.frameCount,
     frameNames: names,
     tags: [],
@@ -634,6 +953,220 @@ export async function generateCharacterAtlas(
     previewFrame: { name: names[0] ?? 'neutral', x: 0, y: 0, w: 512, h: 512 },
   }
   return { atlas: summary, character: saved.character }
+}
+
+export async function deleteCharacterSpritesheet(
+  gameId: string,
+  path: string,
+  draft: StudioCharacterDraft,
+  assetPath: string,
+): Promise<StudioCharacterSpritesheetDeleteResponse> {
+  await validateGame(gameId)
+  const normalizedAssetPath = assetPath.replace(/\\/g, '/').replace(/^assets\//, '').replace(/^\/+/, '')
+  assertSpritesheetAssetPath(normalizedAssetPath)
+  const library = spritesheetLibrary(draft.animation, draft.defaultExpression || 'neutral')
+  const states = { ...(recordValue(library['states']) ?? {}) }
+  const animationSheets = { ...(recordValue(library['animationSheets']) ?? {}) }
+  const stateEntry = Object.entries(states).find(([, sheet]) => recordValue(sheet)?.['file'] === normalizedAssetPath)
+  const animationEntry = Object.entries(animationSheets).find(([, sheet]) => recordValue(sheet)?.['file'] === normalizedAssetPath)
+  const entry = stateEntry ?? animationEntry
+  const filePath = resolveAssetPath(gameId, normalizedAssetPath)
+  if (existsSync(filePath)) unlinkSync(filePath)
+  const fallbackAtlas = findAtlasForSpritesheet(dirname(filePath), normalizedAssetPath.split('/').pop() ?? '')
+  const [deletedFolder, deletedSheet] = entry ?? [spritesheetFolderFromPath(normalizedAssetPath), null]
+  const atlas = recordValue(deletedSheet)?.['atlas']
+    ?? (fallbackAtlas ? `${normalizedAssetPath.split('/').slice(0, -1).join('/')}/${fallbackAtlas}` : '')
+  if (typeof atlas === 'string' && atlas.length > 0) {
+    const atlasFile = resolveAssetPath(gameId, atlas)
+    if (existsSync(atlasFile)) unlinkSync(atlasFile)
+  }
+  if (stateEntry) delete states[deletedFolder]
+  if (animationEntry) delete animationSheets[deletedFolder]
+  const remainingStateFolders = Object.keys(states)
+  const remainingAnimationFolders = Object.keys(animationSheets)
+  const nextAnimation = {
+    ...library,
+    states,
+    animationSheets,
+    defaultStateSheet: library['defaultStateSheet'] === deletedFolder ? remainingStateFolders[0] ?? 'Main' : library['defaultStateSheet'],
+    defaultAnimationSheet: library['defaultAnimationSheet'] === deletedFolder ? remainingAnimationFolders[0] ?? 'Main' : library['defaultAnimationSheet'],
+  }
+  const saved = await writeCharacter(gameId, path, {
+    ...draft,
+    animation: nextAnimation,
+    expressions: [],
+  })
+  return {
+    deletedPath: normalizedAssetPath,
+    character: saved.character,
+  }
+}
+
+export async function uploadCharacterSpritesheet(
+  gameId: string,
+  path: string,
+  draft: StudioCharacterDraft,
+  file: File,
+  folderName = 'Main',
+): Promise<StudioCharacterSpritesheetUploadResponse> {
+  await validateGame(gameId)
+  if (!file || file.size === 0) throw new Error('Missing spritesheet image.')
+  const characterId = draft.id.trim() || path.replace(/\.md$/, '')
+  const folder = safeSpritesheetFolderName(folderName)
+  const targetDir = join(spritesheetRootDir(gameId, characterId), folder)
+  mkdirSync(targetDir, { recursive: true })
+  const filename = nextSpritesheetFilename(targetDir, characterId, file.name || 'spritesheet.png')
+  const assetPath = `characters/${characterId}/spritesheets/${folder}/${filename}`
+  writeFileSync(join(targetDir, filename), new Uint8Array(await file.arrayBuffer()))
+  const names = draft.expressions.length > 0 ? draft.expressions : [draft.defaultExpression || 'neutral']
+  const animation = updateSpritesheetLibrary(draft.animation, 'Visual Novel', folder, assetPath, '', names, draft.defaultExpression || 'neutral')
+  const saved = await writeCharacter(gameId, path, { ...draft, animation })
+  return {
+    path: assetPath,
+    url: assetUrl(gameId, assetPath),
+    character: saved.character,
+  }
+}
+
+export async function createCharacterSpritesheetFolder(
+  gameId: string,
+  path: string,
+  draft: StudioCharacterDraft,
+  folderName: string,
+): Promise<StudioCharacterSpritesheetFolderResponse> {
+  await validateGame(gameId)
+  const characterId = draft.id.trim() || path.replace(/\.md$/, '')
+  const folder = safeSpritesheetFolderName(folderName)
+  mkdirSync(join(spritesheetRootDir(gameId, characterId), folder), { recursive: true })
+  const current = await readCharacter(gameId, path)
+  return {
+    folder,
+    character: current.character,
+  }
+}
+
+function spritesheetGenerationPrompt(draft: StudioCharacterDraft, atlasJson: string, options: StudioCharacterSpritesheetGenerateRequest): string {
+  const names = options.spriteNames.map(name => name.trim()).filter(Boolean).join(', ')
+  const atlasKind = options.atlasKind === 'Animation' ? 'Animation' : 'Visual Novel'
+  const animationTags = options.animationTags ?? []
+  const animationTagSummary = animationTags
+    .map(tag => `${tag.name}: frames ${tag.from}-${tag.to}, ${animationDirectionValue(tag.direction)}`)
+    .join('; ')
+  const animationInstructions = atlasKind === 'Animation'
+      ? [
+        'This is an animation spritesheet, not an expression/state spritesheet.',
+        `Animation body type: ${options.spritesheetType || 'Half Body'}.`,
+        'Every cell is a chronological frame in a continuous motion sequence.',
+        'Do not create separate character poses, mood variants, expression options, turnarounds, or costume variants.',
+        'Animate only small progressive changes from frame to frame: breathing, blink, hair sway, cloth sway, idle weight shift, or the user-requested motion.',
+        'Keep the character locked to the same camera angle, same crop, same body scale, same feet/torso anchor, and same center alignment in every frame.',
+        'Adjacent frames must differ subtly and incrementally so the sequence loops smoothly without popping.',
+        `Frames per action: ${Math.max(1, Math.floor(options.animationFramesPerTag ?? options.spriteCount))}.`,
+        animationTagSummary ? `Frame tag ranges: ${animationTagSummary}.` : '',
+      ].filter(Boolean)
+    : [
+        'Each cell is a separate visual novel state or expression, not a motion sequence.',
+      ]
+  return [
+    options.prompt.trim() || (atlasKind === 'Animation'
+      ? `Create a clean looping visual novel character animation spritesheet for ${draft.displayName || draft.id}.`
+      : `Create a clean visual novel ${options.spritesheetType.toLowerCase()} character spritesheet for ${draft.displayName || draft.id}.`),
+    '',
+    'Use the attached concept art as the visual identity reference for the same character.',
+    'Generate one spritesheet image, not individual images.',
+    ...animationInstructions,
+    'Use a perfectly flat solid #00ff00 chroma-key background for background removal.',
+    'The background must be one uniform color with no shadows, gradients, texture, reflections, floor plane, or lighting variation.',
+    'Do not use #00ff00 anywhere in the character sprites.',
+    'No text of any kind: no labels, words, captions, letters, numbers, symbols, UI, watermarks, signatures, or frame markings.',
+    `Canvas: ${options.sheetWidth}x${options.sheetHeight}px.`,
+    `Layout: ${options.layoutDirection}, ${options.spriteCount} ${atlasKind === 'Animation' ? 'frames' : 'sprites'}, ${options.columns || 'auto'} columns.`,
+    `${atlasKind === 'Animation' ? 'Animation frame groups' : 'Sprite names / expressions'} in order: ${names}.`,
+    `Each ${atlasKind === 'Animation' ? 'animation frame' : 'sprite'} must fit exactly inside the matching Aseprite frame rectangle from this JSON contract.`,
+    atlasKind === 'Animation'
+      ? 'Keep scale, outfit, hairstyle, colors, proportions, and motion continuity consistent across every animation frame.'
+      : 'Keep scale, outfit, hairstyle, colors, and proportions consistent across every frame.',
+    'Do not add borders or background art.',
+    '',
+    'Aseprite JSON contract:',
+    atlasJson,
+  ].join('\n')
+}
+
+export async function generateCharacterSpritesheet(
+  gameId: string,
+  path: string,
+  draft: StudioCharacterDraft,
+  options: StudioCharacterSpritesheetGenerateRequest,
+): Promise<StudioCharacterSpritesheetGenerateResponse> {
+  await validateGame(gameId)
+  const settings = await readOpenAiImagesSettingsForGeneration(gameId)
+  const characterId = draft.id.trim() || path.replace(/\.md$/, '')
+  const folder = safeSpritesheetFolderName(options.folder || 'Main')
+  const targetDir = join(spritesheetRootDir(gameId, characterId), folder)
+  mkdirSync(targetDir, { recursive: true })
+  const spritesheetOutputFormat = settings.spritesheetBackgroundRemovalEnabled || settings.outputFormat === 'jpeg' ? 'png' : settings.outputFormat
+  const imageFilename = nextSpritesheetFilename(targetDir, characterId, `${characterId}_spritesheet.${imageExtension(spritesheetOutputFormat)}`)
+  const atlasFilename = atlasFilenameForSpritesheet(targetDir, imageFilename)
+  const assetPath = `characters/${characterId}/spritesheets/${folder}/${imageFilename}`
+  const atlasPathValue = `characters/${characterId}/spritesheets/${folder}/${atlasFilename}`
+  const names = options.spriteNames.length > 0 ? options.spriteNames : draft.expressions.length > 0 ? draft.expressions : [draft.defaultExpression || 'neutral']
+  const atlasKind = atlasKindValue(options.atlasKind)
+  const framesPerTag = Math.max(1, Math.floor(options.animationFramesPerTag ?? options.spriteCount))
+  const frameCount = atlasKind === 'Animation'
+    ? Math.max(1, names.length * framesPerTag)
+    : Math.max(1, Math.floor(options.spriteCount))
+  const animationTags = animationTagsValue(options.animationTags, frameCount, names, framesPerTag)
+  const atlas = atlasKind === 'Animation'
+    ? buildAsepriteAnimationAtlas({
+        sheetWidth: options.sheetWidth,
+        sheetHeight: options.sheetHeight,
+        spritesheetType: options.spritesheetType || 'Half Body',
+        frameCount,
+        layoutDirection: options.layoutDirection,
+        columns: options.columns,
+        animationTags,
+        imageFilename,
+        frameDuration: options.frameDuration,
+      })
+    : buildAsepriteAtlas({
+        sheetWidth: options.sheetWidth,
+        sheetHeight: options.sheetHeight,
+        spritesheetType: options.spritesheetType || 'Half Body',
+        spriteCount: options.spriteCount,
+        layoutDirection: options.layoutDirection,
+        columns: options.columns,
+        spriteNames: names,
+        imageFilename,
+        frameDuration: options.frameDuration,
+      })
+  const atlasJson = JSON.stringify(atlas, null, 2)
+  writeFileSync(join(targetDir, atlasFilename), atlasJson)
+  const referencePathValue = referenceImagePath(draft)
+  if (!referencePathValue) throw new Error('Generate spritesheet requires a character concept art image.')
+  const request = await createOpenAiImagePayload(gameId, settings, spritesheetGenerationPrompt(draft, atlasJson, { ...options, spriteCount: frameCount, spriteNames: names, animationTags }), referencePathValue, {
+    size: settings.spritesheetResolution,
+    outputFormat: spritesheetOutputFormat,
+  })
+  console.info(`[studio] OpenAI Images spritesheet request: game=${gameId} character=${characterId} folder=${folder} model=${settings.model} size=${settings.spritesheetResolution} backgroundRemoval=${settings.spritesheetBackgroundRemovalEnabled ? 'on' : 'off'}`)
+  const response = await fetch(request.url, request.init)
+  const payload = await response.json().catch(() => null) as unknown
+  console.info(`[studio] OpenAI Images spritesheet payload summary: ${imageResponseSummary(payload)}`)
+  if (!response.ok) throw new Error(openAiErrorMessage(payload, `OpenAI spritesheet generation failed with ${response.status}.`))
+  const generated = await imageBytesFromResponse(payload)
+  const imageBytes = runSpritesheetBackgroundRemoval(generated.bytes, settings)
+  writeFileSync(join(targetDir, imageFilename), imageBytes)
+  const runtimeNames = atlasKind === 'Animation' ? animationTags.map(tag => tag.name) : names
+  const animation = updateSpritesheetLibrary(draft.animation, atlasKind, folder, assetPath, atlasPathValue, runtimeNames, draft.defaultExpression || 'neutral')
+  const savedExpressions = atlasKind === 'Animation' ? draft.expressions : runtimeNames
+  const saved = await writeCharacter(gameId, path, { ...draft, animation, expressions: savedExpressions })
+  return {
+    path: assetPath,
+    atlasPath: atlasPathValue,
+    url: assetUrl(gameId, assetPath),
+    revisedPrompt: generated.revisedPrompt,
+    character: saved.character,
+  }
 }
 
 export async function uploadCharacterSheetConcept(

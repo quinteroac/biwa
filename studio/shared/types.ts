@@ -77,6 +77,7 @@ export interface StudioStoryResponse {
 }
 
 export type StudioAssetKind = 'characters' | 'scenes' | 'audio' | 'gallery' | 'music' | 'spritesheets' | 'other'
+export type StudioAsepriteAtlasKind = 'Visual Novel' | 'Animation'
 
 export interface StudioAssetItem {
   path: string
@@ -135,6 +136,8 @@ export interface StudioCharacterOffset {
 
 export interface StudioCharacterAtlasSummary {
   path: string
+  atlasKind: StudioAsepriteAtlasKind
+  spritesheetType: string
   frameCount: number
   frameNames: string[]
   tags: string[]
@@ -164,6 +167,15 @@ export interface StudioCharacterAtlasSummary {
     w: number
     h: number
   } | null
+}
+
+export interface StudioCharacterSpritesheetAsset {
+  folder: string
+  path: string
+  atlasPath: string
+  url: string | null
+  atlas: StudioCharacterAtlasSummary | null
+  isActive: boolean
 }
 
 export interface StudioCharacterSheetAssets {
@@ -214,6 +226,8 @@ export interface StudioCharacterItem {
   atlasPath: string
   previewUrl: string | null
   atlas: StudioCharacterAtlasSummary | null
+  spritesheetFolders: string[]
+  spritesheets: StudioCharacterSpritesheetAsset[]
   characterSheet: StudioCharacterSheetAssets
   characterSheetUrls: StudioCharacterSheetAssetUrls
   body: string
@@ -265,6 +279,54 @@ export interface StudioCharacterResponse {
 
 export interface StudioCharacterAtlasResponse {
   atlas: StudioCharacterAtlasSummary
+  character: StudioCharacterItem
+}
+
+export interface StudioCharacterSpritesheetDeleteResponse {
+  deletedPath: string
+  character: StudioCharacterItem
+}
+
+export interface StudioCharacterSpritesheetUploadResponse {
+  path: string
+  url: string | null
+  character: StudioCharacterItem
+}
+
+export interface StudioCharacterSpritesheetFolderResponse {
+  folder: string
+  character: StudioCharacterItem
+}
+
+export type StudioSpritesheetLayoutDirection = 'Horizontal' | 'Vertical' | 'Grid'
+
+export interface StudioCharacterSpritesheetGenerateRequest {
+  atlasKind?: StudioAsepriteAtlasKind
+  sheetWidth: number
+  sheetHeight: number
+  spritesheetType: string
+  spriteCount: number
+  layoutDirection: StudioSpritesheetLayoutDirection
+  columns: number
+  spriteNames: string[]
+  animationFramesPerTag?: number
+  animationTags?: Array<{
+    name: string
+    from: number
+    to: number
+    direction: string
+    color?: string
+  }>
+  frameDuration: number
+  folder: string
+  prompt: string
+}
+
+export interface StudioCharacterSpritesheetGenerateResponse {
+  path: string
+  atlasPath: string
+  url: string | null
+  revisedPrompt: string
   character: StudioCharacterItem
 }
 
@@ -326,6 +388,10 @@ export interface StudioOpenAiImagesSettings {
   outputFormat: StudioOpenAiImageFormat
   moderation: StudioOpenAiImageModeration
   characterSheetResolution: StudioOpenAiImageResolution
+  spritesheetResolution: StudioOpenAiImageResolution
+  spritesheetBackgroundRemovalEnabled: boolean
+  spritesheetBackgroundRemovalCommand: string
+  spritesheetBackgroundRemovalTimeoutSeconds: number
   imageGenerationTimeoutSeconds: number
 }
 

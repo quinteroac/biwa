@@ -431,6 +431,10 @@ export class GameEngine {
           this.#trackCharacter(tag)
           this.#bus.emit('engine:character', tag)
           break
+        case 'sprite':
+          this.#trackSprite(tag)
+          this.#bus.emit('engine:character', this.#characterPayloadFromState(tag.id ?? ''))
+          break
         case 'transition':
           await this.#runTransition(tag)
           break
@@ -536,11 +540,36 @@ export class GameEngine {
     const position = typeof tag['position'] === 'string'
       ? tag['position']
       : previous?.position ?? (typeof data['defaultPosition'] === 'string' ? data['defaultPosition'] : 'center')
-    const expression = typeof tag['expression'] === 'string'
-      ? tag['expression']
-      : previous?.expression ?? (typeof data['defaultExpression'] === 'string' ? data['defaultExpression'] : 'neutral')
+    const animation = typeof tag['animation'] === 'string'
+      ? tag['animation']
+      : typeof tag['expression'] === 'string'
+        ? tag['expression']
+        : previous?.animation ?? defaultAnimation(data)
+    const sheet = typeof tag['sheet'] === 'string'
+      ? tag['sheet']
+      : previous?.sheet ?? defaultSheet(data, animation)
 
-    this.#currentCharacters.set(id, { id, position, expression })
+    this.#currentCharacters.set(id, { id, position, sheet, animation })
+  }
+
+  #trackSprite(tag: TagCommand): void {
+    const id = tag.id
+    if (!id) return
+    const previous = this.#currentCharacters.get(id)
+    const data = this.#data.characters[id] ?? {}
+    const position = previous?.position ?? (typeof data['defaultPosition'] === 'string' ? data['defaultPosition'] : 'center')
+    const animation = typeof tag['animation'] === 'string'
+      ? tag['animation']
+      : typeof tag['expression'] === 'string'
+        ? tag['expression']
+        : previous?.animation ?? defaultAnimation(data)
+    const sheet = typeof tag['sheet'] === 'string' ? tag['sheet'] : previous?.sheet ?? defaultSheet(data, animation)
+    this.#currentCharacters.set(id, { id, position, sheet, animation })
+  }
+
+  #characterPayloadFromState(id: string): TagCommand {
+    const state = this.#currentCharacters.get(id)
+    return state ? { type: 'character', ...state } : { type: 'character', id }
   }
 
   #restoreVisualState(visual: SavedVisualState | undefined): void {
@@ -680,6 +709,35 @@ function readString(data: Record<string, unknown>, key: string): string | undefi
 function normalizeRendererDiagnostics(renderers: VnPluginRendererDeclarations | undefined): Record<string, string[]> {
   if (!renderers) return {}
   return Object.fromEntries(Object.entries(renderers).map(([kind, values]) => [kind, [...values]]))
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null
+}
+
+function hasMappedAnimation(sheet: unknown, key: string, field: 'actions' | 'sprites'): boolean {
+  const mapping = asRecord(asRecord(sheet)?.[field])
+  return Boolean(mapping?.[key]) || Object.keys(mapping ?? {}).length > 0
+}
+
+function defaultSheet(data: Record<string, unknown>, animationName: string): string {
+  const animation = data['animation']
+  if (typeof animation !== 'object' || animation === null || Array.isArray(animation)) return 'Main'
+  const record = animation as Record<string, unknown>
+  const animationSheets = asRecord(record['animationSheets']) ?? {}
+  const defaultAnimationSheet = typeof record['defaultAnimationSheet'] === 'string' ? record['defaultAnimationSheet'] : 'Main'
+  const selectedAnimationSheet = animationSheets[defaultAnimationSheet] ?? animationSheets['Main'] ?? Object.values(animationSheets)[0]
+  if (selectedAnimationSheet && hasMappedAnimation(selectedAnimationSheet, animationName, 'actions')) return defaultAnimationSheet
+  return typeof record['defaultStateSheet'] === 'string' ? record['defaultStateSheet'] : 'Main'
+}
+
+function defaultAnimation(data: Record<string, unknown>): string {
+  const animation = data['animation']
+  if (typeof animation !== 'object' || animation === null || Array.isArray(animation)) return 'neutral'
+  const record = animation as Record<string, unknown>
+  if (typeof record['defaultState'] === 'string') return record['defaultState']
+  if (typeof record['defaultAction'] === 'string') return record['defaultAction']
+  return typeof data['defaultExpression'] === 'string' ? data['defaultExpression'] : 'neutral'
 }
 
 function normalizeGalleryItem(id: string, data: Record<string, unknown>): GalleryItem {

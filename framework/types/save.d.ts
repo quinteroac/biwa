@@ -13,7 +13,8 @@ export interface SavedSceneState {
 export interface SavedCharacterState {
   id: string
   position: string
-  expression: string
+  sheet: string
+  animation: string
   exiting?: boolean
 }
 

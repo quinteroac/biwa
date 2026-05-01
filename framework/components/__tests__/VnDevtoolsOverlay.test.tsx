@@ -8,7 +8,7 @@ const snapshot: RuntimeDiagnosticsSnapshot = {
   state: 'DIALOG',
   scene: { id: 'cafe', variant: 'night' },
   variables: { trust: 2 },
-  characters: [{ id: 'kai', position: 'left', expression: 'neutral' }],
+  characters: [{ id: 'kai', position: 'left', sheet: 'Main', animation: 'neutral' }],
   audio: { bgm: { id: 'theme' } },
   plugins: [{
     id: 'official-devtools',

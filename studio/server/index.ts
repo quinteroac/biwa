@@ -5,7 +5,7 @@ import { getProjectDiagnostics, getProjectSummary, listProjects, updateProjectId
 import { createStoryFolder, deleteStoryFile, deleteStoryFolder, listStoryEntries, readStoryFile, renameStoryFile, renameStoryFolder, writeStoryFile } from './story.ts'
 import { listAssets, resolveAssetFile } from './assets.ts'
 import { listScenes, readScene, writeScene } from './scenes.ts'
-import { deleteCharacterSheetConcept, editCharacterSheetConcept, generateCharacterAtlas, generateCharacterSheetConcept, listCharacters, readCharacter, uploadCharacterSheetConcept, writeCharacter } from './characters.ts'
+import { createCharacterSpritesheetFolder, deleteCharacterSheetConcept, deleteCharacterSpritesheet, editCharacterSheetConcept, generateCharacterAtlas, generateCharacterSheetConcept, generateCharacterSpritesheet, listCharacters, readCharacter, uploadCharacterSheetConcept, uploadCharacterSpritesheet, writeCharacter } from './characters.ts'
 import { installOfficialPlugin, listStudioPlugins, removeOfficialPlugin } from './plugins.ts'
 import { getBuildManifest, getBuilds, previewFileExists, previewMime, resolvePreviewFile, runStudioBuild } from './builds.ts'
 import { analyzeAuthoring } from './authoring.ts'
@@ -331,6 +331,70 @@ export const studioApi = new Elysia()
       return jsonError(err.message, err.message.includes('not found') ? 404 : 400)
     }
   })
+  .post('/api/projects/:gameId/characters/spritesheet-folder', async ({ body, params }) => {
+    try {
+      const payload = body as { path?: unknown; character?: unknown; folder?: unknown }
+      if (typeof payload.path !== 'string') throw new Error('Missing character file path.')
+      if (typeof payload.character !== 'object' || payload.character === null || Array.isArray(payload.character)) {
+        throw new Error('Missing character payload.')
+      }
+      if (typeof payload.folder !== 'string') throw new Error('Missing spritesheet folder name.')
+      return await createCharacterSpritesheetFolder(
+        params.gameId,
+        payload.path,
+        payload.character as Parameters<typeof createCharacterSpritesheetFolder>[2],
+        payload.folder,
+      )
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, err.message.includes('not found') ? 404 : 400)
+    }
+  })
+  .post('/api/projects/:gameId/characters/spritesheet', async ({ body, params }) => {
+    try {
+      const payload = body as { path?: unknown; character?: unknown; image?: unknown; folder?: unknown }
+      if (typeof payload.path !== 'string') throw new Error('Missing character file path.')
+      if (!(payload.image instanceof File)) throw new Error('Missing spritesheet image.')
+      const parsed = typeof payload.character === 'string'
+        ? JSON.parse(payload.character) as unknown
+        : payload.character
+      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+        throw new Error('Invalid character payload.')
+      }
+      return await uploadCharacterSpritesheet(
+        params.gameId,
+        payload.path,
+        parsed as Parameters<typeof uploadCharacterSpritesheet>[2],
+        payload.image,
+        typeof payload.folder === 'string' ? payload.folder : undefined,
+      )
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, err.message.includes('not found') ? 404 : 400)
+    }
+  })
+  .post('/api/projects/:gameId/characters/spritesheet/generate', async ({ body, params }) => {
+    try {
+      const payload = body as { path?: unknown; character?: unknown; options?: unknown }
+      if (typeof payload.path !== 'string') throw new Error('Missing character file path.')
+      if (typeof payload.character !== 'object' || payload.character === null || Array.isArray(payload.character)) {
+        throw new Error('Missing character payload.')
+      }
+      if (typeof payload.options !== 'object' || payload.options === null || Array.isArray(payload.options)) {
+        throw new Error('Missing spritesheet generation options.')
+      }
+      return await generateCharacterSpritesheet(
+        params.gameId,
+        payload.path,
+        payload.character as Parameters<typeof generateCharacterSpritesheet>[2],
+        payload.options as Parameters<typeof generateCharacterSpritesheet>[3],
+      )
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      console.warn(`[studio] spritesheet generation failed: ${err.message}`)
+      return jsonError(err.message, err.message.includes('not found') ? 404 : 400)
+    }
+  })
   .post('/api/projects/:gameId/characters/character-sheet/generate', async ({ body, params }) => {
     try {
       const payload = body as { path?: unknown; character?: unknown; prompt?: unknown; artTypes?: unknown }
@@ -391,6 +455,25 @@ export const studioApi = new Elysia()
         params.gameId,
         payload.path,
         payload.character as Parameters<typeof deleteCharacterSheetConcept>[2],
+        payload.assetPath,
+      )
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, err.message.includes('not found') ? 404 : 400)
+    }
+  })
+  .delete('/api/projects/:gameId/characters/spritesheet', async ({ body, params }) => {
+    try {
+      const payload = body as { path?: unknown; character?: unknown; assetPath?: unknown }
+      if (typeof payload.path !== 'string') throw new Error('Missing character file path.')
+      if (typeof payload.character !== 'object' || payload.character === null || Array.isArray(payload.character)) {
+        throw new Error('Missing character payload.')
+      }
+      if (typeof payload.assetPath !== 'string') throw new Error('Missing spritesheet asset path.')
+      return await deleteCharacterSpritesheet(
+        params.gameId,
+        payload.path,
+        payload.character as Parameters<typeof deleteCharacterSpritesheet>[2],
         payload.assetPath,
       )
     } catch (e) {

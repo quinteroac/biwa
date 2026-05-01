@@ -3,6 +3,7 @@ export const ASEPRITE_APP_NAME = 'ComfyUI Game Assets Maker'
 
 export type AsepriteLayoutDirection = 'Horizontal' | 'Vertical' | 'Grid'
 export type AsepriteAnimationDirection = 'forward' | 'reverse' | 'pingpong'
+export type AsepriteAtlasKind = 'Visual Novel' | 'Animation'
 
 export interface AsepriteFrameRect {
   x: number
@@ -77,6 +78,7 @@ export interface BuildAsepriteAtlasOptions {
 export interface BuildAsepriteAnimationAtlasOptions {
   sheetWidth: number
   sheetHeight: number
+  spritesheetType?: string
   frameCount: number
   layoutDirection: AsepriteLayoutDirection
   columns?: number
@@ -89,6 +91,12 @@ export interface BuildAsepriteAnimationAtlasOptions {
 export interface AsepriteValidationIssue {
   code: string
   message: string
+}
+
+export function getAsepriteAtlasKind(atlas: AsepriteAtlas): AsepriteAtlasKind {
+  if (atlas.meta?.atlasType === 'Animation' || atlas.meta?.spritesheetType === 'Animation') return 'Animation'
+  if (Array.isArray(atlas.meta?.frameTags) && atlas.meta.frameTags.some(tag => tag.to > tag.from)) return 'Animation'
+  return 'Visual Novel'
 }
 
 function safeName(value: string, fallback: string): string {
@@ -224,7 +232,7 @@ export function buildAsepriteAnimationAtlas(options: BuildAsepriteAnimationAtlas
   const atlasOptions: BuildAsepriteAtlasOptions = {
     sheetWidth: options.sheetWidth,
     sheetHeight: options.sheetHeight,
-    spritesheetType: 'Animation',
+    spritesheetType: options.spritesheetType ?? 'Animation',
     spriteCount: frameCount,
     layoutDirection: options.layoutDirection,
     spriteNames: frameNames,
@@ -272,6 +280,17 @@ export function getAsepriteFrameTags(atlas: AsepriteAtlas): AsepriteFrameTag[] {
     direction: 'forward',
     color: '#000000ff',
   }))
+}
+
+export function getAsepritePlaybackFrameIndices(tag: AsepriteFrameTag): number[] {
+  const start = Math.max(0, Math.floor(tag.from))
+  const end = Math.max(start, Math.floor(tag.to))
+  const forward = Array.from({ length: end - start + 1 }, (_, index) => start + index)
+  if (tag.direction === 'reverse') return [...forward].reverse()
+  if (tag.direction === 'pingpong' && forward.length > 1) {
+    return [...forward, ...forward.slice(1, -1).reverse()]
+  }
+  return forward
 }
 
 export function validateAsepriteAtlas(atlas: unknown, options: { requireAnimationTags?: boolean; requireGameAssetsMaker?: boolean } = {}): AsepriteValidationIssue[] {

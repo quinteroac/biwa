@@ -22,6 +22,10 @@ const DEFAULT_OPENAI_IMAGES_SETTINGS = Object.freeze({
   outputFormat: 'png',
   moderation: 'auto',
   characterSheetResolution: '1024x1536',
+  spritesheetResolution: '1536x1024',
+  spritesheetBackgroundRemovalEnabled: false,
+  spritesheetBackgroundRemovalCommand: 'uv run --script studio/tools/remove_chroma_key.py --input {input} --out {output} --auto-key border --soft-matte --transparent-threshold 12 --opaque-threshold 220 --despill --force',
+  spritesheetBackgroundRemovalTimeoutSeconds: 120,
   imageGenerationTimeoutSeconds: 300,
 } satisfies StudioOpenAiImagesSettings)
 
@@ -45,6 +49,10 @@ function stringValue(value: unknown, fallback: string): string {
   return typeof value === 'string' ? value : fallback
 }
 
+function booleanValue(value: unknown, fallback: boolean): boolean {
+  return typeof value === 'boolean' ? value : fallback
+}
+
 function boundedNumberValue(value: unknown, fallback: number, min: number, max: number): number {
   const parsed = typeof value === 'number' ? value : Number(value)
   if (!Number.isFinite(parsed)) return fallback
@@ -66,6 +74,10 @@ function sanitizeOpenAiImagesSettings(value: unknown): StudioOpenAiImagesSetting
     outputFormat: enumValue(record['outputFormat'], ['png', 'webp', 'jpeg'] as const, DEFAULT_OPENAI_IMAGES_SETTINGS.outputFormat),
     moderation: enumValue(record['moderation'], ['auto', 'low'] as const, DEFAULT_OPENAI_IMAGES_SETTINGS.moderation),
     characterSheetResolution: enumValue(record['characterSheetResolution'], ['1024x1024', '1024x1536', '1536x1024', 'auto'] as const, DEFAULT_OPENAI_IMAGES_SETTINGS.characterSheetResolution),
+    spritesheetResolution: enumValue(record['spritesheetResolution'], ['1024x1024', '1024x1536', '1536x1024', 'auto'] as const, DEFAULT_OPENAI_IMAGES_SETTINGS.spritesheetResolution),
+    spritesheetBackgroundRemovalEnabled: booleanValue(record['spritesheetBackgroundRemovalEnabled'], booleanValue(record['spritesheetBiRefNetEnabled'], DEFAULT_OPENAI_IMAGES_SETTINGS.spritesheetBackgroundRemovalEnabled)),
+    spritesheetBackgroundRemovalCommand: stringValue(record['spritesheetBackgroundRemovalCommand'], DEFAULT_OPENAI_IMAGES_SETTINGS.spritesheetBackgroundRemovalCommand).trim() || DEFAULT_OPENAI_IMAGES_SETTINGS.spritesheetBackgroundRemovalCommand,
+    spritesheetBackgroundRemovalTimeoutSeconds: boundedNumberValue(record['spritesheetBackgroundRemovalTimeoutSeconds'], boundedNumberValue(record['spritesheetBiRefNetTimeoutSeconds'], DEFAULT_OPENAI_IMAGES_SETTINGS.spritesheetBackgroundRemovalTimeoutSeconds, 30, 1800), 30, 1800),
     imageGenerationTimeoutSeconds: boundedNumberValue(record['imageGenerationTimeoutSeconds'], DEFAULT_OPENAI_IMAGES_SETTINGS.imageGenerationTimeoutSeconds, 30, 600),
   }
 }

@@ -3,8 +3,10 @@ import {
   ASEPRITE_ATLAS_VERSION,
   buildAsepriteAnimationAtlas,
   buildAsepriteAtlas,
+  getAsepriteAtlasKind,
   getAsepriteFrameItems,
   getAsepriteFrameTags,
+  getAsepritePlaybackFrameIndices,
   validateAsepriteAtlas,
 } from '../engine/AsepriteAtlas.ts'
 
@@ -25,6 +27,7 @@ describe('AsepriteAtlas', () => {
     expect(atlas.meta.app).toBe('ComfyUI Game Assets Maker')
     expect(atlas.meta.version).toBe(ASEPRITE_ATLAS_VERSION)
     expect(atlas.meta.image).toBe('kai_spritesheet.png')
+    expect(getAsepriteAtlasKind(atlas)).toBe('Visual Novel')
     expect(atlas.meta.layout?.columns).toBe(2)
     expect(atlas.meta.layout?.rows).toBe(2)
     expect(Object.keys(atlas.frames)).toEqual(['neutral.png', 'happy.png', 'sad.png', 'angry.png'])
@@ -59,8 +62,15 @@ describe('AsepriteAtlas', () => {
 
     expect(atlas.meta.spritesheetType).toBe('Animation')
     expect(atlas.meta.atlasType).toBe('Animation')
+    expect(getAsepriteAtlasKind(atlas)).toBe('Animation')
     expect(atlas.meta.frameTags).toEqual([{ name: 'idle', from: 0, to: 3, direction: 'forward', color: '#000000ff' }])
     expect(getAsepriteFrameItems(atlas).map(item => item.key)).toEqual(['idle_01.png', 'idle_02.png', 'idle_03.png', 'idle_04.png'])
+  })
+
+  it('resolves Aseprite playback order from frame tag direction', () => {
+    expect(getAsepritePlaybackFrameIndices({ name: 'idle', from: 0, to: 3, direction: 'forward' })).toEqual([0, 1, 2, 3])
+    expect(getAsepritePlaybackFrameIndices({ name: 'idle', from: 0, to: 3, direction: 'reverse' })).toEqual([3, 2, 1, 0])
+    expect(getAsepritePlaybackFrameIndices({ name: 'idle', from: 0, to: 3, direction: 'pingpong' })).toEqual([0, 1, 2, 3, 2, 1])
   })
 
   it('validates required atlas fields and frame bounds', () => {

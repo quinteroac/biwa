@@ -12,12 +12,28 @@ function stringRecord(value: unknown): Record<string, string> | null {
   return Object.fromEntries(entries) as Record<string, string>
 }
 
-function AsepriteCharacterAtlasRenderer({ animation, expression, assetBase }: CharacterRendererProps) {
-  const file = typeof animation.file === 'string' ? animation.file : null
-  const atlas = typeof animation.atlas === 'string' ? animation.atlas : null
-  const expressions = stringRecord(animation.expressions)
+function AsepriteCharacterAtlasRenderer({ animation, sheet, animationName, assetBase }: CharacterRendererProps) {
+  const animationSheets = animation.animationSheets && typeof animation.animationSheets === 'object' && !Array.isArray(animation.animationSheets)
+    ? animation.animationSheets as Record<string, Record<string, unknown>>
+    : {}
+  const stateSheets = animation.states && typeof animation.states === 'object' && !Array.isArray(animation.states)
+    ? animation.states as Record<string, Record<string, unknown>>
+    : {}
+  const selectedAnimationSheet = animationSheets[sheet]
+    ?? (typeof animation.defaultAnimationSheet === 'string' ? animationSheets[animation.defaultAnimationSheet] : undefined)
+    ?? animationSheets['Main']
+    ?? Object.values(animationSheets)[0]
+  const selectedStateSheet = stateSheets[sheet]
+    ?? (typeof animation.defaultStateSheet === 'string' ? stateSheets[animation.defaultStateSheet] : undefined)
+    ?? stateSheets['Main']
+    ?? Object.values(stateSheets)[0]
+  const actionMapping = stringRecord(selectedAnimationSheet?.actions)
+  const selectedSheet = actionMapping?.[animationName] || !selectedStateSheet ? selectedAnimationSheet : selectedStateSheet
+  const file = typeof selectedSheet?.file === 'string' ? selectedSheet.file : null
+  const atlas = typeof selectedSheet?.atlas === 'string' ? selectedSheet.atlas : null
+  const animations = stringRecord(selectedSheet?.actions) ?? stringRecord(selectedSheet?.sprites)
 
-  if (!file || !atlas || !expressions) {
+  if (!file || !atlas || !animations) {
     return (
       <div data-testid="vn-aseprite-character-atlas-missing-data">
         Missing Aseprite atlas character data.
@@ -29,8 +45,8 @@ function AsepriteCharacterAtlasRenderer({ animation, expression, assetBase }: Ch
     <AsepriteSpritesheetRenderer
       file={file}
       atlas={atlas}
-      expression={expression}
-      expressions={expressions}
+      animation={animationName}
+      animations={animations}
       assetBase={assetBase}
     />
   )

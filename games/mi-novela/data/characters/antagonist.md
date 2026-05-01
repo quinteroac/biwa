@@ -9,13 +9,27 @@ offset:
   x: 0
   'y': 90
 animation:
-  type: spritesheet
-  file: characters/kirk/spritesheet.png
-  atlas: characters/antagonist/antagonist_atlas.json
-  expressions:
-    neutral: neutral
-    menacing: angry
-    surprised: sad
+  type: spritesheet-library
+  defaultStateSheet: Main
+  defaultAnimationSheet: Main
+  defaultState: neutral
+  defaultAction: evil_laugh
+  states:
+    Main:
+      file: characters/antagonist/spritesheets/Main/antagonist_spritesheet_002.png
+      atlas: characters/antagonist/spritesheets/Main/antagonist_spritesheet_002_map.json
+      sprites:
+        neutral: neutral
+        happy: happy
+        angry: angry
+        sad: sad
+  animationSheets:
+    Main:
+      file: characters/antagonist/spritesheets/Main/antagonist_spritesheet_004.png
+      atlas: characters/antagonist/spritesheets/Main/antagonist_spritesheet_004_map.json
+      actions:
+        evil_laugh: evil_laugh
+        fear: fear
 role: Antagonist
 age: '1000'
 gender: Non-binary

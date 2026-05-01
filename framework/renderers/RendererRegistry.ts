@@ -13,7 +13,8 @@ export interface CharacterRendererProps {
   charData: Record<string, unknown> | null
   animation: Record<string, unknown>
   position: 'left' | 'center' | 'right'
-  expression: string
+  sheet: string
+  animationName: string
   exiting: boolean
   assetBase: string
   onExited: (id: string) => void

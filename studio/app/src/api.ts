@@ -9,6 +9,11 @@ import type {
   StudioCharacterDraft,
   StudioCharacterSheetEditResponse,
   StudioCharacterResponse,
+  StudioCharacterSpritesheetDeleteResponse,
+  StudioCharacterSpritesheetFolderResponse,
+  StudioCharacterSpritesheetGenerateRequest,
+  StudioCharacterSpritesheetGenerateResponse,
+  StudioCharacterSpritesheetUploadResponse,
   StudioCharacterSheetArtType,
   StudioCharacterSheetDeleteResponse,
   StudioCharacterSheetGenerateResponse,
@@ -208,6 +213,63 @@ export function generateCharacterAtlas(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path, character }),
+  })
+}
+
+export function deleteCharacterSpritesheet(
+  gameId: string,
+  path: string,
+  character: StudioCharacterDraft,
+  assetPath: string,
+): Promise<StudioCharacterSpritesheetDeleteResponse> {
+  return requestJson<StudioCharacterSpritesheetDeleteResponse>(`/api/projects/${gameId}/characters/spritesheet`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path, character, assetPath }),
+  })
+}
+
+export function uploadCharacterSpritesheet(
+  gameId: string,
+  path: string,
+  character: StudioCharacterDraft,
+  image: File,
+  folder: string,
+): Promise<StudioCharacterSpritesheetUploadResponse> {
+  const body = new FormData()
+  body.set('path', path)
+  body.set('character', JSON.stringify(character))
+  body.set('image', image)
+  body.set('folder', folder)
+  return requestJson<StudioCharacterSpritesheetUploadResponse>(`/api/projects/${gameId}/characters/spritesheet`, {
+    method: 'POST',
+    body,
+  })
+}
+
+export function createCharacterSpritesheetFolder(
+  gameId: string,
+  path: string,
+  character: StudioCharacterDraft,
+  folder: string,
+): Promise<StudioCharacterSpritesheetFolderResponse> {
+  return requestJson<StudioCharacterSpritesheetFolderResponse>(`/api/projects/${gameId}/characters/spritesheet-folder`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path, character, folder }),
+  })
+}
+
+export function generateCharacterSpritesheet(
+  gameId: string,
+  path: string,
+  character: StudioCharacterDraft,
+  options: StudioCharacterSpritesheetGenerateRequest,
+): Promise<StudioCharacterSpritesheetGenerateResponse> {
+  return requestJson<StudioCharacterSpritesheetGenerateResponse>(`/api/projects/${gameId}/characters/spritesheet/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path, character, options }),
   })
 }
 

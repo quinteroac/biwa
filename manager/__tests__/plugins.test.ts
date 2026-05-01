@@ -234,9 +234,9 @@ export default config
     renderers: { character: ['aseprite-character-atlas'] },
   }],`)
     mkdirSync(join(gameDir(gameId), 'data/characters'), { recursive: true })
-    mkdirSync(join(gameDir(gameId), 'assets/characters/tester'), { recursive: true })
-    writeFileSync(join(gameDir(gameId), 'assets/characters/tester/tester.png'), '')
-    writeFileSync(join(gameDir(gameId), 'assets/characters/tester/tester_atlas.json'), JSON.stringify({
+    mkdirSync(join(gameDir(gameId), 'assets/characters/tester/spritesheets/Main'), { recursive: true })
+    writeFileSync(join(gameDir(gameId), 'assets/characters/tester/spritesheets/Main/tester.png'), '')
+    writeFileSync(join(gameDir(gameId), 'assets/characters/tester/spritesheets/Main/tester_atlas.json'), JSON.stringify({
       frames: {
         'neutral.png': {
           frame: { x: 0, y: 0, w: 32, h: 32 },
@@ -257,12 +257,19 @@ export default config
     writeFileSync(join(gameDir(gameId), 'data/characters/tester.md'), `---
 id: tester
 animation:
-  type: aseprite-character-atlas
-  file: characters/tester/tester.png
-  atlas: characters/tester/tester_atlas.json
-  expressions:
-    neutral: neutral
-    happy: happy
+  type: spritesheet-library
+  defaultStateSheet: Main
+  defaultAnimationSheet: Main
+  defaultState: neutral
+  defaultAction: ''
+  states:
+    Main:
+      file: characters/tester/spritesheets/Main/tester.png
+      atlas: characters/tester/spritesheets/Main/tester_atlas.json
+      sprites:
+        neutral: neutral
+        happy: happy
+  animationSheets: {}
 ---
 `)
 

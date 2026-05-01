@@ -5,35 +5,29 @@ export interface Offset {
   y: number;
 }
 
-// Animation variants
-export interface SpritesAnimation {
-  type: 'sprites';
+export interface SpritesheetStateSheet {
+  file: string;
+  atlas: string;
   sprites: Record<string, string>;
 }
 
-export interface SpritesheetAnimation {
-  type: 'spritesheet';
+export interface SpritesheetAnimationSheet {
   file: string;
   atlas: string;
-  expressions: Record<string, string>;
+  actions: Record<string, string>;
 }
 
-export interface SpineAnimation {
-  type: 'spine';
-  file: string;
-  atlas: string;
-  expressions: Record<string, string>;
-  idle?: string;
+export interface SpritesheetLibraryAnimation {
+  type: 'spritesheet-library';
+  defaultStateSheet?: string;
+  defaultAnimationSheet?: string;
+  defaultState?: string;
+  defaultAction?: string;
+  states: Record<string, SpritesheetStateSheet>;
+  animationSheets: Record<string, SpritesheetAnimationSheet>;
 }
 
-export interface RiveAnimation {
-  type: 'rive';
-  file: string;
-  stateMachine: string;
-  expressions: Record<string, string>;
-}
-
-export type Animation = SpritesAnimation | SpritesheetAnimation | SpineAnimation | RiveAnimation;
+export type Animation = SpritesheetLibraryAnimation;
 
 export interface Layer {
   id: string;

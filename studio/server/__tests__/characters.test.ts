@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'bun:test'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { deleteCharacterSheetConcept, editCharacterSheetConcept, generateCharacterAtlas, generateCharacterSheetConcept, listCharacters, readCharacter, uploadCharacterSheetConcept, writeCharacter } from '../characters.ts'
+import { createCharacterSpritesheetFolder, deleteCharacterSheetConcept, deleteCharacterSpritesheet, editCharacterSheetConcept, generateCharacterAtlas, generateCharacterSheetConcept, generateCharacterSpritesheet, listCharacters, readCharacter, uploadCharacterSheetConcept, uploadCharacterSpritesheet, writeCharacter } from '../characters.ts'
 import { studioApi } from '../index.ts'
 import { writeStudioSettings } from '../settings.ts'
 
@@ -16,10 +16,12 @@ function makeCharacterFixture(gameId: string): void {
   mkdirSync(join(gameDir, 'data', 'characters'), { recursive: true })
   mkdirSync(join(gameDir, 'assets', 'characters', 'hero'), { recursive: true })
   mkdirSync(join(gameDir, 'assets', 'characters', 'hero', 'character-sheet', 'concepts'), { recursive: true })
+  mkdirSync(join(gameDir, 'assets', 'characters', 'hero', 'spritesheets', 'Main'), { recursive: true })
   writeFileSync(join(gameDir, 'story', 'en', 'main.ink'), '-> DONE\n')
   writeFileSync(join(gameDir, 'assets', 'characters', 'hero', 'hero.svg'), '<svg xmlns="http://www.w3.org/2000/svg" />')
   writeFileSync(join(gameDir, 'assets', 'characters', 'hero', 'character-sheet', 'main.png'), '')
   writeFileSync(join(gameDir, 'assets', 'characters', 'hero', 'character-sheet', 'concepts', 'concept-001.png'), '')
+  writeFileSync(join(gameDir, 'assets', 'characters', 'hero', 'spritesheets', 'Main', 'initial.png'), '')
   writeFileSync(join(gameDir, 'game.config.ts'), `
 import type { GameConfig } from '../../framework/types.ts'
 
@@ -42,9 +44,18 @@ scale: 1
 offset:
   y: 0
 animation:
-  type: sprites
-  sprites:
-    neutral: characters/hero/hero.svg
+  type: spritesheet-library
+  defaultStateSheet: Main
+  defaultAnimationSheet: Main
+  defaultState: neutral
+  defaultAction: ''
+  states:
+    Main:
+      file: characters/hero/spritesheets/Main/initial.png
+      atlas: ''
+      sprites:
+        neutral: neutral
+  animationSheets: {}
 characterSheet:
   main: characters/hero/character-sheet/main.png
   concepts:
@@ -56,6 +67,13 @@ Original body.
 `)
 }
 
+function spritesheet(character: { animation: Record<string, unknown> }, folder = 'Main', kind: 'states' | 'animationSheets' = 'states'): Record<string, unknown> {
+  const sheets = character.animation[kind]
+  if (!sheets || typeof sheets !== 'object' || Array.isArray(sheets)) return {}
+  const sheet = (sheets as Record<string, unknown>)[folder]
+  return sheet && typeof sheet === 'object' && !Array.isArray(sheet) ? sheet as Record<string, unknown> : {}
+}
+
 afterEach(() => {
   globalThis.fetch = originalFetch
   for (const gameId of createdGames.splice(0)) {
@@ -65,11 +83,13 @@ afterEach(() => {
 
 describe('studio character API helpers', () => {
   it('lists character metadata and resolves preview URLs', async () => {
-    const characters = await listCharacters('smoke-fixture')
-    const tester = characters.find(character => character.id === 'tester')
+    const gameId = `studio-character-list-${Date.now()}`
+    makeCharacterFixture(gameId)
+    const characters = await listCharacters(gameId)
+    const tester = characters.find(character => character.id === 'hero')
 
-    expect(tester?.displayName).toBe('Tester')
-    expect(tester?.previewUrl).toContain('/api/projects/smoke-fixture/assets/file')
+    expect(tester?.displayName).toBe('Hero')
+    expect(tester?.previewUrl).toContain(`/api/projects/${gameId}/assets/file`)
   })
 
   it('maps character-sheet art from markdown into Studio asset URLs', async () => {
@@ -113,7 +133,8 @@ describe('studio character API helpers', () => {
 
     expect(saved.character.role).toBe('lead')
     expect(saved.character.offset.y).toBe(64)
-    expect(saved.character.animation['sprites']).toBeTruthy()
+    expect(saved.character.animation['type']).toBe('spritesheet-library')
+    expect(spritesheet(saved.character)['sprites']).toEqual({ neutral: 'neutral', happy: 'happy' })
     expect(saved.character.expressions).toEqual(['neutral', 'happy'])
     expect(saved.character.characterSheet.generated).toEqual(['characters/hero/character-sheet/generated/sheet-001.png'])
   })
@@ -176,6 +197,282 @@ describe('studio character API helpers', () => {
     expect(readFileSync(join(ROOT, 'games', gameId, 'data', 'characters', 'hero.md'), 'utf8')).not.toContain(uploaded.path)
   })
 
+  it('deletes the active spritesheet file and clears animation references', async () => {
+    const gameId = `studio-character-spritesheet-delete-${Date.now()}`
+    makeCharacterFixture(gameId)
+    const current = await readCharacter(gameId, 'hero.md')
+    const generated = await generateCharacterAtlas(gameId, 'hero.md', current.character)
+    const spritesheetPath = String(spritesheet(generated.character)['file'])
+    writeFileSync(join(ROOT, 'games', gameId, 'assets', spritesheetPath), 'png')
+
+    const deleted = await deleteCharacterSpritesheet(gameId, 'hero.md', generated.character, spritesheetPath)
+
+    expect(deleted.deletedPath).toBe(spritesheetPath)
+    expect(existsSync(join(ROOT, 'games', gameId, 'assets', spritesheetPath))).toBe(false)
+    expect(spritesheet(deleted.character)['file']).toBeUndefined()
+    expect(readFileSync(join(ROOT, 'games', gameId, 'data', 'characters', 'hero.md'), 'utf8')).not.toContain(spritesheetPath)
+  })
+
+  it('deletes a spritesheet from a selected library folder', async () => {
+    const gameId = `studio-character-shared-spritesheet-delete-${Date.now()}`
+    makeCharacterFixture(gameId)
+    mkdirSync(join(ROOT, 'games', gameId, 'assets', 'characters', 'hero', 'spritesheets', 'Chapter_01'), { recursive: true })
+    const spritesheetPath = 'characters/hero/spritesheets/Chapter_01/spritesheet.png'
+    writeFileSync(join(ROOT, 'games', gameId, 'assets', spritesheetPath), 'png')
+    const current = await readCharacter(gameId, 'hero.md')
+    const saved = await writeCharacter(gameId, 'hero.md', {
+      ...current.character,
+      animation: {
+        type: 'spritesheet-library',
+        defaultStateSheet: 'Chapter_01',
+        defaultAnimationSheet: 'Main',
+        defaultState: 'neutral',
+        defaultAction: '',
+        states: {
+          Chapter_01: {
+            file: spritesheetPath,
+            atlas: '',
+            sprites: { neutral: 'neutral' },
+          },
+        },
+        animationSheets: {},
+      },
+    })
+
+    const deleted = await deleteCharacterSpritesheet(gameId, 'hero.md', saved.character, spritesheetPath)
+
+    expect(deleted.deletedPath).toBe(spritesheetPath)
+    expect(existsSync(join(ROOT, 'games', gameId, 'assets', spritesheetPath))).toBe(false)
+    expect(spritesheet(deleted.character, 'Chapter_01')['file']).toBeUndefined()
+  })
+
+  it('uploads a spritesheet file and updates character animation', async () => {
+    const gameId = `studio-character-spritesheet-upload-${Date.now()}`
+    makeCharacterFixture(gameId)
+    const current = await readCharacter(gameId, 'hero.md')
+
+    const uploaded = await uploadCharacterSpritesheet(
+      gameId,
+      'hero.md',
+      current.character,
+      new File(['spritesheet'], 'Hero Sheet.PNG', { type: 'image/png' }),
+    )
+
+    expect(uploaded.path).toBe('characters/hero/spritesheets/Main/hero_spritesheet.png')
+    expect(uploaded.url).toContain(encodeURIComponent(uploaded.path))
+    expect(uploaded.character.animation['type']).toBe('spritesheet-library')
+    expect(spritesheet(uploaded.character)['file']).toBe(uploaded.path)
+    expect(existsSync(join(ROOT, 'games', gameId, 'assets', uploaded.path))).toBe(true)
+    expect(readFileSync(join(ROOT, 'games', gameId, 'data', 'characters', 'hero.md'), 'utf8')).toContain(uploaded.path)
+  })
+
+  it('creates spritesheet folders and uploads spritesheets into the selected folder', async () => {
+    const gameId = `studio-character-spritesheet-folder-${Date.now()}`
+    makeCharacterFixture(gameId)
+    const current = await readCharacter(gameId, 'hero.md')
+
+    const folder = await createCharacterSpritesheetFolder(gameId, 'hero.md', current.character, 'Chapter_01')
+    const uploaded = await uploadCharacterSpritesheet(
+      gameId,
+      'hero.md',
+      folder.character,
+      new File(['spritesheet'], 'Hero Sheet.PNG', { type: 'image/png' }),
+      'Chapter_01',
+    )
+
+    expect(folder.character.spritesheetFolders).toContain('Chapter_01')
+    expect(uploaded.path).toBe('characters/hero/spritesheets/Chapter_01/hero_spritesheet.png')
+    expect(uploaded.character.spritesheetFolders).toContain('Chapter_01')
+    expect(uploaded.character.animation['defaultStateSheet']).toBe('Chapter_01')
+    expect(spritesheet(uploaded.character, 'Chapter_01')['file']).toBe(uploaded.path)
+    expect(existsSync(join(ROOT, 'games', gameId, 'assets', uploaded.path))).toBe(true)
+  })
+
+  it('generates a spritesheet with OpenAI Images and saves atlas beside it', async () => {
+    const gameId = `studio-character-spritesheet-ai-${Date.now()}`
+    makeCharacterFixture(gameId)
+    await writeStudioSettings(gameId, {
+      openaiImages: {
+        apiKey: 'test-key',
+        apiKeyConfigured: false,
+        baseUrl: 'https://api.example.test/v1',
+        imageGenerationPath: '/images/generations',
+        model: 'gpt-image-1.5',
+        quality: 'low',
+        outputFormat: 'png',
+        moderation: 'low',
+        characterSheetResolution: '1024x1024',
+        spritesheetResolution: '1536x1024',
+        spritesheetBackgroundRemovalEnabled: false,
+        spritesheetBackgroundRemovalCommand: 'uv run --script studio/tools/remove_chroma_key.py --input {input} --out {output} --auto-key border --soft-matte --transparent-threshold 12 --opaque-threshold 220 --despill --force',
+        spritesheetBackgroundRemovalTimeoutSeconds: 300,
+        imageGenerationTimeoutSeconds: 20,
+      },
+    })
+    const calls: Array<{ url: string; body: Record<string, unknown> }> = []
+    globalThis.fetch = (async (request, init) => {
+      const url = String(request)
+      if (url.includes('/images/edits')) {
+        calls.push({
+          url,
+          body: init?.body instanceof FormData ? Object.fromEntries(init.body.entries()) : {},
+        })
+        return Response.json({ data: [{ b64_json: Buffer.from('spritesheet-ai').toString('base64'), revised_prompt: 'revised' }] })
+      }
+      return originalFetch(request)
+    }) as typeof fetch
+    const current = await readCharacter(gameId, 'hero.md')
+    const folder = await createCharacterSpritesheetFolder(gameId, 'hero.md', current.character, 'Chapter_01')
+
+    const generated = await generateCharacterSpritesheet(gameId, 'hero.md', folder.character, {
+      sheetWidth: 2048,
+      sheetHeight: 512,
+      spritesheetType: 'Half Body',
+      spriteCount: 4,
+      layoutDirection: 'Horizontal',
+      columns: 0,
+      spriteNames: ['neutral', 'happy', 'sad', 'angry'],
+      frameDuration: 100,
+      folder: 'Chapter_01',
+      prompt: 'Generate production sprites.',
+    })
+
+    expect(generated.path).toBe('characters/hero/spritesheets/Chapter_01/hero_spritesheet.png')
+    expect(generated.atlasPath).toBe('characters/hero/spritesheets/Chapter_01/hero_spritesheet_map.json')
+    expect(existsSync(join(ROOT, 'games', gameId, 'assets', generated.path))).toBe(true)
+    expect(existsSync(join(ROOT, 'games', gameId, 'assets', generated.atlasPath))).toBe(true)
+    expect(generated.character.animation['defaultStateSheet']).toBe('Chapter_01')
+    expect(spritesheet(generated.character, 'Chapter_01')['file']).toBe(generated.path)
+    expect(spritesheet(generated.character, 'Chapter_01')['atlas']).toBe(generated.atlasPath)
+    expect(spritesheet(generated.character, 'Chapter_01')['sprites']).toEqual({ neutral: 'neutral', happy: 'happy', sad: 'sad', angry: 'angry' })
+    expect(generated.character.atlas?.atlasKind).toBe('Visual Novel')
+    expect(generated.character.atlas?.spritesheetType).toBe('Half Body')
+    expect(calls[0]?.body['size']).toBe('1536x1024')
+    expect(calls[0]?.body['background']).toBeUndefined()
+    expect(calls[0]?.body['output_format']).toBe('png')
+    expect(String(calls[0]?.body['prompt'])).toContain('No text of any kind')
+    expect(String(calls[0]?.body['prompt'])).toContain('solid #00ff00 chroma-key background')
+  })
+
+  it('post-processes generated spritesheets with the configured background removal command', async () => {
+    const gameId = `studio-character-spritesheet-background-removal-${Date.now()}`
+    makeCharacterFixture(gameId)
+    await writeStudioSettings(gameId, {
+      openaiImages: {
+        apiKey: 'test-key',
+        apiKeyConfigured: false,
+        baseUrl: 'https://api.example.test/v1',
+        imageGenerationPath: '/images/generations',
+        model: 'gpt-image-1.5',
+        quality: 'low',
+        outputFormat: 'webp',
+        moderation: 'low',
+        characterSheetResolution: '1024x1024',
+        spritesheetResolution: '1536x1024',
+        spritesheetBackgroundRemovalEnabled: true,
+        spritesheetBackgroundRemovalCommand: 'printf postprocessed > {output}',
+        spritesheetBackgroundRemovalTimeoutSeconds: 30,
+        imageGenerationTimeoutSeconds: 20,
+      },
+    })
+    globalThis.fetch = (async (request, init) => {
+      const url = String(request)
+      if (url.includes('/images/edits')) {
+        expect(init?.body instanceof FormData ? init.body.get('background') : null).toBeNull()
+        expect(init?.body instanceof FormData ? init.body.get('output_format') : null).toBe('png')
+        return Response.json({ data: [{ b64_json: Buffer.from('raw-spritesheet').toString('base64') }] })
+      }
+      return originalFetch(request)
+    }) as typeof fetch
+    const current = await readCharacter(gameId, 'hero.md')
+
+    const generated = await generateCharacterSpritesheet(gameId, 'hero.md', current.character, {
+      sheetWidth: 1024,
+      sheetHeight: 512,
+      spritesheetType: 'Half Body',
+      spriteCount: 2,
+      layoutDirection: 'Horizontal',
+      columns: 0,
+      spriteNames: ['neutral', 'happy'],
+      frameDuration: 100,
+      folder: 'Main',
+      prompt: '',
+    })
+
+    expect(generated.path).toBe('characters/hero/spritesheets/Main/hero_spritesheet.png')
+    expect(readFileSync(join(ROOT, 'games', gameId, 'assets', generated.path), 'utf8')).toBe('postprocessed')
+  })
+
+  it('generates animation atlases for character spritesheets when requested', async () => {
+    const gameId = `studio-character-animation-spritesheet-${Date.now()}`
+    makeCharacterFixture(gameId)
+    await writeStudioSettings(gameId, {
+      openaiImages: {
+        apiKey: 'test-key',
+        apiKeyConfigured: false,
+        baseUrl: 'https://api.example.test/v1',
+        imageGenerationPath: '/images/generations',
+        model: 'gpt-image-1.5',
+        quality: 'low',
+        outputFormat: 'png',
+        moderation: 'low',
+        characterSheetResolution: '1024x1024',
+        spritesheetResolution: '1536x1024',
+        spritesheetBackgroundRemovalEnabled: false,
+        spritesheetBackgroundRemovalCommand: '',
+        spritesheetBackgroundRemovalTimeoutSeconds: 30,
+        imageGenerationTimeoutSeconds: 20,
+      },
+    })
+    const calls: Array<{ body: Record<string, unknown> }> = []
+    globalThis.fetch = (async (request, init) => {
+      const url = String(request)
+      if (url.includes('/images/edits')) {
+        calls.push({
+          body: init?.body instanceof FormData ? Object.fromEntries(init.body.entries()) : {},
+        })
+        return Response.json({ data: [{ b64_json: Buffer.from('animation-spritesheet').toString('base64') }] })
+      }
+      return originalFetch(request)
+    }) as typeof fetch
+    const current = await readCharacter(gameId, 'hero.md')
+
+    const generated = await generateCharacterSpritesheet(gameId, 'hero.md', current.character, {
+      atlasKind: 'Animation',
+      sheetWidth: 1024,
+      sheetHeight: 512,
+      spritesheetType: 'Half Body',
+      spriteCount: 4,
+      layoutDirection: 'Horizontal',
+      columns: 0,
+      spriteNames: ['happy', 'angry'],
+      animationFramesPerTag: 2,
+      animationTags: [
+        { name: 'happy', from: 0, to: 1, direction: 'pingpong', color: '#000000ff' },
+        { name: 'angry', from: 2, to: 3, direction: 'pingpong', color: '#000000ff' },
+      ],
+      frameDuration: 120,
+      folder: 'Main',
+      prompt: '',
+    })
+
+    const atlas = JSON.parse(readFileSync(join(ROOT, 'games', gameId, 'assets', generated.atlasPath), 'utf8')) as Record<string, unknown>
+    const generatedSpritesheet = generated.character.spritesheets.find(item => item.path === generated.path)
+    expect(generatedSpritesheet?.atlas?.atlasKind).toBe('Animation')
+    expect(generatedSpritesheet?.atlas?.spritesheetType).toBe('Half Body')
+    expect(generatedSpritesheet?.atlas?.frameTags).toEqual([
+      { name: 'happy', from: 0, to: 1, direction: 'pingpong' },
+      { name: 'angry', from: 2, to: 3, direction: 'pingpong' },
+    ])
+    expect(spritesheet(generated.character, 'Main', 'animationSheets')['actions']).toEqual({ happy: 'happy', angry: 'angry' })
+    expect((atlas['meta'] as Record<string, unknown>)['atlasType']).toBe('Animation')
+    expect((atlas['meta'] as Record<string, unknown>)['spritesheetType']).toBe('Half Body')
+    expect(String(calls[0]?.body['prompt'])).toContain('This is an animation spritesheet, not an expression/state spritesheet.')
+    expect(String(calls[0]?.body['prompt'])).toContain('Animation body type: Half Body.')
+    expect(String(calls[0]?.body['prompt'])).toContain('Every cell is a chronological frame in a continuous motion sequence.')
+    expect(String(calls[0]?.body['prompt'])).toContain('Frame tag ranges: happy: frames 0-1, pingpong; angry: frames 2-3, pingpong.')
+  })
+
   it('accepts character-sheet concept uploads through the HTTP API', async () => {
     const gameId = `studio-character-concept-http-${Date.now()}`
     makeCharacterFixture(gameId)
@@ -212,6 +509,10 @@ describe('studio character API helpers', () => {
         outputFormat: 'png',
         moderation: 'low',
         characterSheetResolution: '1024x1536',
+        spritesheetResolution: '1536x1024',
+        spritesheetBackgroundRemovalEnabled: false,
+        spritesheetBackgroundRemovalCommand: 'uv run --script studio/tools/remove_chroma_key.py --input {input} --out {output} --auto-key border --soft-matte --transparent-threshold 12 --opaque-threshold 220 --despill --force',
+        spritesheetBackgroundRemovalTimeoutSeconds: 300,
         imageGenerationTimeoutSeconds: 180,
       },
     })
@@ -275,6 +576,10 @@ describe('studio character API helpers', () => {
         outputFormat: 'png',
         moderation: 'low',
         characterSheetResolution: '1024x1536',
+        spritesheetResolution: '1536x1024',
+        spritesheetBackgroundRemovalEnabled: false,
+        spritesheetBackgroundRemovalCommand: 'uv run --script studio/tools/remove_chroma_key.py --input {input} --out {output} --auto-key border --soft-matte --transparent-threshold 12 --opaque-threshold 220 --despill --force',
+        spritesheetBackgroundRemovalTimeoutSeconds: 300,
         imageGenerationTimeoutSeconds: 180,
       },
     })
@@ -345,9 +650,13 @@ describe('studio character API helpers', () => {
       scale: 0.9,
       offset: { x: 0, y: 42 },
       animation: {
-        type: 'spritesheet',
-        file: 'characters/rival/rival_spritesheet.png',
-        atlas: 'characters/rival/rival_atlas.json',
+        type: 'spritesheet-library',
+        defaultStateSheet: 'Main',
+        defaultAnimationSheet: 'Main',
+        defaultState: 'neutral',
+        defaultAction: '',
+        states: {},
+        animationSheets: {},
       },
       expressions: ['neutral', 'smirk'],
     })
@@ -365,15 +674,26 @@ describe('studio character API helpers', () => {
     const result = await generateCharacterAtlas(gameId, 'hero.md', {
       ...current.character,
       animation: {
-        type: 'spritesheet',
-        file: 'characters/hero/hero_spritesheet.png',
+        type: 'spritesheet-library',
+        defaultStateSheet: 'Main',
+        defaultAnimationSheet: 'Main',
+        defaultState: 'neutral',
+        defaultAction: '',
+        states: {
+          Main: {
+            file: 'characters/hero/hero_spritesheet.png',
+            atlas: '',
+            sprites: { neutral: 'neutral', happy: 'happy', sad: 'sad' },
+          },
+        },
+        animationSheets: {},
       },
       expressions: ['neutral', 'happy', 'sad'],
     })
 
     expect(result.atlas.frameCount).toBe(3)
-    expect(result.character.atlasPath).toBe('characters/hero/hero_atlas.json')
-    expect(result.character.animation['expressions']).toEqual({
+    expect(result.character.atlasPath).toBe('characters/hero/spritesheets/Main/hero_atlas.json')
+    expect(spritesheet(result.character)['sprites']).toEqual({
       neutral: 'neutral',
       happy: 'happy',
       sad: 'sad',

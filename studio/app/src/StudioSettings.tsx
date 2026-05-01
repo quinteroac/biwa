@@ -8,6 +8,7 @@ const qualityOptions = ['low', 'medium', 'high', 'auto'] as const
 const formatOptions = ['png', 'webp', 'jpeg'] as const
 const moderationOptions = ['auto', 'low'] as const
 const characterSheetResolutionOptions = ['1024x1536', '1024x1024', '1536x1024', 'auto'] as const
+const spritesheetResolutionOptions = ['1536x1024', '1024x1024', '1024x1536', 'auto'] as const
 
 export function StudioSettings(props: {
   project: StudioProjectSummary
@@ -124,6 +125,34 @@ export function StudioSettings(props: {
               >
                 {characterSheetResolutionOptions.map(resolution => <option key={resolution} value={resolution}>{resolution}</option>)}
               </select>
+            </label>
+            <label className="settings-field">
+              <span>Spritesheet Resolution</span>
+              <select
+                onChange={event => setDraft({ ...draft, openaiImages: { ...openaiImages, spritesheetResolution: event.target.value as typeof spritesheetResolutionOptions[number] } })}
+                value={openaiImages.spritesheetResolution}
+              >
+                {spritesheetResolutionOptions.map(resolution => <option key={resolution} value={resolution}>{resolution}</option>)}
+              </select>
+            </label>
+            <label className="settings-field">
+              <span>Remove Spritesheet Background</span>
+              <input
+                checked={openaiImages.spritesheetBackgroundRemovalEnabled}
+                onChange={event => setDraft({ ...draft, openaiImages: { ...openaiImages, spritesheetBackgroundRemovalEnabled: event.target.checked } })}
+                type="checkbox"
+              />
+            </label>
+            <label className="settings-field">
+              <span>Background Removal Timeout Seconds</span>
+              <input
+                disabled={!openaiImages.spritesheetBackgroundRemovalEnabled}
+                max={1800}
+                min={30}
+                onChange={event => setDraft({ ...draft, openaiImages: { ...openaiImages, spritesheetBackgroundRemovalTimeoutSeconds: Number(event.target.value) } })}
+                type="number"
+                value={openaiImages.spritesheetBackgroundRemovalTimeoutSeconds}
+              />
             </label>
             <label className="settings-field">
               <span>Generation Timeout Seconds</span>

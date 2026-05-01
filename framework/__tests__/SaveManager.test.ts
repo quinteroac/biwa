@@ -86,7 +86,7 @@ describe('SaveManager.save', () => {
     const state = makeState({
       visual: {
         scene: { id: 'cafe', variant: 'night' },
-        characters: [{ id: 'kai', position: 'left', expression: 'happy' }],
+        characters: [{ id: 'kai', position: 'left', sheet: 'Main', animation: 'happy' }],
         audio: { bgm: { type: 'bgm', id: 'theme', file: 'audio/theme.mp3' } },
         locale: 'en',
       },

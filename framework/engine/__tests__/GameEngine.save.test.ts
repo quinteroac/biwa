@@ -34,7 +34,8 @@ interface ScenePayload {
 interface CharacterPayload {
   id: string
   position?: string
-  expression?: string
+  sheet?: string
+  animation?: string
 }
 
 function compileInk(ink: string): string {
@@ -130,7 +131,7 @@ async function createEngine(ink: string): Promise<GameEngineLike> {
 describe('GameEngine save/load snapshots', () => {
   it('captures scene, character, audio, locale, thumbnail and elapsed playtime', async () => {
     const engine = await createEngine(`# scene: cafe, variant: night
-# character: kai, position: left, expression: happy
+# character: kai, position: left, sheet: Main, animation: happy
 # bgm: theme
 Kai: Hello there.
 `)
@@ -148,7 +149,7 @@ Kai: Hello there.
     expect(state.meta.thumbnail).toBe('images/thumbs/cafe.jpg')
     expect(state.meta.playtime).toBeGreaterThanOrEqual(0)
     expect(state.visual?.scene).toEqual({ id: 'cafe', variant: 'night' })
-    expect(state.visual?.characters).toEqual([{ id: 'kai', position: 'left', expression: 'happy' }])
+    expect(state.visual?.characters).toEqual([{ id: 'kai', position: 'left', sheet: 'Main', animation: 'happy' }])
     expect(state.visual?.audio.bgm).toMatchObject({
       type: 'bgm',
       id: 'theme',
@@ -190,7 +191,7 @@ Kai: Hello there.
       },
       visual: {
         scene: { id: 'cafe', variant: 'night' },
-        characters: [{ id: 'kai', position: 'right', expression: 'sad' }],
+        characters: [{ id: 'kai', position: 'right', sheet: 'Chapter_01', animation: 'sad' }],
         audio: {
           bgm: { type: 'bgm', id: 'theme', file: 'audio/theme.mp3', volume: 0.6 },
         },
@@ -199,7 +200,7 @@ Kai: Hello there.
     })
 
     expect(scenes[0]).toMatchObject({ id: 'cafe', variant: 'night' })
-    expect(characters[0]).toEqual({ id: 'kai', position: 'right', expression: 'sad' })
+    expect(characters[0]).toEqual({ id: 'kai', position: 'right', sheet: 'Chapter_01', animation: 'sad' })
     expect(bgm[0]).toMatchObject({ type: 'bgm', id: 'theme', file: 'audio/theme.mp3' })
 
     await waitUntil(() => dialogs.length === 1)
@@ -207,7 +208,7 @@ Kai: Hello there.
     const restored = engine.getState()
     expect(restored.meta.playtime).toBeGreaterThanOrEqual(12)
     expect(restored.visual?.scene).toEqual({ id: 'cafe', variant: 'night' })
-    expect(restored.visual?.characters).toEqual([{ id: 'kai', position: 'right', expression: 'sad' }])
+    expect(restored.visual?.characters).toEqual([{ id: 'kai', position: 'right', sheet: 'Chapter_01', animation: 'sad' }])
     expect(restored.visual?.audio.bgm).toMatchObject({ id: 'theme', file: 'audio/theme.mp3' })
   })
 })

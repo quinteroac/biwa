@@ -1,0 +1,209 @@
+{
+  "frames": {
+    "evil_laugh_01.png": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 256,
+        "h": 2048
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 256,
+        "h": 2048
+      },
+      "sourceSize": {
+        "w": 256,
+        "h": 2048
+      },
+      "duration": 100
+    },
+    "evil_laugh_02.png": {
+      "frame": {
+        "x": 256,
+        "y": 0,
+        "w": 256,
+        "h": 2048
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 256,
+        "h": 2048
+      },
+      "sourceSize": {
+        "w": 256,
+        "h": 2048
+      },
+      "duration": 100
+    },
+    "evil_laugh_03.png": {
+      "frame": {
+        "x": 512,
+        "y": 0,
+        "w": 256,
+        "h": 2048
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 256,
+        "h": 2048
+      },
+      "sourceSize": {
+        "w": 256,
+        "h": 2048
+      },
+      "duration": 100
+    },
+    "evil_laugh_04.png": {
+      "frame": {
+        "x": 768,
+        "y": 0,
+        "w": 256,
+        "h": 2048
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 256,
+        "h": 2048
+      },
+      "sourceSize": {
+        "w": 256,
+        "h": 2048
+      },
+      "duration": 100
+    },
+    "fear_01.png": {
+      "frame": {
+        "x": 1024,
+        "y": 0,
+        "w": 256,
+        "h": 2048
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 256,
+        "h": 2048
+      },
+      "sourceSize": {
+        "w": 256,
+        "h": 2048
+      },
+      "duration": 100
+    },
+    "fear_02.png": {
+      "frame": {
+        "x": 1280,
+        "y": 0,
+        "w": 256,
+        "h": 2048
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 256,
+        "h": 2048
+      },
+      "sourceSize": {
+        "w": 256,
+        "h": 2048
+      },
+      "duration": 100
+    },
+    "fear_03.png": {
+      "frame": {
+        "x": 1536,
+        "y": 0,
+        "w": 256,
+        "h": 2048
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 256,
+        "h": 2048
+      },
+      "sourceSize": {
+        "w": 256,
+        "h": 2048
+      },
+      "duration": 100
+    },
+    "fear_04.png": {
+      "frame": {
+        "x": 1792,
+        "y": 0,
+        "w": 256,
+        "h": 2048
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 256,
+        "h": 2048
+      },
+      "sourceSize": {
+        "w": 256,
+        "h": 2048
+      },
+      "duration": 100
+    }
+  },
+  "meta": {
+    "app": "ComfyUI Game Assets Maker",
+    "version": "aseprite-atlas-v1",
+    "image": "antagonist_spritesheet_004.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 2048,
+      "h": 2048
+    },
+    "scale": "1",
+    "spritesheetType": "Half Body",
+    "layout": {
+      "direction": "Horizontal",
+      "columns": 8,
+      "rows": 1,
+      "spriteCount": 8,
+      "frameWidth": 256,
+      "frameHeight": 2048
+    },
+    "frameTags": [
+      {
+        "name": "evil_laugh",
+        "from": 0,
+        "to": 3,
+        "direction": "forward",
+        "color": "#000000ff"
+      },
+      {
+        "name": "fear",
+        "from": 4,
+        "to": 7,
+        "direction": "forward",
+        "color": "#000000ff"
+      }
+    ],
+    "atlasType": "Animation"
+  }
+}

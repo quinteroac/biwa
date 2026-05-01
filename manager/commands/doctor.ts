@@ -71,7 +71,7 @@ type TagDeclarations = Set<string>
 
 const BUILT_IN_RENDERERS: Record<RendererKind, Set<string>> = {
   background: new Set(['static', 'parallax', 'video']),
-  character: new Set(['sprites', 'spritesheet']),
+  character: new Set(['spritesheet-library']),
   transition: new Set(['fade', 'fade-color', 'slide', 'wipe', 'cut']),
 }
 
@@ -234,8 +234,8 @@ function validateExpressionReferences(filePath: string, atlas: unknown, expressi
         severity: 'error',
         path: filePath,
         code: 'atlas_expression_invalid',
-        message: `Expression "${expression}" must reference a frame tag string.`,
-        suggestion: 'Set each animation.expressions value to an Aseprite frameTag or generated frame name.',
+        message: `Animation "${expression}" must reference a frame tag string.`,
+        suggestion: 'Set each sheet animation value to an Aseprite frameTag or generated frame name.',
       })
       continue
     }
@@ -244,8 +244,8 @@ function validateExpressionReferences(filePath: string, atlas: unknown, expressi
         severity: 'warning',
         path: filePath,
         code: 'atlas_expression_missing',
-        message: `Expression "${expression}" references missing atlas frame tag "${rawTag}".`,
-        suggestion: 'Update animation.expressions or regenerate the atlas with matching sprite names/frameTags.',
+        message: `Animation "${expression}" references missing atlas frame tag "${rawTag}".`,
+        suggestion: 'Update the sheet animations or regenerate the atlas with matching sprite names/frameTags.',
       })
     }
   }
@@ -407,18 +407,41 @@ function validateDataFile(
     }
     if (animation) {
       validateRendererReference(rendererDeclarations, filePath, 'character', animation['type'], issues)
-      checkAsset(gameDir, filePath, animation['file'], issues, 'Character animation file')
-      checkAsset(gameDir, filePath, animation['atlas'], issues, 'Character atlas')
-      if (animation['type'] === 'spritesheet' || animation['type'] === 'aseprite-character-atlas') {
-        validateAtlasAsset(gameDir, filePath, animation['atlas'], issues, {
-          requireGameAssetsMaker: animation['type'] === 'aseprite-character-atlas',
-          expressions: asRecord(animation['expressions']),
-        })
-      }
-      const sprites = asRecord(animation['sprites'])
-      if (sprites) {
-        for (const [name, ref] of Object.entries(sprites)) {
-          checkAsset(gameDir, filePath, ref, issues, `Character sprite "${name}"`)
+      if (animation['type'] === 'spritesheet-library') {
+        const stateSheets = asRecord(animation['states']) ?? {}
+        const animationSheets = asRecord(animation['animationSheets']) ?? {}
+        if (Object.keys(stateSheets).length === 0 && Object.keys(animationSheets).length === 0) {
+          issues.push({ severity: 'warning', path: filePath, code: 'character_spritesheet_library_empty', message: 'Character spritesheet library has no state or animation sheets.' })
+        }
+        for (const [sheetName, rawSheet] of Object.entries(stateSheets)) {
+          const sheet = asRecord(rawSheet)
+          if (!sheet) {
+            issues.push({ severity: 'error', path: filePath, code: 'character_spritesheet_sheet_invalid', message: `State spritesheet "${sheetName}" must be an object.` })
+            continue
+          }
+          checkAsset(gameDir, filePath, sheet['file'], issues, `Character state spritesheet "${sheetName}" file`)
+          checkAsset(gameDir, filePath, sheet['atlas'], issues, `Character state spritesheet "${sheetName}" atlas`)
+          if (typeof sheet['atlas'] === 'string' && sheet['atlas'].length > 0) {
+            validateAtlasAsset(gameDir, filePath, sheet['atlas'], issues, {
+              requireGameAssetsMaker: false,
+              expressions: asRecord(sheet['sprites']),
+            })
+          }
+        }
+        for (const [sheetName, rawSheet] of Object.entries(animationSheets)) {
+          const sheet = asRecord(rawSheet)
+          if (!sheet) {
+            issues.push({ severity: 'error', path: filePath, code: 'character_spritesheet_sheet_invalid', message: `Animation spritesheet "${sheetName}" must be an object.` })
+            continue
+          }
+          checkAsset(gameDir, filePath, sheet['file'], issues, `Character animation spritesheet "${sheetName}" file`)
+          checkAsset(gameDir, filePath, sheet['atlas'], issues, `Character animation spritesheet "${sheetName}" atlas`)
+          if (typeof sheet['atlas'] === 'string' && sheet['atlas'].length > 0) {
+            validateAtlasAsset(gameDir, filePath, sheet['atlas'], issues, {
+              requireGameAssetsMaker: false,
+              expressions: asRecord(sheet['actions']),
+            })
+          }
         }
       }
     }

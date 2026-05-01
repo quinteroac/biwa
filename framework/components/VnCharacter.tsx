@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { getAsepriteFrameItems, getAsepriteFrameTags } from '../engine/AsepriteAtlas.ts'
+import { getAsepriteFrameItems, getAsepriteFrameTags, getAsepritePlaybackFrameIndices } from '../engine/AsepriteAtlas.ts'
 import { defaultRendererRegistry } from '../renderers/RendererRegistry.ts'
 import type { AsepriteAtlas } from '../engine/AsepriteAtlas.ts'
 
@@ -12,19 +12,27 @@ interface CharacterLayer {
   default: string
 }
 
+interface CharacterSpritesheetSheet {
+  file: string
+  atlas: string
+  sprites?: Record<string, string>
+  actions?: Record<string, string>
+}
+
 export interface CharacterData {
   displayName?: string
   nameColor?: string
   defaultPosition?: 'left' | 'center' | 'right'
-  defaultExpression?: string
   scale?: number
   offset?: { x?: number; y?: number }
   animation?: {
     type: string
-    sprites?: Record<string, string>
-    file?: string
-    atlas?: string
-    expressions?: Record<string, string>
+    defaultStateSheet?: string
+    defaultAnimationSheet?: string
+    defaultState?: string
+    defaultAction?: string
+    states?: Record<string, CharacterSpritesheetSheet>
+    animationSheets?: Record<string, CharacterSpritesheetSheet>
   }
   layers?: CharacterLayer[]
 }
@@ -33,16 +41,17 @@ export interface VnCharacterProps {
   id: string
   charData: CharacterData | null
   position: 'left' | 'center' | 'right'
-  expression: string
+  sheet: string
+  animation: string
   exiting: boolean
   onExited: (id: string) => void
 }
 
-export function AsepriteSpritesheetRenderer({ file, atlas, expression, expressions, assetBase = './assets/' }: {
+export function AsepriteSpritesheetRenderer({ file, atlas, animation, animations, assetBase = './assets/' }: {
   file: string
   atlas: string
-  expression: string
-  expressions: Record<string, string>
+  animation: string
+  animations: Record<string, string>
   assetBase?: string
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -69,20 +78,20 @@ export function AsepriteSpritesheetRenderer({ file, atlas, expression, expressio
     if (timerRef.current) clearInterval(timerRef.current)
     if (!atlasData || !canvasRef.current) return
 
-    const animName = expressions[expression] ?? expressions['neutral'] ?? Object.values(expressions)[0]
+    const animName = animations[animation] ?? animations['neutral'] ?? Object.values(animations)[0]
     if (!animName) return
     const tags = getAsepriteFrameTags(atlasData)
     const tag = tags.find(t => t.name === animName)
     if (!tag) return
 
     const frames = getAsepriteFrameItems(atlasData)
-    const frameCount = tag.to - tag.from + 1
+    const frameOrder = getAsepritePlaybackFrameIndices(tag)
     let currentFrame = 0
 
-    const drawFrame = (img: HTMLImageElement, frameIdx: number) => {
+    const drawFrame = (img: HTMLImageElement, frameIndex: number) => {
       const canvas = canvasRef.current
       if (!canvas) return
-      const frameItem = frames[tag.from + frameIdx]
+      const frameItem = frames[frameIndex]
       if (!frameItem) return
       const { x, y, w, h } = frameItem
       canvas.width  = w
@@ -93,14 +102,16 @@ export function AsepriteSpritesheetRenderer({ file, atlas, expression, expressio
     }
 
     const startAnimation = (img: HTMLImageElement) => {
-      drawFrame(img, 0)
-      if (frameCount > 1) {
-        const duration = frames[tag.from]?.frame.duration ?? 100
-        timerRef.current = setInterval(() => {
-          currentFrame = (currentFrame + 1) % frameCount
-          drawFrame(img, currentFrame)
-        }, duration)
+      const drawNext = () => {
+        const frameIndex = frameOrder[currentFrame]
+        if (frameIndex === undefined) return
+        drawFrame(img, frameIndex)
+        currentFrame = (currentFrame + 1) % frameOrder.length
+        const nextFrameIndex = frameOrder[currentFrame] ?? frameIndex
+        const duration = frames[nextFrameIndex]?.frame.duration ?? frames[frameIndex]?.frame.duration ?? 100
+        if (frameOrder.length > 1) timerRef.current = setTimeout(drawNext, duration)
       }
+      drawNext()
     }
 
     if (imgRef.current?.complete && imgRef.current.naturalWidth > 0) {
@@ -110,7 +121,7 @@ export function AsepriteSpritesheetRenderer({ file, atlas, expression, expressio
     }
 
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
-  }, [atlasData, expression, expressions])
+  }, [atlasData, animation, animations])
 
   return (
     <canvas
@@ -120,7 +131,33 @@ export function AsepriteSpritesheetRenderer({ file, atlas, expression, expressio
   )
 }
 
-export function VnCharacter({ id, charData, position, expression, exiting, onExited }: VnCharacterProps) {
+function sheetMap(value: unknown): Record<string, CharacterSpritesheetSheet> {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, CharacterSpritesheetSheet>
+    : {}
+}
+
+function selectedSpritesheet(anim: CharacterData['animation'], sheet: string, animation: string): { sheet: CharacterSpritesheetSheet; mapping: Record<string, string> } | null {
+  if (anim?.type !== 'spritesheet-library') return null
+  const animationSheets = sheetMap(anim.animationSheets)
+  const states = sheetMap(anim.states)
+  const animationSheet = animationSheets[sheet]
+    ?? (anim.defaultAnimationSheet ? animationSheets[anim.defaultAnimationSheet] : undefined)
+    ?? animationSheets['Main']
+    ?? Object.values(animationSheets)[0]
+  const actionMapping = animationSheet?.actions ?? {}
+  if (animationSheet && (actionMapping[animation] || Object.keys(states).length === 0)) {
+    return { sheet: animationSheet, mapping: actionMapping }
+  }
+  const stateSheet = states[sheet]
+    ?? (anim.defaultStateSheet ? states[anim.defaultStateSheet] : undefined)
+    ?? states['Main']
+    ?? Object.values(states)[0]
+  if (!stateSheet) return null
+  return { sheet: stateSheet, mapping: stateSheet.sprites ?? {} }
+}
+
+export function VnCharacter({ id, charData, position, sheet, animation, exiting, onExited }: VnCharacterProps) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -137,13 +174,7 @@ export function VnCharacter({ id, charData, position, expression, exiting, onExi
   const anim   = charData?.animation
   const layers = charData?.layers
   const externalRenderer = anim ? defaultRendererRegistry.get('character', anim.type) : undefined
-
-  let spriteSrc: string | null = null
-  if (anim?.type === 'sprites' && anim.sprites) {
-    const sprites = anim.sprites
-    const path = sprites[expression] ?? sprites['neutral'] ?? Object.values(sprites)[0]
-    if (path) spriteSrc = `./assets/${path}`
-  }
+  const selectedSheet = selectedSpritesheet(anim, sheet, animation)
 
   const visible = entered && !exiting
   const scale = charData?.scale ?? 1
@@ -171,7 +202,7 @@ export function VnCharacter({ id, charData, position, expression, exiting, onExi
     }
   }
 
-  const unsupportedAnimationType = anim && !['sprites', 'spritesheet'].includes(anim.type) && (!layers || layers.length === 0)
+  const unsupportedAnimationType = anim && anim.type !== 'spritesheet-library' && (!layers || layers.length === 0)
 
   return (
     <div style={{
@@ -189,26 +220,20 @@ export function VnCharacter({ id, charData, position, expression, exiting, onExi
             charData={charData as Record<string, unknown> | null}
             animation={anim as unknown as Record<string, unknown>}
             position={position}
-            expression={expression}
+            sheet={sheet}
+            animationName={animation}
             exiting={exiting}
             assetBase="./assets/"
             onExited={onExited}
           />
         )
       })()}
-      {!externalRenderer && anim?.type === 'spritesheet' && anim.file && anim.atlas && anim.expressions && (
+      {!externalRenderer && selectedSheet && (
         <AsepriteSpritesheetRenderer
-          file={anim.file}
-          atlas={anim.atlas}
-          expression={expression}
-          expressions={anim.expressions}
-        />
-      )}
-      {!externalRenderer && spriteSrc && (
-        <img
-          src={spriteSrc}
-          alt={`${charData?.displayName ?? id} - ${expression}`}
-          style={{ display: 'block', width: '100%', height: 'auto', userSelect: 'none' }}
+          file={selectedSheet.sheet.file}
+          atlas={selectedSheet.sheet.atlas}
+          animation={animation}
+          animations={selectedSheet.mapping}
         />
       )}
       {!externalRenderer && unsupportedAnimationType && (
@@ -234,7 +259,7 @@ export function VnCharacter({ id, charData, position, expression, exiting, onExi
         const layerImgs = layers.flatMap(layer => {
           const sprites = layer.animation?.sprites
           if (!sprites) return []
-          const path = sprites[expression] ?? sprites[layer.default] ?? Object.values(sprites)[0]
+          const path = sprites[animation] ?? sprites[layer.default] ?? Object.values(sprites)[0]
           if (!path) return []
           return [<img
             key={layer.id}

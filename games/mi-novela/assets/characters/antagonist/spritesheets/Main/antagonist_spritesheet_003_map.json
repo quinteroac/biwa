@@ -1,0 +1,139 @@
+{
+  "frames": {
+    "sprite_01_01.png": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 512,
+        "h": 2048
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 512,
+        "h": 2048
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 2048
+      },
+      "duration": 100
+    },
+    "sprite_02_01.png": {
+      "frame": {
+        "x": 512,
+        "y": 0,
+        "w": 512,
+        "h": 2048
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 512,
+        "h": 2048
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 2048
+      },
+      "duration": 100
+    },
+    "sprite_03_01.png": {
+      "frame": {
+        "x": 1024,
+        "y": 0,
+        "w": 512,
+        "h": 2048
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 512,
+        "h": 2048
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 2048
+      },
+      "duration": 100
+    },
+    "sprite_04_01.png": {
+      "frame": {
+        "x": 1536,
+        "y": 0,
+        "w": 512,
+        "h": 2048
+      },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": {
+        "x": 0,
+        "y": 0,
+        "w": 512,
+        "h": 2048
+      },
+      "sourceSize": {
+        "w": 512,
+        "h": 2048
+      },
+      "duration": 100
+    }
+  },
+  "meta": {
+    "app": "ComfyUI Game Assets Maker",
+    "version": "aseprite-atlas-v1",
+    "image": "antagonist_spritesheet_003.png",
+    "format": "RGBA8888",
+    "size": {
+      "w": 2048,
+      "h": 2048
+    },
+    "scale": "1",
+    "spritesheetType": "Animation",
+    "layout": {
+      "direction": "Horizontal",
+      "columns": 4,
+      "rows": 1,
+      "spriteCount": 4,
+      "frameWidth": 512,
+      "frameHeight": 2048
+    },
+    "frameTags": [
+      {
+        "name": "sprite_01",
+        "from": 0,
+        "to": 0,
+        "direction": "forward",
+        "color": "#000000ff"
+      },
+      {
+        "name": "sprite_02",
+        "from": 1,
+        "to": 1,
+        "direction": "forward",
+        "color": "#000000ff"
+      },
+      {
+        "name": "sprite_03",
+        "from": 2,
+        "to": 2,
+        "direction": "forward",
+        "color": "#000000ff"
+      },
+      {
+        "name": "sprite_04",
+        "from": 3,
+        "to": 3,
+        "direction": "forward",
+        "color": "#000000ff"
+      }
+    ],
+    "atlasType": "Animation"
+  }
+}

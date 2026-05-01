@@ -1,0 +1,54 @@
+{
+  "frames": {
+    "kai_neutral": {
+      "frame": { "x": 0, "y": 0, "w": 384, "h": 1024 },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 384, "h": 1024 },
+      "sourceSize": { "w": 384, "h": 1024 },
+      "duration": 100
+    },
+    "kai_happy": {
+      "frame": { "x": 384, "y": 0, "w": 384, "h": 1024 },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 384, "h": 1024 },
+      "sourceSize": { "w": 384, "h": 1024 },
+      "duration": 100
+    },
+    "kai_sad": {
+      "frame": { "x": 768, "y": 0, "w": 384, "h": 1024 },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 384, "h": 1024 },
+      "sourceSize": { "w": 384, "h": 1024 },
+      "duration": 100
+    },
+    "kai_surprised": {
+      "frame": { "x": 1152, "y": 0, "w": 384, "h": 1024 },
+      "rotated": false,
+      "trimmed": false,
+      "spriteSourceSize": { "x": 0, "y": 0, "w": 384, "h": 1024 },
+      "sourceSize": { "w": 384, "h": 1024 },
+      "duration": 100
+    }
+  },
+  "meta": {
+    "app": "imagegen",
+    "version": "1",
+    "image": "spritesheet-generated-001.png",
+    "format": "RGBA8888",
+    "size": { "w": 1536, "h": 1024 },
+    "scale": "1",
+    "frameTags": [
+      { "name": "neutral", "from": 0, "to": 0, "direction": "forward" },
+      { "name": "happy", "from": 1, "to": 1, "direction": "forward" },
+      { "name": "sad", "from": 2, "to": 2, "direction": "forward" },
+      { "name": "surprised", "from": 3, "to": 3, "direction": "forward" }
+    ],
+    "layers": [
+      { "name": "Kai", "opacity": 255, "blendMode": "normal" }
+    ],
+    "slices": []
+  }
+}

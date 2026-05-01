@@ -8,7 +8,8 @@ export interface RuntimeDiagnosticsScene {
 export interface RuntimeDiagnosticsCharacter {
   id: string
   position: string
-  expression: string
+  sheet: string
+  animation: string
   exiting?: boolean
 }
 
