@@ -302,7 +302,6 @@ describe('studio character API helpers', () => {
         outputFormat: 'png',
         moderation: 'low',
         characterSheetResolution: '1024x1024',
-        spritesheetResolution: '1536x1024',
         spritesheetBackgroundRemovalEnabled: false,
         spritesheetBackgroundRemovalCommand: 'uv run --script studio/tools/remove_chroma_key.py --input {input} --out {output} --auto-key border --soft-matte --transparent-threshold 12 --opaque-threshold 220 --despill --force',
         spritesheetBackgroundRemovalTimeoutSeconds: 300,
@@ -325,8 +324,7 @@ describe('studio character API helpers', () => {
     const folder = await createCharacterSpritesheetFolder(gameId, 'hero.md', current.character, 'Chapter_01')
 
     const generated = await generateCharacterSpritesheet(gameId, 'hero.md', folder.character, {
-      sheetWidth: 2048,
-      sheetHeight: 512,
+      size: '2048x1024',
       spritesheetType: 'Half Body',
       spriteCount: 4,
       layoutDirection: 'Horizontal',
@@ -347,7 +345,7 @@ describe('studio character API helpers', () => {
     expect(spritesheet(generated.character, 'Chapter_01')['sprites']).toEqual({ neutral: 'neutral', happy: 'happy', sad: 'sad', angry: 'angry' })
     expect(generated.character.atlas?.atlasKind).toBe('Visual Novel')
     expect(generated.character.atlas?.spritesheetType).toBe('Half Body')
-    expect(calls[0]?.body['size']).toBe('1536x1024')
+    expect(calls[0]?.body['size']).toBe('2048x1024')
     expect(calls[0]?.body['background']).toBeUndefined()
     expect(calls[0]?.body['output_format']).toBe('png')
     expect(String(calls[0]?.body['prompt'])).toContain('No text of any kind')
@@ -368,7 +366,6 @@ describe('studio character API helpers', () => {
         outputFormat: 'webp',
         moderation: 'low',
         characterSheetResolution: '1024x1024',
-        spritesheetResolution: '1536x1024',
         spritesheetBackgroundRemovalEnabled: true,
         spritesheetBackgroundRemovalCommand: 'printf postprocessed > {output}',
         spritesheetBackgroundRemovalTimeoutSeconds: 30,
@@ -387,8 +384,7 @@ describe('studio character API helpers', () => {
     const current = await readCharacter(gameId, 'hero.md')
 
     const generated = await generateCharacterSpritesheet(gameId, 'hero.md', current.character, {
-      sheetWidth: 1024,
-      sheetHeight: 512,
+      size: '1024x1024',
       spritesheetType: 'Half Body',
       spriteCount: 2,
       layoutDirection: 'Horizontal',
@@ -417,7 +413,6 @@ describe('studio character API helpers', () => {
         outputFormat: 'png',
         moderation: 'low',
         characterSheetResolution: '1024x1024',
-        spritesheetResolution: '1536x1024',
         spritesheetBackgroundRemovalEnabled: false,
         spritesheetBackgroundRemovalCommand: '',
         spritesheetBackgroundRemovalTimeoutSeconds: 30,
@@ -439,8 +434,7 @@ describe('studio character API helpers', () => {
 
     const generated = await generateCharacterSpritesheet(gameId, 'hero.md', current.character, {
       atlasKind: 'Animation',
-      sheetWidth: 1024,
-      sheetHeight: 512,
+      size: '1024x1024',
       spritesheetType: 'Half Body',
       spriteCount: 4,
       layoutDirection: 'Horizontal',
@@ -509,7 +503,6 @@ describe('studio character API helpers', () => {
         outputFormat: 'png',
         moderation: 'low',
         characterSheetResolution: '1024x1536',
-        spritesheetResolution: '1536x1024',
         spritesheetBackgroundRemovalEnabled: false,
         spritesheetBackgroundRemovalCommand: 'uv run --script studio/tools/remove_chroma_key.py --input {input} --out {output} --auto-key border --soft-matte --transparent-threshold 12 --opaque-threshold 220 --despill --force',
         spritesheetBackgroundRemovalTimeoutSeconds: 300,
@@ -576,7 +569,6 @@ describe('studio character API helpers', () => {
         outputFormat: 'png',
         moderation: 'low',
         characterSheetResolution: '1024x1536',
-        spritesheetResolution: '1536x1024',
         spritesheetBackgroundRemovalEnabled: false,
         spritesheetBackgroundRemovalCommand: 'uv run --script studio/tools/remove_chroma_key.py --input {input} --out {output} --auto-key border --soft-matte --transparent-threshold 12 --opaque-threshold 220 --despill --force',
         spritesheetBackgroundRemovalTimeoutSeconds: 300,

@@ -157,4 +157,51 @@ animation:
       rmSync(dir, { recursive: true, force: true })
     }
   })
+
+  it('validates scene-linked audio asset paths', async () => {
+    const gameId = `doctor-scene-audio-${Date.now()}`
+    const dir = gameDir(gameId)
+    rmSync(dir, { recursive: true, force: true })
+    mkdirSync(join(dir, 'story/en'), { recursive: true })
+    mkdirSync(join(dir, 'data/scenes'), { recursive: true })
+    mkdirSync(join(dir, 'assets/scenes/cafe'), { recursive: true })
+    mkdirSync(join(dir, 'assets/audio/ambience'), { recursive: true })
+    writeFileSync(join(dir, 'story/en/main.ink'), '# scene: cafe\nHello.\n')
+    writeFileSync(join(dir, 'assets/scenes/cafe/bg.svg'), '<svg xmlns="http://www.w3.org/2000/svg" />')
+    writeFileSync(join(dir, 'assets/audio/ambience/rain.ogg'), '')
+    writeFileSync(join(dir, 'game.config.ts'), `import type { GameConfig } from '../../framework/types.ts'
+
+const config: GameConfig = {
+  id: '${gameId}',
+  title: '${gameId}',
+  version: '1.0.0',
+  story: { defaultLocale: 'en', locales: { en: './story/en/main.ink' } },
+  data: { scenes: './data/scenes/' },
+}
+
+export default config
+`)
+    writeFileSync(join(dir, 'data/scenes/cafe.md'), `---
+id: cafe
+displayName: Cafe
+background:
+  type: static
+  image: scenes/cafe/bg.svg
+audio:
+  ambience:
+    file: audio/ambience/rain.ogg
+  music:
+    file: audio/bgm/missing.ogg
+---
+`)
+
+    try {
+      const result = await validateGame(gameId)
+      const messages = result.issues.map(item => item.message)
+      expect(messages).toContain('Scene music audio not found: audio/bgm/missing.ogg')
+      expect(messages).not.toContain('Scene ambience audio not found: audio/ambience/rain.ogg')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
 })

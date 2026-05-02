@@ -7,6 +7,20 @@ import type { StudioCharacterDraft, StudioCharacterItem, StudioCharacterSheetArt
 
 const genderOptions = ['Male', 'Female', 'Transgender', 'Non-binary', 'Other']
 const NEW_CHARACTER_PATH = '__new_character__.md'
+const spritesheetSizeOptions = [
+  '1024x1024',
+  '1536x1024',
+  '1024x1536',
+  '2048x1024',
+  '1024x2048',
+  '2048x2048',
+  '3072x1024',
+  '1024x3072',
+  '3840x1280',
+  '1280x3840',
+  '3840x2160',
+  '2160x3840',
+] as const
 const characterTabs = ['Character Sheet', 'Spritesheet', 'Sprites', 'Animations'] as const
 const characterSheetArtOptions = Object.freeze([
   { id: 'conceptArt', label: 'Concept Art', uploadLabel: 'Upload concept art', icon: 'assets', slug: 'concept-art' },
@@ -34,8 +48,7 @@ type SpritesheetContextMenu = {
 
 const defaultSpritesheetGeneration = Object.freeze({
   atlasKind: 'Visual Novel',
-  sheetWidth: 2048,
-  sheetHeight: 2048,
+  size: '2048x2048',
   spritesheetType: 'Half Body',
   spriteCount: 4,
   layoutDirection: 'Horizontal',
@@ -900,7 +913,7 @@ export function CharacterDesigner(props: {
     })
   }
 
-  function updateSpritesheetGenerateNumber(key: 'sheetWidth' | 'sheetHeight' | 'spriteCount' | 'columns' | 'frameDuration' | 'animationFramesPerTag', value: string): void {
+  function updateSpritesheetGenerateNumber(key: 'spriteCount' | 'columns' | 'frameDuration' | 'animationFramesPerTag', value: string): void {
     const next = Math.max(key === 'columns' ? 0 : 1, Math.floor(Number(value) || 0))
     setSpritesheetGenerateDraft(current => {
       if (key === 'animationFramesPerTag') {
@@ -1963,8 +1976,9 @@ export function CharacterDesigner(props: {
                 <option>Visual Novel</option>
                 <option>Animation</option>
               </select></label>
-              <label><span>Width</span><input min={1} onChange={event => updateSpritesheetGenerateNumber('sheetWidth', event.target.value)} type="number" value={spritesheetGenerateDraft.sheetWidth} /></label>
-              <label><span>Height</span><input min={1} onChange={event => updateSpritesheetGenerateNumber('sheetHeight', event.target.value)} type="number" value={spritesheetGenerateDraft.sheetHeight} /></label>
+              <label><span>Size</span><select onChange={event => setSpritesheetGenerateDraft(current => ({ ...current, size: event.target.value as typeof spritesheetSizeOptions[number] }))} value={spritesheetGenerateDraft.size}>
+                {spritesheetSizeOptions.map(size => <option key={size} value={size}>{size}</option>)}
+              </select></label>
               <label><span>Type</span><select onChange={event => setSpritesheetGenerateDraft(current => ({ ...current, spritesheetType: event.target.value }))} value={spritesheetGenerateDraft.spritesheetType}>
                 <option>Half Body</option>
                 <option>Full Body</option>

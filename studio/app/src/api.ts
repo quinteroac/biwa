@@ -1,6 +1,8 @@
 import type {
   StudioDoctorResponse,
   StudioAssetsResponse,
+  StudioArtStyleMutationResponse,
+  StudioArtStyleResponse,
   StudioAuthoringAnalysisResponse,
   StudioBuildMode,
   StudioBuildResponse,
@@ -20,6 +22,14 @@ import type {
   StudioCharacterSheetUploadResponse,
   StudioCharactersResponse,
   StudioSceneDraft,
+  StudioSceneBackgroundDeleteResponse,
+  StudioSceneBackgroundFolderResponse,
+  StudioSceneBackgroundGenerateRequest,
+  StudioSceneBackgroundGenerateResponse,
+  StudioSceneBackgroundUploadResponse,
+  StudioSceneFileMutationResponse,
+  StudioSceneFolderResponse,
+  StudioSceneGenerateRequest,
   StudioSceneResponse,
   StudioScenesResponse,
   StudioPluginMutationResponse,
@@ -72,6 +82,44 @@ export function uploadProjectCover(gameId: string, cover: File): Promise<StudioP
   return requestJson<StudioProjectCoverUploadResponse>(`/api/projects/${gameId}/cover`, {
     method: 'POST',
     body,
+  })
+}
+
+export function fetchArtStyle(gameId: string): Promise<StudioArtStyleResponse> {
+  return requestJson<StudioArtStyleResponse>(`/api/projects/${gameId}/art-style`)
+}
+
+export function uploadArtStyleImage(gameId: string, index: number, image: File): Promise<StudioArtStyleMutationResponse> {
+  const body = new FormData()
+  body.set('index', String(index))
+  body.set('image', image)
+  return requestJson<StudioArtStyleMutationResponse>(`/api/projects/${gameId}/art-style`, {
+    method: 'POST',
+    body,
+  })
+}
+
+export function generateArtStyleImage(gameId: string, index: number, prompt: string): Promise<StudioArtStyleMutationResponse> {
+  return requestJson<StudioArtStyleMutationResponse>(`/api/projects/${gameId}/art-style/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ index, prompt }),
+  })
+}
+
+export function editArtStyleImage(gameId: string, index: number, prompt: string): Promise<StudioArtStyleMutationResponse> {
+  return requestJson<StudioArtStyleMutationResponse>(`/api/projects/${gameId}/art-style/edit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ index, prompt }),
+  })
+}
+
+export function deleteArtStyleImage(gameId: string, index: number): Promise<StudioArtStyleMutationResponse> {
+  return requestJson<StudioArtStyleMutationResponse>(`/api/projects/${gameId}/art-style`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ index }),
   })
 }
 
@@ -180,11 +228,110 @@ export function fetchScene(gameId: string, path: string): Promise<StudioSceneRes
   return requestJson<StudioSceneResponse>(`/api/projects/${gameId}/scenes/file?path=${encodeURIComponent(path)}`)
 }
 
+export function createSceneFolder(gameId: string, path: string): Promise<StudioSceneFolderResponse> {
+  return requestJson<StudioSceneFolderResponse>(`/api/projects/${gameId}/scenes/folder`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path }),
+  })
+}
+
+export function createSceneFile(gameId: string, folder: string, name: string): Promise<StudioSceneFileMutationResponse> {
+  return requestJson<StudioSceneFileMutationResponse>(`/api/projects/${gameId}/scenes/file`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ folder, name }),
+  })
+}
+
+export function uploadSceneFile(gameId: string, folder: string, file: File): Promise<StudioSceneFileMutationResponse> {
+  const body = new FormData()
+  body.set('folder', folder)
+  body.set('file', file)
+  return requestJson<StudioSceneFileMutationResponse>(`/api/projects/${gameId}/scenes/file`, {
+    method: 'POST',
+    body,
+  })
+}
+
+export function generateSceneFile(gameId: string, options: StudioSceneGenerateRequest): Promise<StudioSceneFileMutationResponse> {
+  return requestJson<StudioSceneFileMutationResponse>(`/api/projects/${gameId}/scenes/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ options }),
+  })
+}
+
+export function deleteSceneFile(gameId: string, path: string): Promise<StudioScenesResponse> {
+  return requestJson<StudioScenesResponse>(`/api/projects/${gameId}/scenes/file`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path }),
+  })
+}
+
 export function saveScene(gameId: string, path: string, scene: StudioSceneDraft): Promise<StudioSceneResponse> {
   return requestJson<StudioSceneResponse>(`/api/projects/${gameId}/scenes/file`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path, scene }),
+  })
+}
+
+export function createSceneBackgroundFolder(
+  gameId: string,
+  path: string,
+  scene: StudioSceneDraft,
+  folder: string,
+): Promise<StudioSceneBackgroundFolderResponse> {
+  return requestJson<StudioSceneBackgroundFolderResponse>(`/api/projects/${gameId}/scenes/background-folder`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path, scene, folder }),
+  })
+}
+
+export function uploadSceneBackground(
+  gameId: string,
+  path: string,
+  scene: StudioSceneDraft,
+  image: File,
+  folder: string,
+): Promise<StudioSceneBackgroundUploadResponse> {
+  const body = new FormData()
+  body.set('path', path)
+  body.set('scene', JSON.stringify(scene))
+  body.set('image', image)
+  body.set('folder', folder)
+  return requestJson<StudioSceneBackgroundUploadResponse>(`/api/projects/${gameId}/scenes/background`, {
+    method: 'POST',
+    body,
+  })
+}
+
+export function generateSceneBackground(
+  gameId: string,
+  path: string,
+  scene: StudioSceneDraft,
+  options: StudioSceneBackgroundGenerateRequest,
+): Promise<StudioSceneBackgroundGenerateResponse> {
+  return requestJson<StudioSceneBackgroundGenerateResponse>(`/api/projects/${gameId}/scenes/background/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path, scene, options }),
+  })
+}
+
+export function deleteSceneBackground(
+  gameId: string,
+  path: string,
+  scene: StudioSceneDraft,
+  assetPath: string,
+): Promise<StudioSceneBackgroundDeleteResponse> {
+  return requestJson<StudioSceneBackgroundDeleteResponse>(`/api/projects/${gameId}/scenes/background`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path, scene, assetPath }),
   })
 }
 

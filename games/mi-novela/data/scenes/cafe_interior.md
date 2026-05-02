@@ -17,9 +17,20 @@ transitions:
     duration: 0.6
 
 ambient:
-  sfx: city_morning
-  sfxVolume: 0.7
   effect: none
+
+audio:
+  ambience:
+    id: cafe_interior_city
+    file: audio/ambience/city_morning.ogg
+    volume: 0.7
+    fadeIn: 1
+  music:
+    id: cafe_interior_morning_theme
+    file: audio/bgm/morning_theme.ogg
+    volume: 0.4
+    fadeIn: 1.5
+    fadeOut: 2
 
 thumbnail: scenes/cafe_interior/fg.png
 ---

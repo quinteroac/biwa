@@ -188,6 +188,45 @@ function checkAsset(gameDir: string, filePath: string, ref: unknown, issues: Iss
   }
 }
 
+function validateSceneAudioCue(
+  gameDir: string,
+  filePath: string,
+  value: unknown,
+  issues: Issue[],
+  maps: DataMaps,
+  label: string,
+): void {
+  if (typeof value === 'string') {
+    if (value.length === 0 || maps.audio.has(value)) return
+    if (value.includes('/') || value.includes('.')) {
+      checkAsset(gameDir, filePath, value, issues, label)
+      return
+    }
+    issues.push({
+      severity: 'warning',
+      path: filePath,
+      code: 'scene_audio_unknown',
+      message: `${label} references unknown audio id "${value}".`,
+      suggestion: `Create data/audio/${value}.md, set ${label.toLowerCase()} to a file path, or update the scene audio reference.`,
+    })
+    return
+  }
+
+  const cue = asRecord(value)
+  if (!cue) return
+  checkAsset(gameDir, filePath, cue['file'], issues, label)
+  const id = typeof cue['id'] === 'string' ? cue['id'] : ''
+  if (!cue['file'] && id && !maps.audio.has(id)) {
+    issues.push({
+      severity: 'warning',
+      path: filePath,
+      code: 'scene_audio_unknown',
+      message: `${label} references unknown audio id "${id}".`,
+      suggestion: `Create data/audio/${id}.md, add a file field to this cue, or update the scene audio reference.`,
+    })
+  }
+}
+
 function validateAtlasAsset(
   gameDir: string,
   filePath: string,
@@ -473,6 +512,20 @@ function validateDataFile(
     for (const [idx, rawLayer] of layers.entries()) {
       const layer = asRecord(rawLayer)
       checkAsset(gameDir, filePath, layer?.['image'], issues, `Scene parallax layer ${idx} image`)
+    }
+    const audio = asRecord(data['audio'])
+    if (audio) {
+      validateSceneAudioCue(gameDir, filePath, audio['ambience'], issues, maps, 'Scene ambience audio')
+      validateSceneAudioCue(gameDir, filePath, audio['music'] ?? audio['bgm'], issues, maps, 'Scene music audio')
+      const sfx = audio['sfx']
+      const sfxRecord = asRecord(sfx)
+      if (sfxRecord && !('file' in sfxRecord) && !('id' in sfxRecord)) {
+        for (const [name, cue] of Object.entries(sfxRecord)) {
+          validateSceneAudioCue(gameDir, filePath, cue, issues, maps, `Scene SFX "${name}" audio`)
+        }
+      } else {
+        validateSceneAudioCue(gameDir, filePath, sfx, issues, maps, 'Scene SFX audio')
+      }
     }
     checkAsset(gameDir, filePath, data['thumbnail'], issues, 'Scene thumbnail')
   }

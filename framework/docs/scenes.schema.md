@@ -111,7 +111,7 @@ background:
   fit:    cover
 ```
 
-> The engine always sets `autoplay`, `loop`, and `muted` on the video element. Audio is handled separately via `ambient.sfx`.
+> The engine always sets `autoplay`, `loop`, and `muted` on the video element. Audio is handled separately via scene `audio`.
 
 ---
 
@@ -320,14 +320,41 @@ transitions:
 
 ---
 
-### Ambient
+### Scene Audio
 
-Optional audio and visual effects that play automatically while the scene is active.
+Optional audio references that play automatically while the scene is active.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `ambient.sfx` | `string` | — | ID of a looping ambient sound from `data/audio/sfx/`. Example: `"city_morning"`. |
-| `ambient.sfxVolume` | `number` | — | Volume `0.0–1.0`. Default: `1.0`. |
+| `audio.ambience` | `string | SceneAudioCue` | — | Looping ambience for this scene. |
+| `audio.music` | `string | SceneAudioCue` | — | Persistent BGM for this scene. Alias: `audio.bgm`. |
+| `audio.sfx` | `string | SceneAudioCue` | — | One-shot sound effect emitted when entering this scene. |
+
+`SceneAudioCue` accepts `id`, `file`, `volume`, `fade`, `fadeIn`, `fadeOut`, and `duration`. Use `file` to reference an asset directly from `assets/`.
+
+```yaml
+audio:
+  ambience:
+    id: cafe_exterior_rain
+    file: audio/ambience/storm/rain.ogg
+    volume: 0.5
+    fadeIn: 1
+  music:
+    id: cafe_exterior_theme
+    file: audio/bgm/morning_theme.ogg
+    volume: 0.45
+    fadeIn: 1.5
+    fadeOut: 2
+```
+
+---
+
+### Ambient
+
+Optional visual effects that render automatically while the scene is active.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
 | `ambient.effect` | `AmbientEffect` | — | Built-in visual effect overlaid on top of the scene. See values below. |
 
 #### Ambient effects
@@ -344,9 +371,7 @@ Optional audio and visual effects that play automatically while the scene is act
 
 ```yaml
 ambient:
-  sfx:       city_morning
-  sfxVolume: 0.6
-  effect:    rain
+  effect: rain
 ```
 
 ---
@@ -438,9 +463,11 @@ transitions:
     type:     fade
     duration: 0.5
 
-ambient:
-  sfx:       city_morning
-  sfxVolume: 0.5
+audio:
+  ambience:
+    id: cafe_exterior_city
+    file: audio/ambience/city_morning.ogg
+    volume: 0.5
 
 thumbnail: scenes/cafe_exterior/thumb.jpg
 ---
@@ -480,9 +507,11 @@ transitions:
     type:     fade
     duration: 0.8
 
-ambient:
-  sfx:       rain_heavy
-  sfxVolume: 0.7
+audio:
+  ambience:
+    id: rain_window_heavy
+    file: audio/ambience/rain_heavy.ogg
+    volume: 0.7
 
 thumbnail: scenes/rain_window/thumb.jpg
 ---
@@ -575,10 +604,14 @@ transitions:
     type:     fade
     duration: 1.0
 
+audio:
+  ambience:
+    id: forest_birds
+    file: audio/ambience/forest_birds.ogg
+    volume: 0.5
+
 ambient:
-  sfx:       forest_birds
-  sfxVolume: 0.5
-  effect:    dust
+  effect: dust
 
 thumbnail: scenes/forest/thumb.jpg
 ---
@@ -665,9 +698,11 @@ transitions:
     color:    white
     duration: 2.0
 
-ambient:
-  sfx:       cathedral_reverb
-  sfxVolume: 0.3
+audio:
+  ambience:
+    id: cathedral_reverb
+    file: audio/ambience/cathedral_reverb.ogg
+    volume: 0.3
 
 thumbnail: scenes/cathedral/thumb.jpg
 ---
@@ -730,5 +765,5 @@ The engine runs these checks at startup via `SchemaValidator`.
 - For `canvas` and `three`: `entry` is required and the file must exist
 - `transitions.in.type` and `transitions.out.type` must be a valid `TransitionType`
 - `transitions.in.direction` is required when type is `"slide"` or `"wipe"`
-- `ambient.sfxVolume` must be between `0.0` and `1.0`
+- `audio.*.volume` must be between `0.0` and `1.0`
 - `ambient.effect` must be a valid `AmbientEffect` value if present

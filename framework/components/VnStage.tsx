@@ -302,8 +302,6 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
       bus.on<{ id: string; data: Record<string, unknown>; variant?: string }>('engine:scene', ({ id, data, variant }) => {
         setScene({ id, data, ...(variant !== undefined ? { variant } : {}) })
         setEffects(sceneEffects(id, data))
-        const ambSfx = (data?.['ambient'] as Record<string, unknown> | undefined)?.['sfx'] as string | undefined
-        if (ambSfx) audio.playAmbience(ambSfx, null)
       }),
 
       bus.on<{ id: string; position?: string; sheet?: string; animation?: string; expression?: string; exit?: boolean }>('engine:character', ({ id, position, sheet, animation, expression, exit: shouldExit }) => {

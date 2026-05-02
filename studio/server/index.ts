@@ -3,8 +3,8 @@ import { existsSync } from 'fs'
 import { extname } from 'path'
 import { getProjectDiagnostics, getProjectSummary, listProjects, updateProjectIdentity, uploadProjectCover } from './projects.ts'
 import { createStoryFolder, deleteStoryFile, deleteStoryFolder, listStoryEntries, readStoryFile, renameStoryFile, renameStoryFolder, writeStoryFile } from './story.ts'
-import { listAssets, resolveAssetFile } from './assets.ts'
-import { listScenes, readScene, writeScene } from './scenes.ts'
+import { deleteArtStyleImage, editArtStyleImage, generateArtStyleImage, listArtStyle, listAssets, resolveAssetFile, uploadArtStyleImage } from './assets.ts'
+import { createSceneBackgroundFolder, createSceneFile, createSceneFolder, deleteSceneBackground, deleteSceneFile, generateSceneBackground, generateSceneFile, listSceneEntries, readScene, uploadSceneBackground, uploadSceneFile, writeScene } from './scenes.ts'
 import { createCharacterSpritesheetFolder, deleteCharacterSheetConcept, deleteCharacterSpritesheet, editCharacterSheetConcept, generateCharacterAtlas, generateCharacterSheetConcept, generateCharacterSpritesheet, listCharacters, readCharacter, uploadCharacterSheetConcept, uploadCharacterSpritesheet, writeCharacter } from './characters.ts'
 import { installOfficialPlugin, listStudioPlugins, removeOfficialPlugin } from './plugins.ts'
 import { getBuildManifest, getBuilds, previewFileExists, previewMime, resolvePreviewFile, runStudioBuild } from './builds.ts'
@@ -181,6 +181,54 @@ export const studioApi = new Elysia()
       return jsonError(err.message, 400)
     }
   })
+  .get('/api/projects/:gameId/art-style', async ({ params }) => {
+    try {
+      return await listArtStyle(params.gameId)
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, err.message.includes('does not exist') ? 404 : 400)
+    }
+  })
+  .post('/api/projects/:gameId/art-style', async ({ body, params }) => {
+    try {
+      const payload = body as { index?: unknown; image?: unknown }
+      const index = Number(payload.index)
+      if (!(payload.image instanceof File)) throw new Error('Missing art style image.')
+      return await uploadArtStyleImage(params.gameId, index, payload.image)
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, 400)
+    }
+  })
+  .post('/api/projects/:gameId/art-style/generate', async ({ body, params }) => {
+    try {
+      const payload = body as { index?: unknown; prompt?: unknown }
+      if (typeof payload.prompt !== 'string') throw new Error('Missing art style generation prompt.')
+      return await generateArtStyleImage(params.gameId, Number(payload.index), payload.prompt)
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, 400)
+    }
+  })
+  .post('/api/projects/:gameId/art-style/edit', async ({ body, params }) => {
+    try {
+      const payload = body as { index?: unknown; prompt?: unknown }
+      if (typeof payload.prompt !== 'string') throw new Error('Missing art style edit prompt.')
+      return await editArtStyleImage(params.gameId, Number(payload.index), payload.prompt)
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, 400)
+    }
+  })
+  .delete('/api/projects/:gameId/art-style', async ({ body, params }) => {
+    try {
+      const payload = body as { index?: unknown }
+      return await deleteArtStyleImage(params.gameId, Number(payload.index))
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, 400)
+    }
+  })
   .get('/api/projects/:gameId/builds', ({ params }) => {
     try {
       return getBuilds(params.gameId)
@@ -237,10 +285,46 @@ export const studioApi = new Elysia()
   })
   .get('/api/projects/:gameId/scenes', async ({ params }) => {
     try {
-      return { scenes: await listScenes(params.gameId) }
+      return await listSceneEntries(params.gameId)
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e))
       return jsonError(err.message, err.message.includes('does not exist') ? 404 : 400)
+    }
+  })
+  .post('/api/projects/:gameId/scenes/folder', async ({ body, params }) => {
+    try {
+      const payload = body as { path?: unknown }
+      if (typeof payload.path !== 'string') throw new Error('Missing scene folder path.')
+      return await createSceneFolder(params.gameId, payload.path)
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, 400)
+    }
+  })
+  .post('/api/projects/:gameId/scenes/file', async ({ body, params }) => {
+    try {
+      const payload = body as { folder?: unknown; name?: unknown; file?: unknown }
+      if (payload.file instanceof File) {
+        return await uploadSceneFile(params.gameId, typeof payload.folder === 'string' ? payload.folder : '', payload.file)
+      }
+      if (typeof payload.name !== 'string') throw new Error('Missing scene name.')
+      return await createSceneFile(params.gameId, typeof payload.folder === 'string' ? payload.folder : '', payload.name)
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, 400)
+    }
+  })
+  .post('/api/projects/:gameId/scenes/generate', async ({ body, params }) => {
+    try {
+      const payload = body as { options?: unknown }
+      if (typeof payload.options !== 'object' || payload.options === null || Array.isArray(payload.options)) {
+        throw new Error('Missing scene generation options.')
+      }
+      return await generateSceneFile(params.gameId, payload.options as Parameters<typeof generateSceneFile>[1])
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      console.warn(`[studio] scene generation failed: ${err.message}`)
+      return jsonError(err.message, 400)
     }
   })
   .get('/api/projects/:gameId/scenes/file', async ({ params, query }) => {
@@ -260,6 +344,99 @@ export const studioApi = new Elysia()
         throw new Error('Missing scene payload.')
       }
       return await writeScene(params.gameId, payload.path, payload.scene as Parameters<typeof writeScene>[2])
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, err.message.includes('not found') ? 404 : 400)
+    }
+  })
+  .delete('/api/projects/:gameId/scenes/file', async ({ body, params }) => {
+    try {
+      const payload = body as { path?: unknown }
+      if (typeof payload.path !== 'string') throw new Error('Missing scene file path.')
+      return await deleteSceneFile(params.gameId, payload.path)
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, err.message.includes('not found') ? 404 : 400)
+    }
+  })
+  .post('/api/projects/:gameId/scenes/background-folder', async ({ body, params }) => {
+    try {
+      const payload = body as { path?: unknown; scene?: unknown; folder?: unknown }
+      if (typeof payload.path !== 'string') throw new Error('Missing scene file path.')
+      if (typeof payload.scene !== 'object' || payload.scene === null || Array.isArray(payload.scene)) {
+        throw new Error('Missing scene payload.')
+      }
+      if (typeof payload.folder !== 'string') throw new Error('Missing scene background folder name.')
+      return await createSceneBackgroundFolder(
+        params.gameId,
+        payload.path,
+        payload.scene as Parameters<typeof createSceneBackgroundFolder>[2],
+        payload.folder,
+      )
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, err.message.includes('not found') ? 404 : 400)
+    }
+  })
+  .post('/api/projects/:gameId/scenes/background', async ({ body, params }) => {
+    try {
+      const payload = body as { path?: unknown; scene?: unknown; image?: unknown; folder?: unknown }
+      if (typeof payload.path !== 'string') throw new Error('Missing scene file path.')
+      if (!(payload.image instanceof File)) throw new Error('Missing scene background image.')
+      const parsed = typeof payload.scene === 'string'
+        ? JSON.parse(payload.scene) as unknown
+        : payload.scene
+      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+        throw new Error('Invalid scene payload.')
+      }
+      return await uploadSceneBackground(
+        params.gameId,
+        payload.path,
+        parsed as Parameters<typeof uploadSceneBackground>[2],
+        payload.image,
+        typeof payload.folder === 'string' ? payload.folder : undefined,
+      )
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, err.message.includes('not found') ? 404 : 400)
+    }
+  })
+  .post('/api/projects/:gameId/scenes/background/generate', async ({ body, params }) => {
+    try {
+      const payload = body as { path?: unknown; scene?: unknown; options?: unknown }
+      if (typeof payload.path !== 'string') throw new Error('Missing scene file path.')
+      if (typeof payload.scene !== 'object' || payload.scene === null || Array.isArray(payload.scene)) {
+        throw new Error('Missing scene payload.')
+      }
+      if (typeof payload.options !== 'object' || payload.options === null || Array.isArray(payload.options)) {
+        throw new Error('Missing scene background generation options.')
+      }
+      return await generateSceneBackground(
+        params.gameId,
+        payload.path,
+        payload.scene as Parameters<typeof generateSceneBackground>[2],
+        payload.options as Parameters<typeof generateSceneBackground>[3],
+      )
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      console.warn(`[studio] scene background generation failed: ${err.message}`)
+      return jsonError(err.message, err.message.includes('not found') ? 404 : 400)
+    }
+  })
+  .delete('/api/projects/:gameId/scenes/background', async ({ body, params }) => {
+    try {
+      const payload = body as { path?: unknown; scene?: unknown; assetPath?: unknown }
+      if (typeof payload.path !== 'string') throw new Error('Missing scene file path.')
+      if (typeof payload.scene !== 'object' || payload.scene === null || Array.isArray(payload.scene)) {
+        throw new Error('Missing scene payload.')
+      }
+      if (typeof payload.assetPath !== 'string') throw new Error('Missing scene background asset path.')
+      return await deleteSceneBackground(
+        params.gameId,
+        payload.path,
+        payload.scene as Parameters<typeof deleteSceneBackground>[2],
+        payload.assetPath,
+      )
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e))
       return jsonError(err.message, err.message.includes('not found') ? 404 : 400)

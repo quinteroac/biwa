@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchProjects, runDoctor, saveProjectIdentity, uploadProjectCover } from './api.ts'
+import { deleteArtStyleImage, editArtStyleImage, fetchArtStyle, fetchProjects, generateArtStyleImage, runDoctor, saveProjectIdentity, uploadArtStyleImage, uploadProjectCover } from './api.ts'
 import { AuthoringTools } from './AuthoringTools.tsx'
 import { BuildPreview } from './BuildPreview.tsx'
 import { CharacterDesigner } from './CharacterDesigner.tsx'
@@ -10,7 +10,7 @@ import { StudioSettings } from './StudioSettings.tsx'
 import { StudioIcon } from './StudioIcon.tsx'
 import { StoryEditor } from './StoryEditor.tsx'
 import type { StudioIconName } from './StudioIcon.tsx'
-import type { StudioProjectIdentityDraft, StudioProjectSummary } from '../../shared/types.ts'
+import type { StudioArtStyleSlot, StudioProjectIdentityDraft, StudioProjectSummary } from '../../shared/types.ts'
 
 const sections = ['Overview', 'Story', 'Characters', 'Scenes', 'Assets', 'Plugins', 'Tools', 'Settings', 'Build/Preview']
 
@@ -56,12 +56,6 @@ function countIcon(label: string): StudioIconName {
     Assets: 'assets',
     Plugins: 'plugins',
   } as Record<string, StudioIconName>)[label] ?? 'overview'
-}
-
-function diagnosticIcon(severity: string): StudioIconName {
-  if (severity === 'error') return 'error'
-  if (severity === 'warning') return 'warning'
-  return 'info'
 }
 
 function countColor(label: string): string {
@@ -158,46 +152,147 @@ function StudioSidebar(props: {
   )
 }
 
-function DiagnosticsPanel(props: {
-  project: StudioProjectSummary
-  isRunning: boolean
-  onRun: () => void
-}) {
-  const issues = props.project.diagnostics.issues
+function ArtStylePanel(props: { project: StudioProjectSummary }) {
+  const queryClient = useQueryClient()
+  const uploadInputRef = useRef<HTMLInputElement | null>(null)
+  const [uploadSlot, setUploadSlot] = useState<number | null>(null)
+  const [previewSlot, setPreviewSlot] = useState<StudioArtStyleSlot | null>(null)
+  const [promptAction, setPromptAction] = useState<{ kind: 'generate' | 'edit'; slot: StudioArtStyleSlot } | null>(null)
+  const [prompt, setPrompt] = useState('')
+  const artStyleQuery = useQuery({
+    queryKey: ['studio-art-style', props.project.id],
+    queryFn: () => fetchArtStyle(props.project.id),
+  })
+  const invalidateArtStyle = () => {
+    void queryClient.invalidateQueries({ queryKey: ['studio-art-style', props.project.id] })
+    void queryClient.invalidateQueries({ queryKey: ['studio-assets', props.project.id] })
+    void queryClient.invalidateQueries({ queryKey: ['studio-projects'] })
+  }
+  const uploadMutation = useMutation({
+    mutationFn: (payload: { index: number; file: File }) => uploadArtStyleImage(props.project.id, payload.index, payload.file),
+    onSuccess: invalidateArtStyle,
+  })
+  const generateMutation = useMutation({
+    mutationFn: (payload: { index: number; prompt: string }) => generateArtStyleImage(props.project.id, payload.index, payload.prompt),
+    onSuccess: () => {
+      setPromptAction(null)
+      setPrompt('')
+      invalidateArtStyle()
+    },
+  })
+  const editMutation = useMutation({
+    mutationFn: (payload: { index: number; prompt: string }) => editArtStyleImage(props.project.id, payload.index, payload.prompt),
+    onSuccess: () => {
+      setPromptAction(null)
+      setPrompt('')
+      invalidateArtStyle()
+    },
+  })
+  const deleteMutation = useMutation({
+    mutationFn: (index: number) => deleteArtStyleImage(props.project.id, index),
+    onSuccess: invalidateArtStyle,
+  })
+  const slots = artStyleQuery.data?.slots ?? Array.from({ length: 5 }, (_, index) => ({ index, path: null, url: null, size: null }))
+  const isPromptPending = generateMutation.isPending || editMutation.isPending
+  const promptError = generateMutation.error?.message ?? editMutation.error?.message ?? null
+
+  function openPrompt(kind: 'generate' | 'edit', slot: StudioArtStyleSlot): void {
+    setPromptAction({ kind, slot })
+    setPrompt('')
+  }
+
+  function submitPrompt(): void {
+    if (!promptAction) return
+    const payload = { index: promptAction.slot.index, prompt }
+    if (promptAction.kind === 'generate') generateMutation.mutate(payload)
+    else editMutation.mutate(payload)
+  }
+
   return (
-    <section className="studio-panel diagnostics-panel">
+    <section className="studio-panel art-style-panel">
       <div className="studio-panel-heading">
-        <span>Diagnostics</span>
-        <button className="ghost-button" disabled={props.isRunning} onClick={props.onRun} type="button">
-          {props.isRunning ? 'Running' : 'Run Doctor'}
-        </button>
+        <span>Art Style</span>
+        <small>Visual reference slots</small>
       </div>
-      <div className="diagnostics-summary">
-        <span data-severity="error"><StudioIcon name="error" size={16} />{props.project.diagnostics.summary.error} errors</span>
-        <span data-severity="warning"><StudioIcon name="warning" size={16} />{props.project.diagnostics.summary.warning} warnings</span>
-        <span data-severity="info"><StudioIcon name="info" size={16} />{props.project.diagnostics.summary.info} info</span>
-      </div>
-      {issues.length === 0 ? (
-        <p className="muted">No diagnostics reported for this project.</p>
-      ) : (
-        <div className="issue-list">
-          {issues.slice(0, 8).map((issue, index) => (
-            <article className={`issue-row is-${issue.severity}`} key={`${issue.path}-${issue.code}-${index}`}>
-              <div className="issue-row-heading">
-                <span className="issue-icon">
-                  <StudioIcon name={diagnosticIcon(issue.severity)} size={18} />
-                </span>
-                <div>
-                  <strong>{issue.severity}</strong>
-                  <span>{issue.code}</span>
+      <input
+        accept="image/png,image/jpeg,image/webp"
+        className="art-style-upload-input"
+        onChange={event => {
+          const file = event.target.files?.[0]
+          if (file && uploadSlot !== null) uploadMutation.mutate({ index: uploadSlot, file })
+          event.currentTarget.value = ''
+          setUploadSlot(null)
+        }}
+        ref={uploadInputRef}
+        type="file"
+      />
+      <div className="art-style-grid">
+        {slots.map(slot => (
+          <article className={slot.url ? 'art-style-slot has-image' : 'art-style-slot'} key={slot.index}>
+            {slot.url ? (
+              <>
+                <img alt={`Art style reference ${slot.index + 1}`} src={slot.url} />
+                <div className="art-style-slot-actions">
+                  <button onClick={() => setPreviewSlot(slot)} type="button">View</button>
+                  <button onClick={() => openPrompt('edit', slot)} type="button">Edit</button>
+                  <button onClick={() => deleteMutation.mutate(slot.index)} type="button">Delete</button>
                 </div>
+              </>
+            ) : (
+              <div className="art-style-placeholder">
+                <StudioIcon name="assets" size={30} />
+                <span>Slot {slot.index + 1}</span>
               </div>
-              <p>{issue.message}</p>
-              <small>{issue.path}</small>
-            </article>
-          ))}
+            )}
+            <div className="art-style-slot-footer">
+              <button
+                className="ghost-button"
+                onClick={() => {
+                  setUploadSlot(slot.index)
+                  uploadInputRef.current?.click()
+                }}
+                type="button"
+              >
+                Upload
+              </button>
+              <button className="ghost-button" onClick={() => openPrompt('generate', slot)} type="button">
+                Generate
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
+      {uploadMutation.error ? <p className="story-dialog-error">{uploadMutation.error.message}</p> : null}
+      {deleteMutation.error ? <p className="story-dialog-error">{deleteMutation.error.message}</p> : null}
+      {previewSlot?.url ? (
+        <div className="character-preview-modal" onClick={() => setPreviewSlot(null)}>
+          <button className="character-preview-modal-close" onClick={() => setPreviewSlot(null)} type="button">x</button>
+          <img alt={`Art style reference ${previewSlot.index + 1}`} src={previewSlot.url} />
         </div>
-      )}
+      ) : null}
+      {promptAction ? (
+        <div className="story-dialog-scrim" onClick={() => setPromptAction(null)}>
+          <section className="story-dialog art-style-prompt-dialog" onClick={event => event.stopPropagation()}>
+            <strong>{promptAction.kind === 'generate' ? 'Generate Art Style' : 'Edit Art Style'}</strong>
+            <label>
+              <span>Prompt</span>
+              <textarea
+                autoFocus
+                onChange={event => setPrompt(event.target.value)}
+                placeholder={promptAction.kind === 'generate' ? 'Anime visual novel style, soft lighting, painterly backgrounds...' : 'Refine colors, line weight, rendering mood...'}
+                value={prompt}
+              />
+            </label>
+            {promptError ? <p className="story-dialog-error">{promptError}</p> : null}
+            <div className="story-dialog-actions">
+              <button onClick={() => setPromptAction(null)} type="button">Cancel</button>
+              <button disabled={isPromptPending} onClick={submitPrompt} type="button">
+                {isPromptPending ? 'Working' : promptAction.kind === 'generate' ? 'Generate' : 'Edit'}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </section>
   )
 }
@@ -460,11 +555,7 @@ function OverviewSection(props: {
         </section>
       </div>
 
-      <DiagnosticsPanel
-        isRunning={props.isRunningDoctor}
-        onRun={props.onRunDoctor}
-        project={props.project}
-      />
+      <ArtStylePanel project={props.project} />
     </div>
   )
 }
@@ -569,11 +660,7 @@ function ProjectOverview(props: {
           </div>
         </section>
 
-        <DiagnosticsPanel
-          isRunning={props.isRunningDoctor}
-          onRun={props.onRunDoctor}
-          project={props.project}
-        />
+        <ArtStylePanel project={props.project} />
       </div>
       )}
     </main>

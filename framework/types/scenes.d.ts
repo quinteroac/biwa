@@ -88,6 +88,23 @@ export interface TransitionConfig {
 
 export type AmbientEffect = 'rain' | 'snow' | 'sakura' | 'dust' | 'none';
 
+export interface SceneAudioCue {
+  id?: string;
+  file?: string;
+  volume?: number;
+  fade?: number;
+  duration?: number;
+  fadeIn?: number;
+  fadeOut?: number;
+}
+
+export interface SceneAudioConfig {
+  ambience?: string | SceneAudioCue;
+  music?: string | SceneAudioCue;
+  bgm?: string | SceneAudioCue;
+  sfx?: string | SceneAudioCue | Record<string, string | SceneAudioCue>;
+}
+
 export interface SceneFrontmatter {
   id: string;
   displayName?: string;
@@ -101,10 +118,10 @@ export interface SceneFrontmatter {
   };
 
   ambient?: {
-    sfx?: string;
-    sfxVolume?: number; // 0.0 - 1.0
     effect?: AmbientEffect;
   };
+
+  audio?: SceneAudioConfig;
 
   thumbnail?: string;
 

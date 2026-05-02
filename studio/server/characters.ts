@@ -652,11 +652,26 @@ function artTypeValue(value: unknown): StudioCharacterSheetArtType | undefined {
     : undefined
 }
 
-function buildCharacterImagePrompt(draft: StudioCharacterDraft, artType: StudioCharacterSheetArtType, referencePath: string | null): string {
+function artStyleReferencePaths(gameId: string): string[] {
+  const dir = join(GAMES_DIR, gameId, 'assets', 'art-style')
+  if (!existsSync(dir)) return []
+  return readdirSync(dir)
+    .filter(entry => /^style_reference_\d+\.(png|jpe?g|webp)$/i.test(entry))
+    .sort((a, b) => a.localeCompare(b))
+    .map(entry => `art-style/${entry}`)
+}
+
+function buildCharacterImagePrompt(
+  draft: StudioCharacterDraft,
+  artType: StudioCharacterSheetArtType,
+  referencePath: string | null,
+  styleReferencePaths: string[] = [],
+): string {
   const art = CHARACTER_SHEET_ART_INSTRUCTIONS[artType]
   const details = [
     `Task: ${art.label}.`,
     art.prompt,
+    styleReferencePaths.length > 0 ? `Use the attached visual novel art style reference image${styleReferencePaths.length === 1 ? '' : 's'} as the style guide. Create this character in that same visual style, matching the overall line quality, rendering approach, palette discipline, lighting mood, and finish level while keeping the character design original.` : '',
     referencePath ? `Use the attached reference image to preserve this character's identity, silhouette, costume language, palette, and proportions.` : '',
     `Character: ${draft.displayName || draft.id}.`,
     draft.role ? `Role: ${draft.role}.` : '',
@@ -776,7 +791,7 @@ async function createOpenAiImagePayload(
   gameId: string,
   settings: Awaited<ReturnType<typeof readOpenAiImagesSettingsForGeneration>>,
   prompt: string,
-  referencePathValue: string | null,
+  referencePathValue: string | string[] | null,
   options: {
     size?: string
     background?: 'transparent' | 'opaque' | 'auto'
@@ -785,7 +800,12 @@ async function createOpenAiImagePayload(
 ): Promise<{ url: string; init: RequestInit }> {
   const size = options.size ?? settings.characterSheetResolution
   const outputFormat = options.outputFormat ?? settings.outputFormat
-  if (!referencePathValue) {
+  const referencePaths = Array.isArray(referencePathValue)
+    ? referencePathValue
+    : referencePathValue
+      ? [referencePathValue]
+      : []
+  if (referencePaths.length === 0) {
     const body: Record<string, unknown> = {
       model: settings.model,
       prompt,
@@ -808,8 +828,6 @@ async function createOpenAiImagePayload(
       },
     }
   }
-  const imagePath = resolveAssetPath(gameId, referencePathValue)
-  const image = Bun.file(imagePath)
   const form = new FormData()
   form.set('model', settings.model)
   form.set('prompt', prompt)
@@ -819,7 +837,12 @@ async function createOpenAiImagePayload(
   form.set('output_format', outputFormat)
   form.set('moderation', settings.moderation)
   if (options.background) form.set('background', options.background)
-  form.set('image', new File([await image.arrayBuffer()], referencePathValue.split('/').pop() ?? 'reference.png', { type: imageMimeFromPath(referencePathValue) }))
+  const imageFieldName = referencePaths.length > 1 ? 'image[]' : 'image'
+  for (const path of referencePaths) {
+    const imagePath = resolveAssetPath(gameId, path)
+    const image = Bun.file(imagePath)
+    form.append(imageFieldName, new File([await image.arrayBuffer()], path.split('/').pop() ?? 'reference.png', { type: imageMimeFromPath(path) }))
+  }
   return {
     url: apiUrl(settings.baseUrl, editsPathFromGenerationPath(settings.imageGenerationPath)),
     init: {
@@ -1079,7 +1102,7 @@ function spritesheetGenerationPrompt(draft: StudioCharacterDraft, atlasJson: str
     'The background must be one uniform color with no shadows, gradients, texture, reflections, floor plane, or lighting variation.',
     'Do not use #00ff00 anywhere in the character sprites.',
     'No text of any kind: no labels, words, captions, letters, numbers, symbols, UI, watermarks, signatures, or frame markings.',
-    `Canvas: ${options.sheetWidth}x${options.sheetHeight}px.`,
+    `Canvas: ${options.size}px.`,
     `Layout: ${options.layoutDirection}, ${options.spriteCount} ${atlasKind === 'Animation' ? 'frames' : 'sprites'}, ${options.columns || 'auto'} columns.`,
     `${atlasKind === 'Animation' ? 'Animation frame groups' : 'Sprite names / expressions'} in order: ${names}.`,
     `Each ${atlasKind === 'Animation' ? 'animation frame' : 'sprite'} must fit exactly inside the matching Aseprite frame rectangle from this JSON contract.`,
@@ -1091,6 +1114,20 @@ function spritesheetGenerationPrompt(draft: StudioCharacterDraft, atlasJson: str
     'Aseprite JSON contract:',
     atlasJson,
   ].join('\n')
+}
+
+function spritesheetSize(value: string): { width: number; height: number } {
+  const match = value.match(/^(\d+)x(\d+)$/)
+  if (!match) throw new Error(`Unsupported spritesheet size: ${value}`)
+  const width = Number(match[1])
+  const height = Number(match[2])
+  if (!Number.isInteger(width) || !Number.isInteger(height)) throw new Error(`Unsupported spritesheet size: ${value}`)
+  if (width % 16 !== 0 || height % 16 !== 0) throw new Error('Spritesheet size must use dimensions divisible by 16.')
+  if (width <= 0 || height <= 0 || width > 3840 || height > 3840) throw new Error('Spritesheet size must be between 1 and 3840 pixels per side.')
+  const pixels = width * height
+  if (pixels < 655_360 || pixels > 8_294_400) throw new Error('Spritesheet size is outside OpenAI Images pixel limits.')
+  if (Math.max(width, height) / Math.min(width, height) > 3) throw new Error('Spritesheet size aspect ratio cannot exceed 3:1.')
+  return { width, height }
 }
 
 export async function generateCharacterSpritesheet(
@@ -1112,6 +1149,7 @@ export async function generateCharacterSpritesheet(
   const atlasPathValue = `characters/${characterId}/spritesheets/${folder}/${atlasFilename}`
   const names = options.spriteNames.length > 0 ? options.spriteNames : draft.expressions.length > 0 ? draft.expressions : [draft.defaultExpression || 'neutral']
   const atlasKind = atlasKindValue(options.atlasKind)
+  const { width: sheetWidth, height: sheetHeight } = spritesheetSize(options.size)
   const framesPerTag = Math.max(1, Math.floor(options.animationFramesPerTag ?? options.spriteCount))
   const frameCount = atlasKind === 'Animation'
     ? Math.max(1, names.length * framesPerTag)
@@ -1119,8 +1157,8 @@ export async function generateCharacterSpritesheet(
   const animationTags = animationTagsValue(options.animationTags, frameCount, names, framesPerTag)
   const atlas = atlasKind === 'Animation'
     ? buildAsepriteAnimationAtlas({
-        sheetWidth: options.sheetWidth,
-        sheetHeight: options.sheetHeight,
+        sheetWidth,
+        sheetHeight,
         spritesheetType: options.spritesheetType || 'Half Body',
         frameCount,
         layoutDirection: options.layoutDirection,
@@ -1130,8 +1168,8 @@ export async function generateCharacterSpritesheet(
         frameDuration: options.frameDuration,
       })
     : buildAsepriteAtlas({
-        sheetWidth: options.sheetWidth,
-        sheetHeight: options.sheetHeight,
+        sheetWidth,
+        sheetHeight,
         spritesheetType: options.spritesheetType || 'Half Body',
         spriteCount: options.spriteCount,
         layoutDirection: options.layoutDirection,
@@ -1145,10 +1183,10 @@ export async function generateCharacterSpritesheet(
   const referencePathValue = referenceImagePath(draft)
   if (!referencePathValue) throw new Error('Generate spritesheet requires a character concept art image.')
   const request = await createOpenAiImagePayload(gameId, settings, spritesheetGenerationPrompt(draft, atlasJson, { ...options, spriteCount: frameCount, spriteNames: names, animationTags }), referencePathValue, {
-    size: settings.spritesheetResolution,
+    size: options.size,
     outputFormat: spritesheetOutputFormat,
   })
-  console.info(`[studio] OpenAI Images spritesheet request: game=${gameId} character=${characterId} folder=${folder} model=${settings.model} size=${settings.spritesheetResolution} backgroundRemoval=${settings.spritesheetBackgroundRemovalEnabled ? 'on' : 'off'}`)
+  console.info(`[studio] OpenAI Images spritesheet request: game=${gameId} character=${characterId} folder=${folder} model=${settings.model} size=${options.size} backgroundRemoval=${settings.spritesheetBackgroundRemovalEnabled ? 'on' : 'off'}`)
   const response = await fetch(request.url, request.init)
   const payload = await response.json().catch(() => null) as unknown
   console.info(`[studio] OpenAI Images spritesheet payload summary: ${imageResponseSummary(payload)}`)
@@ -1217,15 +1255,19 @@ export async function generateCharacterSheetConcept(
   mkdirSync(targetDir, { recursive: true })
   const selectedArtTypes = normalizedArtTypes(artTypes)
   const referencePathValue = referenceImagePath(draft)
+  const visualNovelStyleReferences = referencePathValue ? [] : artStyleReferencePaths(gameId)
+  let activeReferencePath = referencePathValue
   const generatedImages: StudioGeneratedCharacterSheetImage[] = []
   for (const artType of selectedArtTypes) {
     const requestStartedAt = Date.now()
     const controller = new AbortController()
     const timeoutMs = settings.imageGenerationTimeoutSeconds * 1000
     const timeout = setTimeout(() => controller.abort(), timeoutMs)
-    const imagePrompt = buildCharacterImagePrompt(draft, artType, referencePathValue)
-    const request = await createOpenAiImagePayload(gameId, settings, imagePrompt, referencePathValue)
-    console.info(`[studio] OpenAI Images request: game=${gameId} character=${characterId} artType=${artType} model=${settings.model} size=${settings.characterSheetResolution} moderation=${settings.moderation} reference=${referencePathValue ? 'yes' : 'no'}`)
+    const styleReferencesForRequest = activeReferencePath ? [] : visualNovelStyleReferences
+    const imagePrompt = buildCharacterImagePrompt(draft, artType, activeReferencePath, styleReferencesForRequest)
+    const requestReferences = activeReferencePath ? activeReferencePath : styleReferencesForRequest
+    const request = await createOpenAiImagePayload(gameId, settings, imagePrompt, requestReferences.length === 0 ? null : requestReferences)
+    console.info(`[studio] OpenAI Images request: game=${gameId} character=${characterId} artType=${artType} model=${settings.model} size=${settings.characterSheetResolution} moderation=${settings.moderation} reference=${activeReferencePath ? 'character' : styleReferencesForRequest.length > 0 ? 'art-style' : 'no'}`)
     let response: Response
     try {
       response = await fetch(request.url, { ...request.init, signal: controller.signal })
@@ -1250,8 +1292,9 @@ export async function generateCharacterSheetConcept(
       path: assetPath,
       url: assetUrl(gameId, assetPath),
       revisedPrompt: generated.revisedPrompt,
-      referencePath: referencePathValue,
+      referencePath: activeReferencePath ?? styleReferencesForRequest[0] ?? null,
     })
+    activeReferencePath = activeReferencePath ?? assetPath
     console.info(`[studio] OpenAI Images saved generated concept: ${assetPath}`)
   }
   if (generatedImages.length === 0) throw new Error('No character sheet art types were selected.')

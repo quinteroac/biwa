@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-label="Tutorial del Framework starter background">
+  <defs>
+    <linearGradient id="sky" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#1f2937"/>
+      <stop offset="52%" stop-color="#4338ca"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#sky)"/>
+  <rect y="650" width="1600" height="250" fill="#0f172a" opacity="0.72"/>
+  <circle cx="1220" cy="190" r="80" fill="#f8fafc" opacity="0.86"/>
+  <path d="M0 645 C260 560 420 700 690 610 C980 510 1180 675 1600 565 L1600 900 L0 900 Z" fill="#020617" opacity="0.55"/>
+</svg>

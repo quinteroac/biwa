@@ -87,6 +87,17 @@ async function createEngine(ink: string, configOverrides: Partial<GameConfig> = 
       if (url.endsWith('story.json')) {
         return new Response(storyJson, { status: 200 })
       }
+      if (url.endsWith('scenes/index.json')) {
+        return Response.json(['cafe.json'])
+      }
+      if (url.endsWith('scenes/cafe.json')) {
+        return Response.json({
+          audio: {
+            ambience: { id: 'cafe-rain', file: 'audio/ambience/rain.ogg', volume: 0.5 },
+            music: { id: 'cafe-theme', file: 'audio/bgm/theme.ogg', volume: 0.4 },
+          },
+        })
+      }
       return new Response('', { status: 404 })
     }),
   })
@@ -274,6 +285,33 @@ describe('GameEngine - US-003 duplicate advance guard', () => {
     expect(scenes).toEqual(['cafe_exterior'])
     expect(dialogs).toEqual(['Tagged line'])
     expect(engine.state).toBe('CHOICES')
+  })
+
+  it('plays scene-linked audio when entering a scene', async () => {
+    const engine = await createEngine('# scene: cafe\nTagged line\n', {
+      data: {
+        scenes: './scenes/',
+      },
+    })
+    const bgm: Record<string, unknown>[] = []
+    const ambience: Record<string, unknown>[] = []
+    const dialogs: string[] = []
+
+    engine.bus.on<Record<string, unknown>>('engine:bgm', payload => {
+      bgm.push(payload)
+    })
+    engine.bus.on<Record<string, unknown>>('engine:ambience', payload => {
+      ambience.push(payload)
+    })
+    engine.bus.on<DialogPayload>('engine:dialog', payload => {
+      dialogs.push(payload.text)
+    })
+
+    engine.start()
+    await waitUntil(() => dialogs.length === 1)
+
+    expect(bgm[0]).toMatchObject({ type: 'bgm', id: 'cafe-theme', file: 'audio/bgm/theme.ogg', volume: 0.4 })
+    expect(ambience[0]).toMatchObject({ type: 'ambience', id: 'cafe-rain', file: 'audio/ambience/rain.ogg', volume: 0.5 })
   })
 
   it('does not mark post-choice dialog for automatic advance', async () => {

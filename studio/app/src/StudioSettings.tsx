@@ -8,7 +8,6 @@ const qualityOptions = ['low', 'medium', 'high', 'auto'] as const
 const formatOptions = ['png', 'webp', 'jpeg'] as const
 const moderationOptions = ['auto', 'low'] as const
 const characterSheetResolutionOptions = ['1024x1536', '1024x1024', '1536x1024', 'auto'] as const
-const spritesheetResolutionOptions = ['1536x1024', '1024x1024', '1024x1536', 'auto'] as const
 
 export function StudioSettings(props: {
   project: StudioProjectSummary
@@ -124,15 +123,6 @@ export function StudioSettings(props: {
                 value={openaiImages.characterSheetResolution}
               >
                 {characterSheetResolutionOptions.map(resolution => <option key={resolution} value={resolution}>{resolution}</option>)}
-              </select>
-            </label>
-            <label className="settings-field">
-              <span>Spritesheet Resolution</span>
-              <select
-                onChange={event => setDraft({ ...draft, openaiImages: { ...openaiImages, spritesheetResolution: event.target.value as typeof spritesheetResolutionOptions[number] } })}
-                value={openaiImages.spritesheetResolution}
-              >
-                {spritesheetResolutionOptions.map(resolution => <option key={resolution} value={resolution}>{resolution}</option>)}
               </select>
             </label>
             <label className="settings-field">

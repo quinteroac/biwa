@@ -97,6 +97,7 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Studio Scenes and Assets sections with scene metadata editing, background previews and categorized asset browsing.
 - Studio Elysia APIs for scene frontmatter read/write, safe asset serving and asset classification.
 - Studio scene/asset tests covering frontmatter persistence, preview URLs and framework asset categories.
+- Scene frontmatter now supports scene-linked `audio` cues for ambience, music and SFX, and Studio preserves those references while editing scenes.
 - Studio Characters section with character sheet editing, runtime metadata controls, sprite preview and atlas summaries.
 - Studio Elysia APIs for character frontmatter read/write and GameAssetsMaker-compatible atlas generation.
 - Studio character tests covering metadata persistence, preview URLs and atlas mapping updates.

@@ -44,6 +44,23 @@ export interface StudioProjectCoverUploadResponse {
   coverUrl: string | null
 }
 
+export interface StudioArtStyleSlot {
+  index: number
+  path: string | null
+  url: string | null
+  size: number | null
+}
+
+export interface StudioArtStyleResponse {
+  slots: StudioArtStyleSlot[]
+}
+
+export interface StudioArtStyleMutationResponse {
+  slot: StudioArtStyleSlot
+  slots: StudioArtStyleSlot[]
+  revisedPrompt?: string
+}
+
 export interface StudioDoctorResponse {
   diagnostics: DoctorJsonReport
 }
@@ -103,8 +120,23 @@ export interface StudioSceneItem {
   prompt: string
   thumbnail: string
   background?: Record<string, unknown>
+  audio?: Record<string, unknown>
   previewUrl: string | null
+  backgroundFolders: string[]
+  backgrounds: StudioSceneBackgroundAsset[]
   body: string
+}
+
+export interface StudioSceneFolder {
+  path: string
+}
+
+export interface StudioSceneBackgroundAsset {
+  folder: string
+  path: string
+  url: string | null
+  size: number
+  isActive: boolean
 }
 
 export interface StudioSceneDraft {
@@ -118,15 +150,62 @@ export interface StudioSceneDraft {
   prompt: string
   thumbnail: string
   background: Record<string, unknown>
+  audio: Record<string, unknown>
   body?: string
 }
 
 export interface StudioScenesResponse {
   scenes: StudioSceneItem[]
+  folders: StudioSceneFolder[]
 }
 
 export interface StudioSceneResponse {
   scene: StudioSceneItem
+}
+
+export interface StudioSceneBackgroundFolderResponse {
+  folder: string
+  scene: StudioSceneItem
+}
+
+export interface StudioSceneBackgroundUploadResponse {
+  path: string
+  url: string | null
+  scene: StudioSceneItem
+}
+
+export interface StudioSceneBackgroundGenerateRequest {
+  folder: string
+  prompt: string
+}
+
+export interface StudioSceneBackgroundGenerateResponse {
+  path: string
+  url: string | null
+  revisedPrompt: string
+  scene: StudioSceneItem
+}
+
+export interface StudioSceneBackgroundDeleteResponse {
+  deletedPath: string
+  scene: StudioSceneItem
+}
+
+export interface StudioSceneFolderResponse {
+  folder: string
+  scenes: StudioSceneItem[]
+  folders: StudioSceneFolder[]
+}
+
+export interface StudioSceneFileMutationResponse {
+  scene: StudioSceneItem
+  scenes: StudioSceneItem[]
+  folders: StudioSceneFolder[]
+}
+
+export interface StudioSceneGenerateRequest {
+  folder: string
+  prompt: string
 }
 
 export interface StudioCharacterOffset {
@@ -302,8 +381,7 @@ export type StudioSpritesheetLayoutDirection = 'Horizontal' | 'Vertical' | 'Grid
 
 export interface StudioCharacterSpritesheetGenerateRequest {
   atlasKind?: StudioAsepriteAtlasKind
-  sheetWidth: number
-  sheetHeight: number
+  size: StudioOpenAiImageSize
   spritesheetType: string
   spriteCount: number
   layoutDirection: StudioSpritesheetLayoutDirection
@@ -377,7 +455,20 @@ export interface StudioCharacterSheetDeleteResponse {
 export type StudioOpenAiImageQuality = 'low' | 'medium' | 'high' | 'auto'
 export type StudioOpenAiImageFormat = 'png' | 'webp' | 'jpeg'
 export type StudioOpenAiImageModeration = 'auto' | 'low'
-export type StudioOpenAiImageResolution = '1024x1024' | '1024x1536' | '1536x1024' | 'auto'
+export type StudioOpenAiImageSize =
+  | '1024x1024'
+  | '1536x1024'
+  | '1024x1536'
+  | '2048x1024'
+  | '1024x2048'
+  | '2048x2048'
+  | '3072x1024'
+  | '1024x3072'
+  | '3840x1280'
+  | '1280x3840'
+  | '3840x2160'
+  | '2160x3840'
+export type StudioOpenAiImageResolution = StudioOpenAiImageSize | 'auto'
 
 export interface StudioOpenAiImagesSettings {
   apiKey: string
@@ -388,7 +479,6 @@ export interface StudioOpenAiImagesSettings {
   outputFormat: StudioOpenAiImageFormat
   moderation: StudioOpenAiImageModeration
   characterSheetResolution: StudioOpenAiImageResolution
-  spritesheetResolution: StudioOpenAiImageResolution
   spritesheetBackgroundRemovalEnabled: boolean
   spritesheetBackgroundRemovalCommand: string
   spritesheetBackgroundRemovalTimeoutSeconds: number

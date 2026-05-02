@@ -413,7 +413,11 @@ export class GameEngine {
         case 'scene':
           this.#currentSceneId = tag.id ?? null
           this.#currentSceneVariant = typeof tag['variant'] === 'string' ? tag['variant'] : null
-          this.#bus.emit('engine:scene', { ...tag, data: this.#data.scenes[tag.id ?? ''] })
+          {
+            const sceneData = this.#data.scenes[tag.id ?? '']
+            this.#bus.emit('engine:scene', { ...tag, data: sceneData })
+            this.#applySceneAudio(sceneData)
+          }
           break
         case 'bgm':
           this.#emitAudioTag('bgm', tag)
@@ -522,6 +526,35 @@ export class GameEngine {
       if (channel === 'voice') this.#currentVoiceForDialog = { ...payload }
     }
     this.#bus.emit(`engine:${channel}`, payload)
+  }
+
+  #applySceneAudio(sceneData: Record<string, unknown> | undefined): void {
+    if (!sceneData) return
+    const audio = asRecord(sceneData['audio'])
+    const bgm = audio ? audio['bgm'] ?? audio['music'] : undefined
+    const ambience = audio ? audio['ambience'] : undefined
+    const sfx = audio ? audio['sfx'] : undefined
+
+    const bgmTag = sceneAudioTag('bgm', bgm)
+    if (bgmTag) this.#emitAudioTag('bgm', bgmTag)
+
+    const ambienceTag = sceneAudioTag('ambience', ambience)
+    if (ambienceTag) {
+      this.#emitAudioTag('ambience', ambienceTag)
+    } else {
+      const ambient = asRecord(sceneData['ambient'])
+      const legacySfx = typeof ambient?.['sfx'] === 'string' ? ambient['sfx'] : ''
+      if (legacySfx) {
+        this.#emitAudioTag('ambience', {
+          type: 'ambience',
+          id: legacySfx,
+          ...(typeof ambient?.['sfxVolume'] === 'number' ? { volume: ambient['sfxVolume'] } : {}),
+        })
+      }
+    }
+
+    const sfxTag = sceneAudioTag('sfx', sfx)
+    if (sfxTag) this.#bus.emit('engine:sfx', sfxTag)
   }
 
   #trackCharacter(tag: TagCommand): void {
@@ -713,6 +746,19 @@ function normalizeRendererDiagnostics(renderers: VnPluginRendererDeclarations | 
 
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null
+}
+
+function sceneAudioTag(type: 'bgm' | 'ambience' | 'sfx', value: unknown): TagCommand | null {
+  if (typeof value === 'string' && value.trim()) return { type, id: value.trim() }
+  const record = asRecord(value)
+  if (!record) return null
+  const id = typeof record['id'] === 'string' && record['id'].trim()
+    ? record['id'].trim()
+    : typeof record['file'] === 'string' && record['file'].trim()
+      ? record['file'].trim()
+      : ''
+  if (!id) return null
+  return { ...record, type, id }
 }
 
 function hasMappedAnimation(sheet: unknown, key: string, field: 'actions' | 'sprites'): boolean {
