@@ -8,6 +8,7 @@ import type {
   StudioBuildResponse,
   StudioBuildsResponse,
   StudioCharacterAtlasResponse,
+  StudioCharacterDeleteResponse,
   StudioCharacterDraft,
   StudioCharacterSheetEditResponse,
   StudioCharacterResponse,
@@ -23,6 +24,7 @@ import type {
   StudioCharactersResponse,
   StudioSceneDraft,
   StudioSceneBackgroundDeleteResponse,
+  StudioSceneBackgroundEditResponse,
   StudioSceneBackgroundFolderResponse,
   StudioSceneBackgroundGenerateRequest,
   StudioSceneBackgroundGenerateResponse,
@@ -34,6 +36,8 @@ import type {
   StudioScenesResponse,
   StudioPluginMutationResponse,
   StudioPluginsResponse,
+  StudioProjectCreateRequest,
+  StudioProjectCreateResponse,
   StudioProjectCoverUploadResponse,
   StudioProjectIdentityDraft,
   StudioProjectResponse,
@@ -66,6 +70,14 @@ export function fetchProjects(): Promise<StudioProjectsResponse> {
 
 export function fetchProject(gameId: string): Promise<StudioProjectResponse> {
   return requestJson<StudioProjectResponse>(`/api/projects/${gameId}`)
+}
+
+export function createProject(draft: StudioProjectCreateRequest): Promise<StudioProjectCreateResponse> {
+  return requestJson<StudioProjectCreateResponse>('/api/projects', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(draft),
+  })
 }
 
 export function saveProjectIdentity(gameId: string, draft: StudioProjectIdentityDraft): Promise<StudioProjectResponse> {
@@ -236,11 +248,15 @@ export function createSceneFolder(gameId: string, path: string): Promise<StudioS
   })
 }
 
-export function createSceneFile(gameId: string, folder: string, name: string): Promise<StudioSceneFileMutationResponse> {
+export function createSceneFile(gameId: string, folder: string, name: string, displayName?: string): Promise<StudioSceneFileMutationResponse> {
   return requestJson<StudioSceneFileMutationResponse>(`/api/projects/${gameId}/scenes/file`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ folder, name }),
+    body: JSON.stringify({
+      folder,
+      name,
+      ...(displayName ? { displayName } : {}),
+    }),
   })
 }
 
@@ -322,6 +338,20 @@ export function generateSceneBackground(
   })
 }
 
+export function editSceneBackground(
+  gameId: string,
+  path: string,
+  scene: StudioSceneDraft,
+  assetPath: string,
+  prompt: string,
+): Promise<StudioSceneBackgroundEditResponse> {
+  return requestJson<StudioSceneBackgroundEditResponse>(`/api/projects/${gameId}/scenes/background/edit`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path, scene, assetPath, prompt }),
+  })
+}
+
 export function deleteSceneBackground(
   gameId: string,
   path: string,
@@ -348,6 +378,14 @@ export function saveCharacter(gameId: string, path: string, character: StudioCha
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ path, character }),
+  })
+}
+
+export function deleteCharacter(gameId: string, path: string): Promise<StudioCharacterDeleteResponse> {
+  return requestJson<StudioCharacterDeleteResponse>(`/api/projects/${gameId}/characters/file`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path }),
   })
 }
 

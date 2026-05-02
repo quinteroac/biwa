@@ -2,11 +2,13 @@ import { afterEach, describe, expect, it } from 'bun:test'
 import { mkdirSync, rmSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import { listAssets } from '../assets.ts'
-import { createSceneBackgroundFolder, createSceneFile, createSceneFolder, deleteSceneBackground, deleteSceneFile, listScenes, readScene, uploadSceneBackground, uploadSceneFile, writeScene } from '../scenes.ts'
+import { createSceneBackgroundFolder, createSceneFile, createSceneFolder, deleteSceneBackground, deleteSceneFile, editSceneBackground, generateSceneBackground, listScenes, readScene, uploadSceneBackground, uploadSceneFile, writeScene } from '../scenes.ts'
+import { writeStudioSettings } from '../settings.ts'
 import type { StudioSceneDraft, StudioSceneItem } from '../../shared/types.ts'
 
 const ROOT = new URL('../../../', import.meta.url).pathname.replace(/\/$/, '')
 const createdGames: string[] = []
+const originalFetch = globalThis.fetch
 
 function makeSceneFixture(gameId: string): void {
   createdGames.push(gameId)
@@ -61,6 +63,7 @@ function draftFromScene(scene: StudioSceneItem): StudioSceneDraft {
 }
 
 afterEach(() => {
+  globalThis.fetch = originalFetch
   for (const gameId of createdGames.splice(0)) {
     rmSync(join(ROOT, 'games', gameId), { recursive: true, force: true })
   }
@@ -89,6 +92,7 @@ describe('studio scene and asset API helpers', () => {
     const current = await readScene(gameId, 'studio.md')
     const saved = await writeScene(gameId, 'studio.md', {
       ...current.scene,
+      id: 'renamed-studio',
       displayName: 'Studio Updated',
       location: 'Test location',
       timeOfDay: 'night',
@@ -106,6 +110,7 @@ describe('studio scene and asset API helpers', () => {
     })
 
     expect(saved.scene.displayName).toBe('Studio Updated')
+    expect(saved.scene.id).toBe('studio')
     expect(saved.scene.location).toBe('Test location')
     expect(saved.scene.audio?.['ambience']).toEqual({
       id: 'studio-room-tone',
@@ -157,8 +162,10 @@ describe('studio scene and asset API helpers', () => {
     const folder = await createSceneFolder(gameId, 'chapter-one')
     expect(folder.folders.some(item => item.path === 'chapter-one')).toBe(true)
 
-    const created = await createSceneFile(gameId, 'chapter-one', 'Rainy Platform')
+    const created = await createSceneFile(gameId, 'chapter-one', 'rainy-platform', 'Rainy Platform')
     expect(created.scene.path).toBe('chapter-one/rainy-platform.md')
+    expect(created.scene.id).toBe('rainy-platform')
+    expect(created.scene.displayName).toBe('Rainy Platform')
     expect(created.scenes.some(scene => scene.path === created.scene.path)).toBe(true)
 
     const uploaded = await uploadSceneFile(gameId, 'chapter-one', new File([`---
@@ -178,5 +185,137 @@ Uploaded body.
 
     const deleted = await deleteSceneFile(gameId, uploaded.scene.path)
     expect(deleted.scenes.some(scene => scene.path === uploaded.scene.path)).toBe(false)
+  })
+
+  it('generates scene backgrounds from scene form fields and art-style references', async () => {
+    const gameId = `studio-scene-generate-${Date.now()}`
+    makeSceneFixture(gameId)
+    mkdirSync(join(ROOT, 'games', gameId, 'assets', 'art-style'), { recursive: true })
+    writeFileSync(join(ROOT, 'games', gameId, 'assets', 'art-style', 'style_reference_001.png'), 'style-reference')
+    await writeStudioSettings(gameId, {
+      openaiImages: {
+        apiKey: 'test-key',
+        apiKeyConfigured: false,
+        baseUrl: 'https://api.example.test/v1',
+        imageGenerationPath: '/images/generations',
+        model: 'gpt-image-1.5',
+        quality: 'high',
+        outputFormat: 'png',
+        moderation: 'low',
+        characterSheetResolution: '1024x1536',
+        spritesheetBackgroundRemovalEnabled: false,
+        spritesheetBackgroundRemovalCommand: '',
+        spritesheetBackgroundRemovalTimeoutSeconds: 300,
+        imageGenerationTimeoutSeconds: 180,
+      },
+    })
+    const current = await readScene(gameId, 'studio.md')
+    const draft = {
+      ...draftFromScene(current.scene),
+      displayName: 'Cafe Exterior',
+      description: 'Street-facing midnight cafe with wet pavement.',
+      location: 'Street outside the cafe',
+      timeOfDay: 'midnight',
+      weather: 'rain',
+      mood: 'lonely neon melancholy',
+      body: 'Needs a readable entrance and empty lower third for dialogue.',
+    }
+    const calls: Array<{ url: string; body: Record<string, unknown>; authorization: string | null }> = []
+    const fakeFetch = async (input: URL | RequestInfo, init?: RequestInit | BunFetchRequestInit): Promise<Response> => {
+      const body = init?.body instanceof FormData
+        ? Object.fromEntries([...init.body.entries()].map(([key, value]) => [
+          key,
+          typeof value === 'object'
+            && value !== null
+            && 'name' in value
+            && typeof (value as { name?: unknown }).name === 'string'
+            ? (value as { name: string }).name
+            : value,
+        ]))
+        : JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>
+      calls.push({
+        url: String(input),
+        body,
+        authorization: new Headers(init?.headers).get('authorization'),
+      })
+      return Response.json({
+        data: [{
+          b64_json: Buffer.from('scene-image').toString('base64'),
+          revised_prompt: 'Revised scene prompt.',
+        }],
+      })
+    }
+    globalThis.fetch = Object.assign(fakeFetch, { preconnect: originalFetch.preconnect })
+
+    const result = await generateSceneBackground(gameId, 'studio.md', draft, { folder: 'Main' })
+
+    expect(calls).toHaveLength(1)
+    expect(calls[0]?.url).toBe('https://api.example.test/v1/images/edits')
+    expect(calls[0]?.authorization).toBe('Bearer test-key')
+    expect(calls[0]?.body['image']).toBe('style_reference_001.png')
+    expect(String(calls[0]?.body['prompt'])).toContain('Scene Metadata:')
+    expect(String(calls[0]?.body['prompt'])).toContain('Street outside the cafe')
+    expect(String(calls[0]?.body['prompt'])).toContain('Lighting & Mood:')
+    expect(String(calls[0]?.body['prompt'])).toContain('lonely neon melancholy')
+    expect(String(calls[0]?.body['prompt'])).toContain('art style reference')
+    expect(result.path).toBe('scenes/studio/background.png')
+  })
+
+  it('edits a scene background in place using the selected image and art-style references', async () => {
+    const gameId = `studio-scene-edit-${Date.now()}`
+    makeSceneFixture(gameId)
+    mkdirSync(join(ROOT, 'games', gameId, 'assets', 'art-style'), { recursive: true })
+    writeFileSync(join(ROOT, 'games', gameId, 'assets', 'art-style', 'style_reference_001.png'), 'style-reference')
+    writeFileSync(join(ROOT, 'games', gameId, 'assets', 'scenes', 'studio', 'background.png'), 'old-scene')
+    await writeStudioSettings(gameId, {
+      openaiImages: {
+        apiKey: 'test-key',
+        apiKeyConfigured: false,
+        baseUrl: 'https://api.example.test/v1',
+        imageGenerationPath: '/images/generations',
+        model: 'gpt-image-1.5',
+        quality: 'high',
+        outputFormat: 'png',
+        moderation: 'low',
+        characterSheetResolution: '1024x1536',
+        spritesheetBackgroundRemovalEnabled: false,
+        spritesheetBackgroundRemovalCommand: '',
+        spritesheetBackgroundRemovalTimeoutSeconds: 300,
+        imageGenerationTimeoutSeconds: 180,
+      },
+    })
+    const current = await readScene(gameId, 'studio.md')
+    const calls: Array<{ url: string; body: Record<string, unknown> }> = []
+    const fakeFetch = async (input: URL | RequestInfo, init?: RequestInit | BunFetchRequestInit): Promise<Response> => {
+      const body = init?.body instanceof FormData
+        ? [...init.body.entries()].reduce<Record<string, unknown>>((acc, [key, value]) => {
+          const nextValue = typeof value === 'object'
+            && value !== null
+            && 'name' in value
+            && typeof (value as { name?: unknown }).name === 'string'
+            ? (value as { name: string }).name
+            : value
+          const previous = acc[key]
+          acc[key] = previous === undefined ? nextValue : Array.isArray(previous) ? [...previous, nextValue] : [previous, nextValue]
+          return acc
+        }, {})
+        : JSON.parse(String(init?.body ?? '{}')) as Record<string, unknown>
+      calls.push({ url: String(input), body })
+      return Response.json({
+        data: [{
+          b64_json: Buffer.from('edited-scene').toString('base64'),
+          revised_prompt: 'Revised edit prompt.',
+        }],
+      })
+    }
+    globalThis.fetch = Object.assign(fakeFetch, { preconnect: originalFetch.preconnect })
+
+    const result = await editSceneBackground(gameId, 'studio.md', draftFromScene(current.scene), 'scenes/studio/background.png', 'add warmer morning light')
+
+    expect(calls).toHaveLength(1)
+    expect(calls[0]?.url).toBe('https://api.example.test/v1/images/edits')
+    expect(calls[0]?.body['image[]']).toEqual(['background.png', 'style_reference_001.png'])
+    expect(String(calls[0]?.body['prompt'])).toContain('add warmer morning light')
+    expect(result.path).toBe('scenes/studio/background.png')
   })
 })

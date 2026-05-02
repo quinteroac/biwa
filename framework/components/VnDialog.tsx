@@ -126,7 +126,7 @@ export const VnDialog = forwardRef<VnDialogHandle, VnDialogProps>(function VnDia
           </div>
         )}
         <div style={{
-          fontSize: 18 * textScale,
+          fontSize: `calc(var(--vn-dialog-font-size, 18px) * ${textScale})`,
           fontWeight: 300,
           lineHeight: 1.8,
           letterSpacing: '0.01em',

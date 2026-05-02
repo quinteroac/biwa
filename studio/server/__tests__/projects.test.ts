@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'bun:test'
 import { mkdirSync, rmSync, writeFileSync } from 'fs'
 import { join } from 'path'
 import {
+  createProject,
   getProjectDiagnostics,
   getProjectSummary,
   listProjectIds,
@@ -75,6 +76,18 @@ describe('studio project API helpers', () => {
 
     expect(projects.some(project => project.id === 'smoke-fixture')).toBe(true)
     expect(projects.every(project => ['ok', 'warning', 'error'].includes(project.status))).toBe(true)
+  })
+
+  it('creates a new framework novel project for Studio', async () => {
+    const gameId = `studio-new-${Date.now()}`
+    createdGames.push(gameId)
+
+    const created = await createProject(gameId, 'Studio New Novel')
+
+    expect(created.project.id).toBe(gameId)
+    expect(created.project.title).toBe('Studio New Novel')
+    expect(created.project.locales).toContain('en')
+    expect(created.project.counts.storyFiles).toBeGreaterThan(0)
   })
 
   it('updates project identity in the framework game config', async () => {

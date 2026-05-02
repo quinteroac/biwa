@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { CSSProperties, KeyboardEvent as ReactKeyboardEvent, PointerEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createCharacterSpritesheetFolder, deleteCharacterSheetConcept, deleteCharacterSpritesheet, editCharacterSheetConcept, fetchCharacter, fetchCharacters, generateCharacterSpritesheet, generateCharacterAtlas, generateCharacterSheetConcept, saveCharacter, uploadCharacterSheetConcept, uploadCharacterSpritesheet } from './api.ts'
+import { createCharacterSpritesheetFolder, deleteCharacter, deleteCharacterSheetConcept, deleteCharacterSpritesheet, editCharacterSheetConcept, fetchCharacter, fetchCharacters, generateCharacterSpritesheet, generateCharacterAtlas, generateCharacterSheetConcept, saveCharacter, uploadCharacterSheetConcept, uploadCharacterSpritesheet } from './api.ts'
 import { StudioIcon } from './StudioIcon.tsx'
 import type { StudioCharacterDraft, StudioCharacterItem, StudioCharacterSheetArtType, StudioCharacterSpritesheetGenerateRequest, StudioProjectSummary } from '../../shared/types.ts'
 
@@ -324,6 +324,7 @@ export function CharacterDesigner(props: {
   const [previewZoom, setPreviewZoom] = useState(1)
   const [previewPan, setPreviewPan] = useState({ x: 0, y: 0 })
   const [previewDragStart, setPreviewDragStart] = useState<{ pointerId: number; x: number; y: number; panX: number; panY: number } | null>(null)
+  const [deleteCharacterDialogOpen, setDeleteCharacterDialogOpen] = useState(false)
   const [searchText, setSearchText] = useState('')
   const [spritesheetFolders, setSpritesheetFolders] = useState<string[]>([])
   const [selectedSpritesheetFolder, setSelectedSpritesheetFolder] = useState('Main')
@@ -508,6 +509,20 @@ export function CharacterDesigner(props: {
       setSelectedPath(response.character.path)
       queryClient.invalidateQueries({ queryKey: ['studio-characters', props.project.id] })
       queryClient.invalidateQueries({ queryKey: ['studio-projects'] })
+    },
+  })
+  const characterDeleteMutation = useMutation({
+    mutationFn: (path: string) => deleteCharacter(props.project.id, path),
+    onSuccess: response => {
+      const nextPath = response.characters[0]?.path ?? null
+      setSelectedPath(nextPath)
+      setDraft(null)
+      setDeleteCharacterDialogOpen(false)
+      queryClient.setQueryData(['studio-characters', props.project.id], { characters: response.characters })
+      void queryClient.invalidateQueries({ queryKey: ['studio-characters', props.project.id] })
+      void queryClient.invalidateQueries({ queryKey: ['studio-character', props.project.id, response.deletedPath] })
+      void queryClient.invalidateQueries({ queryKey: ['studio-assets', props.project.id] })
+      void queryClient.invalidateQueries({ queryKey: ['studio-projects'] })
     },
   })
   const atlasMutation = useMutation({
@@ -1137,8 +1152,33 @@ export function CharacterDesigner(props: {
               <StudioIcon name="build" size={16} />
               {saveMutation.isPending ? 'Saving' : 'Save Character'}
             </button>
+            <button
+              className="ghost-button is-danger"
+              disabled={!activePath || isNewCharacter || characterDeleteMutation.isPending || isGeneratingConcept}
+              onClick={() => setDeleteCharacterDialogOpen(true)}
+              type="button"
+            >
+              <StudioIcon name="remove" size={16} />
+              Delete
+            </button>
           </div>
         </header>
+
+        {deleteCharacterDialogOpen && activePath && draft ? (
+          <div className="story-dialog-scrim" onClick={() => !characterDeleteMutation.isPending && setDeleteCharacterDialogOpen(false)}>
+            <section className="story-dialog" onClick={event => event.stopPropagation()}>
+              <strong>Delete Character</strong>
+              <p>Delete {draft.displayName || draft.id} from character data.</p>
+              {characterDeleteMutation.error ? <p className="story-dialog-error">{characterDeleteMutation.error.message}</p> : null}
+              <div className="story-dialog-actions">
+                <button disabled={characterDeleteMutation.isPending} onClick={() => setDeleteCharacterDialogOpen(false)} type="button">Cancel</button>
+                <button disabled={characterDeleteMutation.isPending} onClick={() => characterDeleteMutation.mutate(activePath)} type="submit">
+                  {characterDeleteMutation.isPending ? 'Deleting' : 'Delete'}
+                </button>
+              </div>
+            </section>
+          </div>
+        ) : null}
 
         <nav className="character-tabs" aria-label="Character editor tabs">
           {characterTabs.map(tab => (
@@ -1237,7 +1277,7 @@ export function CharacterDesigner(props: {
                       {paletteColors(draft).map((color, index) => (
                         <input
                           aria-label={`Palette color ${index + 1}`}
-                          key={`${index}-${color}`}
+                          key={index}
                           onChange={event => setDraft(updatePaletteColor(draft, index, event.target.value))}
                           type="color"
                           value={color}

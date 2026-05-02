@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'bun:test'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { join } from 'path'
-import { createCharacterSpritesheetFolder, deleteCharacterSheetConcept, deleteCharacterSpritesheet, editCharacterSheetConcept, generateCharacterAtlas, generateCharacterSheetConcept, generateCharacterSpritesheet, listCharacters, readCharacter, uploadCharacterSheetConcept, uploadCharacterSpritesheet, writeCharacter } from '../characters.ts'
+import { createCharacterSpritesheetFolder, deleteCharacterFile, deleteCharacterSheetConcept, deleteCharacterSpritesheet, editCharacterSheetConcept, generateCharacterAtlas, generateCharacterSheetConcept, generateCharacterSpritesheet, listCharacters, readCharacter, uploadCharacterSheetConcept, uploadCharacterSpritesheet, writeCharacter } from '../characters.ts'
 import { studioApi } from '../index.ts'
 import { writeStudioSettings } from '../settings.ts'
 
@@ -90,6 +90,18 @@ describe('studio character API helpers', () => {
 
     expect(tester?.displayName).toBe('Hero')
     expect(tester?.previewUrl).toContain(`/api/projects/${gameId}/assets/file`)
+  })
+
+  it('deletes a character Markdown file without deleting character assets', async () => {
+    const gameId = `studio-character-delete-${Date.now()}`
+    makeCharacterFixture(gameId)
+
+    const deleted = await deleteCharacterFile(gameId, 'hero.md')
+
+    expect(deleted.deletedPath).toBe('hero.md')
+    expect(deleted.characters.some(character => character.path === 'hero.md')).toBe(false)
+    expect(existsSync(join(ROOT, 'games', gameId, 'data', 'characters', 'hero.md'))).toBe(false)
+    expect(existsSync(join(ROOT, 'games', gameId, 'assets', 'characters', 'hero', 'hero.svg'))).toBe(true)
   })
 
   it('maps character-sheet art from markdown into Studio asset URLs', async () => {
@@ -546,6 +558,8 @@ describe('studio character API helpers', () => {
     expect(String(calls[0]?.body['prompt'])).toContain('Concept Art')
     expect(calls[0]?.body['image']).toBe('main.png')
     expect(String(calls[1]?.body['prompt'])).toContain('Silhouette Sketch')
+    expect(String(calls[1]?.body['prompt'])).toContain('primary character identity and art-style guide')
+    expect(String(calls[1]?.body['prompt'])).toContain('Do not reinterpret the character in a different art style.')
     expect(result.path).toBe('characters/hero/character-sheet/generated/concept-art-001.png')
     expect(result.generated).toHaveLength(2)
     expect(result.generated[1]?.path).toBe('characters/hero/character-sheet/generated/silhouette-sketch-001.png')
@@ -615,11 +629,13 @@ describe('studio character API helpers', () => {
     expect(calls[0]?.authorization).toBe('Bearer test-key')
     expect(calls[0]?.body['prompt']).toBe('cambia el color del cabello a rojo')
     expect(calls[0]?.body['image']).toBe('main.png')
-    expect(result.path).toBe('characters/hero/character-sheet/generated/edit-001.png')
+    expect(calls[0]?.body['output_format']).toBe('png')
+    expect(result.path).toBe('characters/hero/character-sheet/main.png')
     expect(result.sourcePath).toBe('characters/hero/character-sheet/main.png')
     expect(result.revisedPrompt).toBe('Revised edit prompt.')
-    expect(result.character.characterSheet.generated).toContain(result.path)
+    expect(result.character.characterSheet.generated).not.toContain(result.path)
     expect(existsSync(join(ROOT, 'games', gameId, 'assets', result.path))).toBe(true)
+    expect(readFileSync(join(ROOT, 'games', gameId, 'assets', result.path), 'utf8')).toBe('edited-image')
   })
 
   it('creates a new character Markdown file from Studio payloads', async () => {

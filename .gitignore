@@ -5,6 +5,7 @@ node_modules/
 dist/
 .studio/
 games/*/.studio/
+games/ella/
 test-results/
 
 # Bun

@@ -72,6 +72,8 @@ export class GameEngine {
   #startedAt = Date.now()
   #restoredPlaytime = 0
   #pendingChoices: ReturnType<ScriptRunner['choices']['slice']> | null = null
+  #presentedChoices: ReturnType<ScriptRunner['choices']['slice']> | null = null
+  #pendingChoiceText: string | null = null
   #advanceInProgress = false
   #booted = false
   #data: GameData = { characters: {}, scenes: {}, audio: {}, minigames: {}, gallery: {}, music: {}, replay: {} }
@@ -251,6 +253,7 @@ export class GameEngine {
 
     const { theme = {} } = this.#config
     if (theme.font)     document.documentElement.style.setProperty('--vn-font', theme.font)
+    if (theme.fontSize) document.documentElement.style.setProperty('--vn-dialog-font-size', theme.fontSize)
     if (theme.dialogBg) document.documentElement.style.setProperty('--vn-dialog-bg', theme.dialogBg)
     if (theme.accent)   document.documentElement.style.setProperty('--vn-accent', theme.accent)
     if (theme.cssVars) {
@@ -352,6 +355,7 @@ export class GameEngine {
     }
 
     if (step.type === 'choices') {
+      this.#presentedChoices = step.choices.slice()
       this.#setState(STATE.CHOICES)
       this.#bus.emit('engine:choices', { choices: step.choices })
       return
@@ -363,8 +367,8 @@ export class GameEngine {
       await this.#runMinigame(step.pendingMinigame, {})
     }
 
-    if (step.type === 'dialog' && step.text) {
-      this.#setState(STATE.DIALOG)
+      if (step.type === 'dialog' && step.text) {
+        this.#setState(STATE.DIALOG)
 
       const speaker = step.speaker
       let displayName = speaker
@@ -378,6 +382,7 @@ export class GameEngine {
         }
       }
 
+      const dialogText = this.#consumeChoiceEcho(step.text)
       const advanceMode = !step.canContinue && step.hasChoices
         ? 'choices'
         : 'none'
@@ -387,12 +392,12 @@ export class GameEngine {
       }
 
       this.#bus.emit('engine:dialog', {
-        text: step.text,
+        text: dialogText,
         speaker: displayName,
         nameColor,
         canContinue: step.canContinue,
         advanceMode,
-        ...this.#recordBacklog(step.text, displayName, nameColor),
+        ...this.#recordBacklog(dialogText, displayName, nameColor),
       })
     } else if (step.type === 'tags-only') {
       await this.#advance()
@@ -433,11 +438,15 @@ export class GameEngine {
           break
         case 'character':
           this.#trackCharacter(tag)
-          this.#bus.emit('engine:character', tag)
+          if (tag.id) {
+            this.#bus.emit('engine:character', tag.exit ? tag : this.#characterPayloadFromState(tag.id))
+          }
           break
         case 'sprite':
           this.#trackSprite(tag)
-          this.#bus.emit('engine:character', this.#characterPayloadFromState(tag.id ?? ''))
+          if (tag.id) {
+            this.#bus.emit('engine:character', this.#characterPayloadFromState(tag.id))
+          }
           break
         case 'transition':
           await this.#runTransition(tag)
@@ -581,8 +590,17 @@ export class GameEngine {
     const sheet = typeof tag['sheet'] === 'string'
       ? tag['sheet']
       : previous?.sheet ?? defaultSheet(data, animation)
+    const scale = characterScale(tag, previous)
+    const offset = characterOffset(tag, previous)
 
-    this.#currentCharacters.set(id, { id, position, sheet, animation })
+    this.#currentCharacters.set(id, {
+      id,
+      position,
+      sheet,
+      animation,
+      ...(scale !== undefined ? { scale } : {}),
+      ...(offset ? { offset } : {}),
+    })
   }
 
   #trackSprite(tag: TagCommand): void {
@@ -597,7 +615,16 @@ export class GameEngine {
         ? tag['expression']
         : previous?.animation ?? defaultAnimation(data)
     const sheet = typeof tag['sheet'] === 'string' ? tag['sheet'] : previous?.sheet ?? defaultSheet(data, animation)
-    this.#currentCharacters.set(id, { id, position, sheet, animation })
+    const scale = characterScale(tag, previous)
+    const offset = characterOffset(tag, previous)
+    this.#currentCharacters.set(id, {
+      id,
+      position,
+      sheet,
+      animation,
+      ...(scale !== undefined ? { scale } : {}),
+      ...(offset ? { offset } : {}),
+    })
   }
 
   #characterPayloadFromState(id: string): TagCommand {
@@ -644,6 +671,23 @@ export class GameEngine {
       this.#currentAudio.voice = visual.audio.voice
       this.#bus.emit('engine:voice', { ...visual.audio.voice, restored: true })
     }
+  }
+
+  #consumeChoiceEcho(text: string): string {
+    const selectedChoiceText = this.#pendingChoiceText
+    this.#pendingChoiceText = null
+    if (!selectedChoiceText) return text
+
+    if (text.startsWith(selectedChoiceText)) {
+      return text.slice(selectedChoiceText.length).replace(/^\s+/, '')
+    }
+
+    const trimmed = text.trimStart()
+    if (trimmed.startsWith(selectedChoiceText)) {
+      return trimmed.slice(selectedChoiceText.length).replace(/^\s+/, '')
+    }
+
+    return text
   }
 
   #seenStorageKey(): string {
@@ -704,6 +748,11 @@ export class GameEngine {
   }
 
   #choose(index: number): void {
+    if (this.#presentedChoices) {
+      const selectedChoiceText = this.#presentedChoices.find(choice => choice.index === index)?.text ?? null
+      this.#pendingChoiceText = selectedChoiceText
+      this.#presentedChoices = null
+    }
     this.#runner.choose(index)
     this.#setState(STATE.DIALOG)
     this.#requestAdvance()
@@ -722,6 +771,7 @@ export class GameEngine {
     if (this.#pendingChoices) {
       const choices = this.#pendingChoices
       this.#pendingChoices = null
+      this.#presentedChoices = choices
       this.#setState(STATE.CHOICES)
       this.#bus.emit('engine:choices', { choices })
     } else {
@@ -784,6 +834,29 @@ function defaultAnimation(data: Record<string, unknown>): string {
   if (typeof record['defaultState'] === 'string') return record['defaultState']
   if (typeof record['defaultAction'] === 'string') return record['defaultAction']
   return typeof data['defaultExpression'] === 'string' ? data['defaultExpression'] : 'neutral'
+}
+
+function numberFromTag(tag: Record<string, unknown>, key: string): number | undefined {
+  const value = tag[key]
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  if (typeof value !== 'string' || value.trim().length === 0) return undefined
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : undefined
+}
+
+function characterScale(tag: TagCommand, previous: SavedCharacterState | undefined): number | undefined {
+  return numberFromTag(tag, 'scale') ?? numberFromTag(tag, 'size') ?? previous?.scale
+}
+
+function characterOffset(tag: TagCommand, previous: SavedCharacterState | undefined): SavedCharacterState['offset'] | undefined {
+  const x = numberFromTag(tag, 'offsetX') ?? numberFromTag(tag, 'x') ?? previous?.offset?.x
+  const y = numberFromTag(tag, 'offsetY') ?? numberFromTag(tag, 'y') ?? previous?.offset?.y
+  return x !== undefined || y !== undefined
+    ? {
+        ...(x !== undefined ? { x } : {}),
+        ...(y !== undefined ? { y } : {}),
+      }
+    : undefined
 }
 
 function normalizeGalleryItem(id: string, data: Record<string, unknown>): GalleryItem {

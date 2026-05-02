@@ -653,6 +653,7 @@ function StoryFlowPanel(props: {
               onEdgesChange={onFlowEdgesChange}
               onNodesChange={onFlowNodesChange}
               panOnDrag
+              panActivationKeyCode={null}
               panOnScroll
               proOptions={{ hideAttribution: true }}
               zoomOnDoubleClick={false}
@@ -1527,11 +1528,18 @@ export function StoryEditor(props: {
               editorRef.current = editor
             }}
             options={{
+              autoIndent: 'advanced',
+              detectIndentation: false,
               fontFamily: STORY_EDITOR_FONT_FAMILY,
               fontSize: 17,
+              insertSpaces: true,
               minimap: { enabled: false },
               padding: { top: 16, bottom: 16 },
               scrollBeyondLastLine: false,
+              tabSize: 2,
+              trimAutoWhitespace: false,
+              useTabStops: true,
+              renderWhitespace: 'selection',
               wordWrap: 'on',
               automaticLayout: true,
             }}

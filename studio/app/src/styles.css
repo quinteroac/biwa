@@ -1688,9 +1688,10 @@ select:focus-visible {
 }
 
 .scene-design-background-preview {
+  position: relative;
   display: grid;
   place-items: center;
-  height: clamp(330px, 53vh, 520px);
+  height: clamp(180px, 32vh, 340px);
   min-height: 0;
   margin: 14px 14px 10px;
   background: var(--studio-surface);
@@ -1702,6 +1703,56 @@ select:focus-visible {
   width: 100%;
   height: 100%;
   object-fit: contain;
+}
+
+.scene-background-zoom {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--studio-surface);
+  background: color-mix(in srgb, var(--studio-text) 20%, transparent);
+  border: 0;
+  cursor: zoom-in;
+  opacity: 0;
+  transition: opacity 140ms ease;
+}
+
+.scene-design-background-preview:hover .scene-background-zoom,
+.scene-background-zoom:focus-visible {
+  opacity: 1;
+}
+
+.scene-background-zoom svg {
+  width: 44px;
+  height: 44px;
+  padding: 10px;
+  color: var(--studio-active);
+  background: var(--studio-surface);
+  border: 1.5px solid var(--studio-line);
+  box-shadow: 3px 3px 0 var(--studio-ink-shadow-soft);
+}
+
+.scene-background-edit-panel {
+  display: grid;
+  gap: 8px;
+  padding: 0 14px 12px;
+}
+
+.scene-background-edit-panel textarea {
+  min-height: 74px;
+  resize: vertical;
+}
+
+.scene-background-edit-panel > div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.scene-background-preview-modal img {
+  max-width: min(96vw, 1536px);
+  max-height: 90vh;
 }
 
 .scene-design-background-preview span {
@@ -1857,23 +1908,6 @@ select:focus-visible {
   margin-top: 4px;
   font-size: 14.5px;
   font-weight: 500;
-}
-
-.scene-design-generate-row {
-  display: grid;
-  gap: 8px;
-  padding: 0 14px 12px;
-}
-
-.scene-design-generate-row textarea {
-  min-height: 84px;
-  resize: vertical;
-}
-
-.scene-design-generate-row > div {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
 }
 
 .scene-design-asset-strip {
@@ -4130,6 +4164,15 @@ select:focus-visible {
   font-family: Newsreader, Georgia, serif;
   font-size: 18px;
   line-height: 1.45;
+}
+
+.new-project-dialog code {
+  padding: 1px 5px;
+  color: var(--studio-active);
+  background: rgba(52, 98, 136, 0.12);
+  border: 1px solid rgba(27, 28, 25, 0.22);
+  font-family: "Zen Kaku Gothic New", Inter, system-ui, sans-serif;
+  font-size: 0.82em;
 }
 
 .story-dialog label {

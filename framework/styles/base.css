@@ -3,6 +3,7 @@
 
 :root {
   --vn-font: "Georgia", serif;
+  --vn-dialog-font-size: 18px;
   --vn-dialog-bg: rgba(10, 10, 20, 0.85);
   --vn-accent: #c084fc;
   --vn-name-color: #e2e8f0;

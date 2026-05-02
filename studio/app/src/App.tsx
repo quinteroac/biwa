@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { deleteArtStyleImage, editArtStyleImage, fetchArtStyle, fetchProjects, generateArtStyleImage, runDoctor, saveProjectIdentity, uploadArtStyleImage, uploadProjectCover } from './api.ts'
+import { createProject, deleteArtStyleImage, editArtStyleImage, fetchArtStyle, fetchProjects, generateArtStyleImage, runDoctor, saveProjectIdentity, uploadArtStyleImage, uploadProjectCover } from './api.ts'
 import { AuthoringTools } from './AuthoringTools.tsx'
 import { BuildPreview } from './BuildPreview.tsx'
 import { CharacterDesigner } from './CharacterDesigner.tsx'
@@ -10,6 +10,7 @@ import { StudioSettings } from './StudioSettings.tsx'
 import { StudioIcon } from './StudioIcon.tsx'
 import { StoryEditor } from './StoryEditor.tsx'
 import type { StudioIconName } from './StudioIcon.tsx'
+import type { FormEvent } from 'react'
 import type { StudioArtStyleSlot, StudioProjectIdentityDraft, StudioProjectSummary } from '../../shared/types.ts'
 
 const sections = ['Overview', 'Story', 'Characters', 'Scenes', 'Assets', 'Plugins', 'Tools', 'Settings', 'Build/Preview']
@@ -68,6 +69,16 @@ function countColor(label: string): string {
   } as Record<string, string>)[label] ?? '#E5E7EB'
 }
 
+function slugFromTitle(title: string): string {
+  return title
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
 function StudioTopbar(props: {
   projects: StudioProjectSummary[]
   selectedId: string | null
@@ -77,6 +88,7 @@ function StudioTopbar(props: {
   setActiveSection: (section: string) => void
   isRunningDoctor: boolean
   onRunDoctor: () => void
+  onNewProject: () => void
 }) {
   return (
     <header className="studio-topbar">
@@ -105,6 +117,10 @@ function StudioTopbar(props: {
         </span>
       ) : null}
       <div className="topbar-actions">
+        <button className="ghost-button" onClick={props.onNewProject} type="button">
+          <StudioIcon name="new-project" size={18} />
+          New Novel
+        </button>
         <button className="ghost-button" disabled={props.isRunningDoctor} onClick={props.onRunDoctor} type="button">
           <StudioIcon name="run-doctor" size={18} />
           {props.isRunningDoctor ? 'Running' : 'Run Doctor'}
@@ -123,6 +139,65 @@ function StudioTopbar(props: {
         </button>
       </div>
     </header>
+  )
+}
+
+function NewProjectDialog(props: {
+  error: string | null
+  isCreating: boolean
+  onClose: () => void
+  onCreate: (draft: { gameId: string; title: string }) => void
+}) {
+  const [title, setTitle] = useState('')
+  const [gameId, setGameId] = useState('')
+  const [idEdited, setIdEdited] = useState(false)
+  const effectiveId = idEdited ? gameId : slugFromTitle(title)
+  const canCreate = Boolean(effectiveId.trim())
+
+  function submit(event: FormEvent<HTMLFormElement>): void {
+    event.preventDefault()
+    if (!canCreate || props.isCreating) return
+    props.onCreate({
+      gameId: effectiveId.trim(),
+      title: title.trim(),
+    })
+  }
+
+  return (
+    <div className="story-dialog-scrim" onClick={props.onClose}>
+      <form className="story-dialog new-project-dialog" onClick={event => event.stopPropagation()} onSubmit={submit}>
+        <strong>New Novel</strong>
+        <p>Create a fresh Biwa project under <code>games/</code>.</p>
+        <label>
+          <span>Title</span>
+          <input
+            autoFocus
+            onChange={event => setTitle(event.target.value)}
+            placeholder="The Midnight Cafe"
+            value={title}
+          />
+        </label>
+        <label>
+          <span>Project ID</span>
+          <input
+            onChange={event => {
+              setIdEdited(true)
+              setGameId(event.target.value)
+            }}
+            pattern="[a-z0-9][a-z0-9-]*"
+            placeholder="midnight-cafe"
+            value={effectiveId}
+          />
+        </label>
+        {props.error ? <p className="story-dialog-error">{props.error}</p> : null}
+        <div className="story-dialog-actions">
+          <button disabled={props.isCreating} onClick={props.onClose} type="button">Cancel</button>
+          <button disabled={!canCreate || props.isCreating} type="submit">
+            {props.isCreating ? 'Creating' : 'Create'}
+          </button>
+        </div>
+      </form>
+    </div>
   )
 }
 
@@ -671,6 +746,7 @@ export function App() {
   const queryClient = useQueryClient()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [activeSection, setActiveSection] = useState('Overview')
+  const [isNewProjectOpen, setIsNewProjectOpen] = useState(false)
   const projectsQuery = useQuery({
     queryKey: ['studio-projects'],
     queryFn: fetchProjects,
@@ -680,6 +756,18 @@ export function App() {
   const doctorMutation = useMutation({
     mutationFn: (gameId: string) => runDoctor(gameId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['studio-projects'] }),
+  })
+  const createProjectMutation = useMutation({
+    mutationFn: (draft: { gameId: string; title: string }) => createProject({
+      gameId: draft.gameId,
+      ...(draft.title ? { title: draft.title } : {}),
+    }),
+    onSuccess: async (response) => {
+      setSelectedId(response.project.id)
+      setActiveSection('Overview')
+      setIsNewProjectOpen(false)
+      await queryClient.invalidateQueries({ queryKey: ['studio-projects'] })
+    },
   })
 
   useEffect(() => {
@@ -709,11 +797,25 @@ export function App() {
           setActiveSection('Overview')
         }}
         onRunDoctor={() => selectedProject && doctorMutation.mutate(selectedProject.id)}
+        onNewProject={() => {
+          createProjectMutation.reset()
+          setIsNewProjectOpen(true)
+        }}
         projects={projects}
         selectedId={selectedProject?.id ?? null}
         selectedProject={selectedProject}
         setActiveSection={setActiveSection}
       />
+      {isNewProjectOpen ? (
+        <NewProjectDialog
+          error={createProjectMutation.error?.message ?? null}
+          isCreating={createProjectMutation.isPending}
+          onClose={() => {
+            if (!createProjectMutation.isPending) setIsNewProjectOpen(false)
+          }}
+          onCreate={(draft) => createProjectMutation.mutate(draft)}
+        />
+      ) : null}
       <StudioSidebar
         activeSection={activeSection}
         setActiveSection={setActiveSection}

@@ -93,8 +93,17 @@ export class ScriptRunner {
     const parsedTags = TagParser.parse(tags)
     const speakerTag = parsedTags.find(t => t.type === 'speaker')
     if (speakerTag?.id) {
-      speaker = speakerTag.id
+      const tagSpeaker = speakerTag.id.trim()
+      const normalized = tagSpeaker.toLowerCase()
+      if (normalized === 'none' || normalized === 'off' || normalized === 'clear' || normalized === 'null') {
+        speaker = null
+      } else {
+        speaker = tagSpeaker
+      }
       this.#currentSpeaker = speaker
+    } else if (speakerTag) {
+      speaker = null
+      this.#currentSpeaker = null
     }
 
     const hasChoices = story.currentChoices.length > 0 && !story.canContinue

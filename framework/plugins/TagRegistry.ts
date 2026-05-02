@@ -10,6 +10,7 @@ export const CORE_TAGS = new Set([
   'ambience',
   'voice',
   'character',
+  'sprite',
   'transition',
   'minigame',
   'end_screen',

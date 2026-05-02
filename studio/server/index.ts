@@ -1,11 +1,11 @@
 import { Elysia } from 'elysia'
 import { existsSync } from 'fs'
 import { extname } from 'path'
-import { getProjectDiagnostics, getProjectSummary, listProjects, updateProjectIdentity, uploadProjectCover } from './projects.ts'
+import { createProject, getProjectDiagnostics, getProjectSummary, listProjects, updateProjectIdentity, uploadProjectCover } from './projects.ts'
 import { createStoryFolder, deleteStoryFile, deleteStoryFolder, listStoryEntries, readStoryFile, renameStoryFile, renameStoryFolder, writeStoryFile } from './story.ts'
 import { deleteArtStyleImage, editArtStyleImage, generateArtStyleImage, listArtStyle, listAssets, resolveAssetFile, uploadArtStyleImage } from './assets.ts'
-import { createSceneBackgroundFolder, createSceneFile, createSceneFolder, deleteSceneBackground, deleteSceneFile, generateSceneBackground, generateSceneFile, listSceneEntries, readScene, uploadSceneBackground, uploadSceneFile, writeScene } from './scenes.ts'
-import { createCharacterSpritesheetFolder, deleteCharacterSheetConcept, deleteCharacterSpritesheet, editCharacterSheetConcept, generateCharacterAtlas, generateCharacterSheetConcept, generateCharacterSpritesheet, listCharacters, readCharacter, uploadCharacterSheetConcept, uploadCharacterSpritesheet, writeCharacter } from './characters.ts'
+import { createSceneBackgroundFolder, createSceneFile, createSceneFolder, deleteSceneBackground, deleteSceneFile, editSceneBackground, generateSceneBackground, generateSceneFile, listSceneEntries, readScene, uploadSceneBackground, uploadSceneFile, writeScene } from './scenes.ts'
+import { createCharacterSpritesheetFolder, deleteCharacterFile, deleteCharacterSheetConcept, deleteCharacterSpritesheet, editCharacterSheetConcept, generateCharacterAtlas, generateCharacterSheetConcept, generateCharacterSpritesheet, listCharacters, readCharacter, uploadCharacterSheetConcept, uploadCharacterSpritesheet, writeCharacter } from './characters.ts'
 import { installOfficialPlugin, listStudioPlugins, removeOfficialPlugin } from './plugins.ts'
 import { getBuildManifest, getBuilds, previewFileExists, previewMime, resolvePreviewFile, runStudioBuild } from './builds.ts'
 import { analyzeAuthoring } from './authoring.ts'
@@ -38,6 +38,17 @@ export const studioApi = new Elysia()
   .get('/api/projects', async () => ({
     projects: await listProjects(),
   }))
+  .post('/api/projects', async ({ body }) => {
+    try {
+      const payload = body as { gameId?: unknown; title?: unknown }
+      if (typeof payload.gameId !== 'string') throw new Error('Missing project id.')
+      if (payload.title !== undefined && typeof payload.title !== 'string') throw new Error('Project title must be text.')
+      return await createProject(payload.gameId, payload.title)
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, err.message.includes('already exists') ? 409 : 400)
+    }
+  })
   .get('/api/projects/:gameId', async ({ params }) => {
     try {
       return { project: await getProjectSummary(params.gameId) }
@@ -303,12 +314,20 @@ export const studioApi = new Elysia()
   })
   .post('/api/projects/:gameId/scenes/file', async ({ body, params }) => {
     try {
-      const payload = body as { folder?: unknown; name?: unknown; file?: unknown }
+      const payload = body as { folder?: unknown; name?: unknown; displayName?: unknown; file?: unknown }
       if (payload.file instanceof File) {
         return await uploadSceneFile(params.gameId, typeof payload.folder === 'string' ? payload.folder : '', payload.file)
       }
       if (typeof payload.name !== 'string') throw new Error('Missing scene name.')
-      return await createSceneFile(params.gameId, typeof payload.folder === 'string' ? payload.folder : '', payload.name)
+      if (payload.displayName !== undefined && typeof payload.displayName !== 'string') {
+        throw new Error('Scene display name must be text.')
+      }
+      return await createSceneFile(
+        params.gameId,
+        typeof payload.folder === 'string' ? payload.folder : '',
+        payload.name,
+        payload.displayName,
+      )
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e))
       return jsonError(err.message, 400)
@@ -423,6 +442,28 @@ export const studioApi = new Elysia()
       return jsonError(err.message, err.message.includes('not found') ? 404 : 400)
     }
   })
+  .post('/api/projects/:gameId/scenes/background/edit', async ({ body, params }) => {
+    try {
+      const payload = body as { path?: unknown; scene?: unknown; assetPath?: unknown; prompt?: unknown }
+      if (typeof payload.path !== 'string') throw new Error('Missing scene file path.')
+      if (typeof payload.scene !== 'object' || payload.scene === null || Array.isArray(payload.scene)) {
+        throw new Error('Missing scene payload.')
+      }
+      if (typeof payload.assetPath !== 'string') throw new Error('Missing scene background asset path.')
+      if (typeof payload.prompt !== 'string') throw new Error('Missing scene background edit instruction.')
+      return await editSceneBackground(
+        params.gameId,
+        payload.path,
+        payload.scene as Parameters<typeof editSceneBackground>[2],
+        payload.assetPath,
+        payload.prompt,
+      )
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      console.warn(`[studio] scene background edit failed: ${err.message}`)
+      return jsonError(err.message, err.message.includes('not found') ? 404 : 400)
+    }
+  })
   .delete('/api/projects/:gameId/scenes/background', async ({ body, params }) => {
     try {
       const payload = body as { path?: unknown; scene?: unknown; assetPath?: unknown }
@@ -467,6 +508,16 @@ export const studioApi = new Elysia()
         throw new Error('Missing character payload.')
       }
       return await writeCharacter(params.gameId, payload.path, payload.character as Parameters<typeof writeCharacter>[2])
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e))
+      return jsonError(err.message, err.message.includes('not found') ? 404 : 400)
+    }
+  })
+  .delete('/api/projects/:gameId/characters/file', async ({ body, params }) => {
+    try {
+      const payload = body as { path?: unknown }
+      if (typeof payload.path !== 'string') throw new Error('Missing character file path.')
+      return await deleteCharacterFile(params.gameId, payload.path)
     } catch (e) {
       const err = e instanceof Error ? e : new Error(String(e))
       return jsonError(err.message, err.message.includes('not found') ? 404 : 400)

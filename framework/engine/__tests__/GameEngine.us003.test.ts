@@ -28,6 +28,7 @@ interface Deferred<T> {
 interface DialogPayload {
   text: string
   advanceMode: 'none' | 'next' | 'choices'
+  speaker?: string | null
 }
 
 interface ChoicesPayload {
@@ -338,5 +339,96 @@ describe('GameEngine - US-003 duplicate advance guard', () => {
     expect(dialogs.map(dialog => dialog.text)).toEqual(['Pick a path.', 'After choice'])
     expect(dialogs[1]?.advanceMode).toBe('none')
     expect(engine.state).toBe('DIALOG')
+  })
+
+  it('does not prepend the selected choice text as dialog text', async () => {
+    const engine = await createEngine(`Escoge un camino.
+* Opcion A -> opcion_a
+* Opcion B -> opcion_b
+
+=== opcion_a ===
+Texto A
+-> DONE
+
+=== opcion_b ===
+Texto B
+-> DONE
+`)
+    const dialogs: DialogPayload[] = []
+    let choicesCount = 0
+
+    engine.bus.on<DialogPayload>('engine:dialog', payload => {
+      dialogs.push(payload)
+    })
+    engine.bus.on<ChoicesPayload>('engine:choices', payload => {
+      choicesCount = payload.choices.length
+    })
+
+    engine.start()
+    await waitUntil(() => dialogs.length === 1)
+    engine.advance()
+    await waitUntil(() => choicesCount === 2)
+
+    engine.choose(0)
+    await waitUntil(() => dialogs.length === 2)
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    expect(dialogs.map(dialog => dialog.text)).toEqual(['Escoge un camino.', 'Texto A'])
+  })
+
+  it('does not prepend the selected choice text when choices follow tags-only output', async () => {
+    const engine = await createEngine(`Linea base.
+# speaker
+* Opcion A -> opcion_a
+* Opcion B -> opcion_b
+
+=== opcion_a ===
+Texto A
+-> DONE
+
+=== opcion_b ===
+Texto B
+-> DONE
+`)
+    const dialogs: DialogPayload[] = []
+    let choicesCount = 0
+
+    engine.bus.on<DialogPayload>('engine:dialog', payload => {
+      dialogs.push(payload)
+    })
+    engine.bus.on<ChoicesPayload>('engine:choices', payload => {
+      choicesCount = payload.choices.length
+    })
+
+    engine.start()
+    await waitUntil(() => dialogs.length === 1)
+    engine.advance()
+    await waitUntil(() => choicesCount === 2)
+
+    engine.choose(0)
+    await waitUntil(() => dialogs.length === 2)
+
+    expect(dialogs.map(dialog => dialog.text)).toEqual(['Linea base.', 'Texto A'])
+  })
+
+  it('clears active speaker when receiving # speaker with reset value', async () => {
+    const engine = await createEngine(`Diana: Hola
+# character: diana exit: true
+# speaker: none
+Te levantas y te vistes sin mucho ánimo.
+`)
+    const dialogs: DialogPayload[] = []
+    engine.bus.on<DialogPayload>('engine:dialog', payload => {
+      dialogs.push(payload)
+    })
+
+    engine.start()
+    await waitUntil(() => dialogs.length === 1)
+    engine.advance()
+    await waitUntil(() => dialogs.length === 2)
+
+    expect(dialogs).toHaveLength(2)
+    expect(dialogs[1]?.text).toBe('Te levantas y te vistes sin mucho ánimo.')
+    expect(dialogs[1]?.speaker).toBeNull()
   })
 })

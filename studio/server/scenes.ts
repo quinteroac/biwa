@@ -8,6 +8,7 @@ import type {
   StudioSceneBackgroundFolderResponse,
   StudioSceneBackgroundGenerateRequest,
   StudioSceneBackgroundGenerateResponse,
+  StudioSceneBackgroundEditResponse,
   StudioSceneBackgroundUploadResponse,
   StudioSceneDraft,
   StudioSceneFileMutationResponse,
@@ -231,8 +232,14 @@ function sceneEntries(gameId: string): StudioScenesResponse {
 function safeSceneFileStem(name: string): string {
   return (name.trim() || 'new-scene')
     .toLowerCase()
-    .replace(/[^a-z0-9-]+/g, '-')
+    .replace(/[^a-z0-9_-]+/g, '-')
     .replace(/^-+|-+$/g, '') || 'new-scene'
+}
+
+function assertSceneId(sceneId: string): void {
+  if (!/^[a-z0-9][a-z0-9_-]*$/.test(sceneId)) {
+    throw new Error('Scene ID must use lowercase letters, numbers, hyphens or underscores.')
+  }
 }
 
 function nextSceneFilePath(gameId: string, folder: string, name: string): string {
@@ -355,18 +362,104 @@ function apiUrl(baseUrl: string, path: string): string {
   return `${baseUrl.replace(/\/+$/, '')}/${path.replace(/^\/+/, '')}`
 }
 
-function sceneBackgroundPrompt(draft: StudioSceneDraft, prompt: string): string {
+function editsPathFromGenerationPath(path: string): string {
+  return path.replace(/\/generations\/?$/, '/edits') || '/images/edits'
+}
+
+function artStyleReferencePaths(gameId: string): string[] {
+  const dir = join(GAMES_DIR, gameId, 'assets', 'art-style')
+  if (!existsSync(dir)) return []
+  return readdirSync(dir)
+    .filter(entry => /^style_reference_\d+\.(png|jpe?g|webp)$/i.test(entry))
+    .sort((a, b) => a.localeCompare(b))
+    .map(entry => `art-style/${entry}`)
+}
+
+function imageMimeFromPath(path: string): string {
+  const ext = extname(path).toLowerCase()
+  if (ext === '.jpg' || ext === '.jpeg') return 'image/jpeg'
+  if (ext === '.webp') return 'image/webp'
+  return 'image/png'
+}
+
+function imageOutputFormatFromPath(path: string): 'png' | 'webp' | 'jpeg' | null {
+  const ext = extname(path).toLowerCase()
+  if (ext === '.png') return 'png'
+  if (ext === '.webp') return 'webp'
+  if (ext === '.jpg' || ext === '.jpeg') return 'jpeg'
+  return null
+}
+
+function sceneBackgroundPrompt(draft: StudioSceneDraft, prompt: string, styleReferencePaths: string[] = []): string {
   return [
     prompt.trim() || `Create a production visual novel background for ${draft.displayName || draft.id}.`,
-    `Scene: ${draft.displayName || draft.id}.`,
-    draft.description ? `Description: ${draft.description}.` : '',
-    draft.location ? `Location: ${draft.location}.` : '',
-    draft.timeOfDay ? `Time of day: ${draft.timeOfDay}.` : '',
-    draft.weather ? `Weather: ${draft.weather}.` : '',
-    draft.mood ? `Mood: ${draft.mood}.` : '',
+    'Use all Scene Metadata and Lighting & Mood fields below as hard requirements for the generated background.',
+    styleReferencePaths.length > 0 ? `Use the attached visual novel art style reference image${styleReferencePaths.length === 1 ? '' : 's'} as the style guide. Match the same art direction, line quality, rendering technique, color discipline, lighting treatment, texture level, and finish. Do not reinterpret the scene in a different art style.` : '',
+    'Scene Metadata:',
+    `- Scene: ${draft.displayName || draft.id}.`,
+    draft.description ? `- Description: ${draft.description}.` : '',
+    draft.location ? `- Location: ${draft.location}.` : '',
+    draft.body?.trim() ? `- Scene notes: ${draft.body.trim().slice(0, 1200)}` : '',
+    'Lighting & Mood:',
+    draft.timeOfDay ? `- Time of day: ${draft.timeOfDay}.` : '',
+    draft.weather ? `- Weather: ${draft.weather}.` : '',
+    draft.mood ? `- Mood: ${draft.mood}.` : '',
     'Wide 16:9 composition, no characters, no text, no UI, no watermark.',
     'Leave usable negative space for visual novel dialogue UI near the lower third.',
   ].filter(Boolean).join('\n')
+}
+
+async function createSceneImagePayload(
+  gameId: string,
+  settings: Awaited<ReturnType<typeof readOpenAiImagesSettingsForGeneration>>,
+  prompt: string,
+  referencePaths: string[],
+  outputFormat = settings.outputFormat,
+): Promise<{ url: string; init: RequestInit }> {
+  if (referencePaths.length === 0) {
+    return {
+      url: apiUrl(settings.baseUrl, settings.imageGenerationPath),
+      init: {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${settings.apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: settings.model,
+          prompt,
+          n: 1,
+          size: SCENE_BACKGROUND_IMAGE_SIZE,
+          quality: settings.quality,
+          output_format: outputFormat,
+          moderation: settings.moderation,
+        }),
+      },
+    }
+  }
+
+  const form = new FormData()
+  form.set('model', settings.model)
+  form.set('prompt', prompt)
+  form.set('n', '1')
+  form.set('size', SCENE_BACKGROUND_IMAGE_SIZE)
+  form.set('quality', settings.quality)
+  form.set('output_format', outputFormat)
+  form.set('moderation', settings.moderation)
+  const imageFieldName = referencePaths.length > 1 ? 'image[]' : 'image'
+  for (const path of referencePaths) {
+    const imagePath = resolveAssetPath(gameId, path)
+    const image = Bun.file(imagePath)
+    form.append(imageFieldName, new File([await image.arrayBuffer()], path.split('/').pop() ?? 'style-reference.png', { type: imageMimeFromPath(path) }))
+  }
+  return {
+    url: apiUrl(settings.baseUrl, editsPathFromGenerationPath(settings.imageGenerationPath)),
+    init: {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${settings.apiKey}` },
+      body: form,
+    },
+  }
 }
 
 export async function listScenes(gameId: string): Promise<StudioSceneItem[]> {
@@ -391,9 +484,10 @@ export async function writeScene(gameId: string, path: string, draft: StudioScen
   const filePath = resolveSceneFile(gameId, path)
   if (!existsSync(dirname(filePath))) throw new Error(`Scene directory not found for: ${path}`)
   const existing = existsSync(filePath) ? frontmatterFromMarkdown(readFileSync(filePath, 'utf8')) : { data: {}, body: '' }
+  const existingId = typeof existing.data['id'] === 'string' ? existing.data['id'] : null
   const data = {
     ...existing.data,
-    id: draft.id,
+    id: existingId ?? draft.id,
     displayName: draft.displayName,
     description: draft.description,
     location: draft.location,
@@ -417,11 +511,18 @@ export async function createSceneFolder(gameId: string, path: string): Promise<S
   return { folder: normalizeScenePath(path), ...sceneEntries(gameId) }
 }
 
-export async function createSceneFile(gameId: string, folder: string, name: string): Promise<StudioSceneFileMutationResponse> {
+export async function createSceneFile(gameId: string, folder: string, sceneId: string, displayName?: string): Promise<StudioSceneFileMutationResponse> {
   await validateGame(gameId)
-  const path = nextSceneFilePath(gameId, folder, name)
+  const normalizedSceneId = safeSceneFileStem(sceneId)
+  assertSceneId(normalizedSceneId)
+  const normalizedFolder = folder.trim() ? normalizeScenePath(folder).replace(/\/+$/, '') : ''
+  const path = normalizedFolder ? `${normalizedFolder}/${normalizedSceneId}.md` : `${normalizedSceneId}.md`
+  if (existsSync(resolveSceneFile(gameId, path))) throw new Error(`Scene ID "${normalizedSceneId}" already exists.`)
   mkdirSync(dirname(resolveSceneFile(gameId, path)), { recursive: true })
-  const draft = sceneDraftFromPrompt(path, '')
+  const draft = {
+    ...sceneDraftFromPrompt(path, ''),
+    displayName: displayName?.trim() || titleFromSceneId(normalizedSceneId),
+  }
   const saved = await writeScene(gameId, path, draft)
   return { scene: saved.scene, ...sceneEntries(gameId) }
 }
@@ -532,23 +633,9 @@ export async function generateSceneBackground(
   mkdirSync(targetDir, { recursive: true })
   const filename = nextSceneBackgroundFilename(targetDir, `background.${imageExtension(settings.outputFormat)}`)
   const assetPath = sceneBackgroundAssetPath(sceneId, folder, filename)
-  const body: Record<string, unknown> = {
-    model: settings.model,
-    prompt: sceneBackgroundPrompt(draft, options.prompt),
-    n: 1,
-    size: SCENE_BACKGROUND_IMAGE_SIZE,
-    quality: settings.quality,
-    output_format: settings.outputFormat,
-    moderation: settings.moderation,
-  }
-  const response = await fetch(apiUrl(settings.baseUrl, settings.imageGenerationPath), {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${settings.apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  })
+  const styleReferences = artStyleReferencePaths(gameId)
+  const request = await createSceneImagePayload(gameId, settings, sceneBackgroundPrompt(draft, options.prompt ?? '', styleReferences), styleReferences)
+  const response = await fetch(request.url, request.init)
   const payload = await response.json().catch(() => null) as unknown
   if (!response.ok) throw new Error(openAiErrorMessage(payload, `OpenAI scene background generation failed with ${response.status}.`))
   const generated = await imageBytesFromResponse(payload)
@@ -558,6 +645,52 @@ export async function generateSceneBackground(
     path: assetPath,
     url: assetUrl(gameId, assetPath),
     revisedPrompt: generated.revisedPrompt,
+    scene: saved.scene,
+  }
+}
+
+export async function editSceneBackground(
+  gameId: string,
+  path: string,
+  draft: StudioSceneDraft,
+  assetPath: string,
+  prompt: string,
+): Promise<StudioSceneBackgroundEditResponse> {
+  await validateGame(gameId)
+  const settings = await readOpenAiImagesSettingsForGeneration(gameId)
+  const trimmedPrompt = prompt.trim()
+  if (!trimmedPrompt) throw new Error('Missing scene background edit instruction.')
+  const normalizedAssetPath = assetPath.replace(/\\/g, '/').replace(/^assets\//, '').replace(/^\/+/, '')
+  const sceneId = draft.id.trim() || path.replace(/\.md$/, '')
+  if (!normalizedAssetPath.startsWith(`scenes/${sceneId}/`) || normalizedAssetPath.includes('..')) {
+    throw new Error('Scene background path must stay inside this scene asset folder.')
+  }
+  const filePath = resolveAssetPath(gameId, normalizedAssetPath)
+  if (!existsSync(filePath)) throw new Error(`Scene background image does not exist: ${normalizedAssetPath}`)
+  const styleReferences = artStyleReferencePaths(gameId)
+  const editPrompt = [
+    `Edit the selected scene background: ${trimmedPrompt}`,
+    sceneBackgroundPrompt(draft, '', styleReferences),
+    'Preserve the scene composition unless the edit instruction explicitly changes it.',
+  ].join('\n')
+  const request = await createSceneImagePayload(
+    gameId,
+    settings,
+    editPrompt,
+    [normalizedAssetPath, ...styleReferences],
+    imageOutputFormatFromPath(normalizedAssetPath) ?? settings.outputFormat,
+  )
+  const response = await fetch(request.url, request.init)
+  const payload = await response.json().catch(() => null) as unknown
+  if (!response.ok) throw new Error(openAiErrorMessage(payload, `OpenAI scene background edit failed with ${response.status}.`))
+  const generated = await imageBytesFromResponse(payload)
+  writeFileSync(filePath, generated.bytes)
+  const saved = await writeScene(gameId, path, draft)
+  return {
+    path: normalizedAssetPath,
+    url: assetUrl(gameId, normalizedAssetPath),
+    revisedPrompt: generated.revisedPrompt,
+    sourcePath: normalizedAssetPath,
     scene: saved.scene,
   }
 }

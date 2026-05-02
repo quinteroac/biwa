@@ -96,6 +96,7 @@
       "type": "object",
       "properties": {
         "font": { "type": "string" },
+        "fontSize": { "type": "string" },
         "dialogBg": { "type": "string" },
         "accent": { "type": "string" },
         "cssVars": { "type": "object", "additionalProperties": { "type": "string" } }

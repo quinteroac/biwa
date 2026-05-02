@@ -36,6 +36,11 @@ export interface CharacterState {
   position: 'left' | 'center' | 'right'
   sheet: string
   animation: string
+  scale?: number
+  offset?: {
+    x?: number
+    y?: number
+  }
   exiting: boolean
 }
 
@@ -304,16 +309,21 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
         setEffects(sceneEffects(id, data))
       }),
 
-      bus.on<{ id: string; position?: string; sheet?: string; animation?: string; expression?: string; exit?: boolean }>('engine:character', ({ id, position, sheet, animation, expression, exit: shouldExit }) => {
+      bus.on<{ id?: string; position?: string; sheet?: string; animation?: string; expression?: string; scale?: number; offset?: { x?: number; y?: number }; exit?: boolean }>('engine:character', ({ id, position, sheet, animation, expression, scale, offset, exit: shouldExit }) => {
+        const safeId = typeof id === 'string' ? id.trim() : ''
+        if (!safeId) {
+          return
+        }
+
         setCharacters(prev => {
           const next = new Map(prev)
           if (shouldExit) {
-            const char = next.get(id)
-            if (char) next.set(id, { ...char, exiting: true })
+            const char = next.get(safeId)
+            if (char) next.set(safeId, { ...char, exiting: true })
             return next
           }
-          const charData = (engine.data?.characters?.[id.toLowerCase()] as Record<string, unknown>) ?? null
-          const existing = next.get(id)
+          const charData = (engine.data?.characters?.[safeId.toLowerCase()] as Record<string, unknown>) ?? null
+          const existing = next.get(safeId)
           const defaultPosition = charData?.['defaultPosition'] as 'left' | 'center' | 'right' | undefined
           const characterAnimation = charData?.['animation'] as Record<string, unknown> | undefined
           const defaultSheet = typeof characterAnimation?.['defaultStateSheet'] === 'string' ? characterAnimation['defaultStateSheet'] : 'Main'
@@ -322,12 +332,16 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
             : typeof characterAnimation?.['defaultAction'] === 'string'
               ? characterAnimation['defaultAction']
             : charData?.['defaultExpression'] as string | undefined
-          next.set(id, {
-            id,
+          const nextScale = scale ?? existing?.scale
+          const nextOffset = offset ?? existing?.offset
+          next.set(safeId, {
+            id: safeId,
             charData: charData ?? existing?.charData ?? null,
             position: (position ?? existing?.position ?? defaultPosition ?? 'center') as 'left' | 'center' | 'right',
             sheet: sheet ?? existing?.sheet ?? defaultSheet,
             animation: animation ?? expression ?? existing?.animation ?? defaultAnimation ?? 'neutral',
+            ...(nextScale !== undefined ? { scale: nextScale } : {}),
+            ...(nextOffset ? { offset: nextOffset } : {}),
             exiting: false,
           })
           return next
@@ -614,6 +628,8 @@ export function VnStage({ engine, showSlotMenu = true, showQuickSave = true, sho
                 position={char.position}
                 sheet={char.sheet}
                 animation={char.animation}
+                {...(char.scale !== undefined ? { scale: char.scale } : {})}
+                {...(char.offset ? { offset: char.offset } : {})}
                 exiting={char.exiting}
                 onExited={handleCharacterExited}
               />

@@ -1,10 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { createSceneFile, createSceneFolder, deleteSceneBackground, deleteSceneFile, fetchAssets, fetchScene, fetchScenes, generateSceneBackground, saveScene, uploadSceneBackground, uploadSceneFile } from './api.ts'
+import { createSceneFile, createSceneFolder, deleteSceneBackground, deleteSceneFile, editSceneBackground, fetchAssets, fetchScene, fetchScenes, generateSceneBackground, saveScene, uploadSceneBackground, uploadSceneFile } from './api.ts'
 import { StudioIcon } from './StudioIcon.tsx'
 import type { StudioAssetItem, StudioProjectSummary, StudioSceneBackgroundAsset, StudioSceneDraft, StudioSceneItem } from '../../shared/types.ts'
 
 type SceneAudioSlot = 'ambience' | 'music' | 'sfx'
+
+interface NewSceneDraft {
+  id: string
+  displayName: string
+}
 
 function backgroundImage(scene: StudioSceneDraft): string {
   const background = scene.background
@@ -26,6 +31,16 @@ function updateBackgroundImage(scene: StudioSceneDraft, image: string): StudioSc
 
 function assetName(path: string): string {
   return path.split('/').at(-1) ?? path
+}
+
+function sceneIdFromTitle(title: string): string {
+  return title
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
 }
 
 function assetSizeLabel(size: number): string {
@@ -128,11 +143,14 @@ export function SceneLibrary(props: {
   const [draft, setDraft] = useState<StudioSceneDraft | null>(null)
   const [selectedBackgroundFolder, setSelectedBackgroundFolder] = useState('Main')
   const [selectedBackgroundPath, setSelectedBackgroundPath] = useState<string | null>(null)
-  const [backgroundGenerateOpen, setBackgroundGenerateOpen] = useState(false)
-  const [backgroundGeneratePrompt, setBackgroundGeneratePrompt] = useState('')
+  const [backgroundPreviewOpen, setBackgroundPreviewOpen] = useState(false)
+  const [backgroundEditOpen, setBackgroundEditOpen] = useState(false)
+  const [backgroundEditPrompt, setBackgroundEditPrompt] = useState('')
   const [sceneSearch, setSceneSearch] = useState('')
   const [selectedSceneFolder, setSelectedSceneFolder] = useState('Scenes')
   const [sceneMenuOpen, setSceneMenuOpen] = useState(false)
+  const [newSceneDraft, setNewSceneDraft] = useState<NewSceneDraft | null>(null)
+  const [newSceneIdEdited, setNewSceneIdEdited] = useState(false)
   const [newSceneFolder, setNewSceneFolder] = useState<string | null>(null)
   const [openSceneMenu, setOpenSceneMenu] = useState<string | null>(null)
   const [selectedAudioSlot, setSelectedAudioSlot] = useState<SceneAudioSlot>('ambience')
@@ -208,10 +226,17 @@ export function SceneLibrary(props: {
     },
   })
   const sceneCreateMutation = useMutation({
-    mutationFn: (name: string) => createSceneFile(props.project.id, selectedSceneFolder === 'Scenes' ? '' : selectedSceneFolder, name),
+    mutationFn: (scene: NewSceneDraft) => createSceneFile(
+      props.project.id,
+      selectedSceneFolder === 'Scenes' ? '' : selectedSceneFolder,
+      scene.id,
+      scene.displayName,
+    ),
     onSuccess: response => {
       setSelectedPath(response.scene.path)
       setSelectedSceneFolder(sceneFolderFromPath(response.scene.path))
+      setNewSceneDraft(null)
+      setNewSceneIdEdited(false)
       queryClient.setQueryData(['studio-scene', props.project.id, response.scene.path], { scene: response.scene })
       void queryClient.invalidateQueries({ queryKey: ['studio-scenes', props.project.id] })
       void queryClient.invalidateQueries({ queryKey: ['studio-assets', props.project.id] })
@@ -256,13 +281,30 @@ export function SceneLibrary(props: {
   const backgroundGenerateMutation = useMutation({
     mutationFn: () => generateSceneBackground(props.project.id, activePath ?? '', draft as StudioSceneDraft, {
       folder: selectedBackgroundFolder,
-      prompt: backgroundGeneratePrompt,
     }),
     onSuccess: response => {
       setDraft(draftFromScene(response.scene))
       setSelectedBackgroundPath(response.path)
-      setBackgroundGenerateOpen(false)
-      setBackgroundGeneratePrompt('')
+      queryClient.setQueryData(['studio-scene', props.project.id, response.scene.path], { scene: response.scene })
+      void queryClient.invalidateQueries({ queryKey: ['studio-scenes', props.project.id] })
+      void queryClient.invalidateQueries({ queryKey: ['studio-scene', props.project.id, response.scene.path] })
+      void queryClient.invalidateQueries({ queryKey: ['studio-assets', props.project.id] })
+      void queryClient.invalidateQueries({ queryKey: ['studio-projects'] })
+    },
+  })
+  const backgroundEditMutation = useMutation({
+    mutationFn: (payload: { assetPath: string; prompt: string }) => editSceneBackground(
+      props.project.id,
+      activePath ?? '',
+      draft as StudioSceneDraft,
+      payload.assetPath,
+      payload.prompt,
+    ),
+    onSuccess: response => {
+      setDraft(draftFromScene(response.scene))
+      setSelectedBackgroundPath(response.path)
+      setBackgroundEditOpen(false)
+      setBackgroundEditPrompt('')
       queryClient.setQueryData(['studio-scene', props.project.id, response.scene.path], { scene: response.scene })
       void queryClient.invalidateQueries({ queryKey: ['studio-scenes', props.project.id] })
       void queryClient.invalidateQueries({ queryKey: ['studio-scene', props.project.id, response.scene.path] })
@@ -326,6 +368,30 @@ export function SceneLibrary(props: {
     if (!file) return
     sceneUploadMutation.mutate(file)
   }
+  const openNewSceneDialog = () => {
+    sceneCreateMutation.reset()
+    setNewSceneDraft({ id: '', displayName: '' })
+    setNewSceneIdEdited(false)
+    setSceneMenuOpen(false)
+  }
+  const updateNewSceneDisplayName = (displayName: string) => {
+    setNewSceneDraft(current => current
+      ? {
+          ...current,
+          displayName,
+          id: newSceneIdEdited ? current.id : sceneIdFromTitle(displayName),
+        }
+      : current)
+  }
+  const createBlankScene = () => {
+    if (!newSceneDraft) return
+    const id = sceneIdFromTitle(newSceneDraft.id)
+    if (!id) return
+    sceneCreateMutation.mutate({
+      id,
+      displayName: newSceneDraft.displayName.trim(),
+    })
+  }
 
   return (
     <div className="scene-workspace">
@@ -355,10 +421,7 @@ export function SceneLibrary(props: {
             {sceneMenuOpen ? (
               <div className="scene-menu" role="menu">
                 <button
-                  onClick={() => {
-                    sceneCreateMutation.mutate('New Scene')
-                    setSceneMenuOpen(false)
-                  }}
+                  onClick={openNewSceneDialog}
                   role="menuitem"
                   type="button"
                 >
@@ -488,6 +551,41 @@ export function SceneLibrary(props: {
         {sceneCreateMutation.error ? <p className="scene-list-error">{sceneCreateMutation.error.message}</p> : null}
         {sceneUploadMutation.error ? <p className="scene-list-error">{sceneUploadMutation.error.message}</p> : null}
         {sceneDeleteMutation.error ? <p className="scene-list-error">{sceneDeleteMutation.error.message}</p> : null}
+        {newSceneDraft ? (
+          <div className="story-dialog-scrim" onClick={() => !sceneCreateMutation.isPending && setNewSceneDraft(null)}>
+            <section className="story-dialog scene-create-dialog" onClick={event => event.stopPropagation()}>
+              <strong>New Scene</strong>
+              <label>
+                <span>Display Name</span>
+                <input
+                  autoFocus
+                  onChange={event => updateNewSceneDisplayName(event.target.value)}
+                  placeholder="Rainy Platform"
+                  value={newSceneDraft.displayName}
+                />
+              </label>
+              <label>
+                <span>Scene ID</span>
+                <input
+                  onChange={event => {
+                    setNewSceneIdEdited(true)
+                    setNewSceneDraft({ ...newSceneDraft, id: sceneIdFromTitle(event.target.value) })
+                  }}
+                  pattern="[a-z0-9][a-z0-9_-]*"
+                  placeholder="rainy-platform"
+                  value={newSceneDraft.id}
+                />
+              </label>
+              {sceneCreateMutation.error ? <p className="story-dialog-error">{sceneCreateMutation.error.message}</p> : null}
+              <div className="story-dialog-actions">
+                <button disabled={sceneCreateMutation.isPending} onClick={() => setNewSceneDraft(null)} type="button">Cancel</button>
+                <button disabled={sceneCreateMutation.isPending || !newSceneDraft.id.trim()} onClick={createBlankScene} type="button">
+                  {sceneCreateMutation.isPending ? 'Creating' : 'Create'}
+                </button>
+              </div>
+            </section>
+          </div>
+        ) : null}
       </aside>
 
       <section className="scene-editor-panel">
@@ -514,6 +612,10 @@ export function SceneLibrary(props: {
                   <strong>Scene Metadata</strong>
                 </div>
                 <div className="scene-form">
+                  <label>
+                    <span>Scene ID</span>
+                    <input disabled value={draft.id} />
+                  </label>
                   <label>
                     <span>Display Name</span>
                     <input value={draft.displayName} onChange={event => setDraft({ ...draft, displayName: event.target.value })} />
@@ -612,7 +714,20 @@ export function SceneLibrary(props: {
                 type="file"
               />
               <div className="scene-design-background-preview">
-                {selectedBackground?.url ? <img alt="" src={selectedBackground.url} /> : <span>No background asset selected</span>}
+                {selectedBackground?.url ? (
+                  <>
+                    <img alt="" src={selectedBackground.url} />
+                    <button
+                      aria-label="Open full size background preview"
+                      className="scene-background-zoom"
+                      onClick={() => setBackgroundPreviewOpen(true)}
+                      title="Open full size preview"
+                      type="button"
+                    >
+                      <StudioIcon name="zoom" size={22} />
+                    </button>
+                  </>
+                ) : <span>No background asset selected</span>}
               </div>
               <div className="scene-design-actions">
                 <button
@@ -625,11 +740,19 @@ export function SceneLibrary(props: {
                 </button>
                 <button
                   className="ghost-button"
-                  disabled={backgroundGenerateMutation.isPending}
-                  onClick={() => setBackgroundGenerateOpen(true)}
+                  disabled={!draft || backgroundGenerateMutation.isPending || backgroundEditMutation.isPending}
+                  onClick={() => backgroundGenerateMutation.mutate()}
                   type="button"
                 >
                   {backgroundGenerateMutation.isPending ? 'Generating' : 'Generate Asset'}
+                </button>
+                <button
+                  className="ghost-button"
+                  disabled={!selectedBackground || backgroundGenerateMutation.isPending || backgroundEditMutation.isPending}
+                  onClick={() => setBackgroundEditOpen(open => !open)}
+                  type="button"
+                >
+                  {backgroundEditMutation.isPending ? 'Editing' : 'Edit Image'}
                 </button>
                 <button
                   className="ghost-button"
@@ -652,26 +775,30 @@ export function SceneLibrary(props: {
                   {backgroundDeleteMutation.isPending ? 'Deleting' : 'Delete'}
                 </button>
               </div>
-              {backgroundGenerateOpen ? (
-                <div className="scene-design-generate-row">
+              {selectedBackground?.url && backgroundEditOpen ? (
+                <form
+                  className="scene-background-edit-panel"
+                  onSubmit={event => {
+                    event.preventDefault()
+                    const prompt = backgroundEditPrompt.trim()
+                    if (selectedBackground && prompt) backgroundEditMutation.mutate({ assetPath: selectedBackground.path, prompt })
+                  }}
+                >
                   <textarea
-                    autoFocus
-                    onChange={event => setBackgroundGeneratePrompt(event.target.value)}
-                    placeholder="Night cafe exterior, rain, neon signage..."
-                    value={backgroundGeneratePrompt}
+                    aria-label="Background edit instruction"
+                    disabled={backgroundEditMutation.isPending}
+                    onChange={event => setBackgroundEditPrompt(event.target.value)}
+                    placeholder="Describe the changes for this image."
+                    rows={3}
+                    value={backgroundEditPrompt}
                   />
                   <div>
-                    <button className="ghost-button" onClick={() => setBackgroundGenerateOpen(false)} type="button">Cancel</button>
-                    <button
-                      className="ghost-button"
-                      disabled={backgroundGenerateMutation.isPending}
-                      onClick={() => backgroundGenerateMutation.mutate()}
-                      type="button"
-                    >
-                      Generate
+                    <button disabled={backgroundEditMutation.isPending} onClick={() => setBackgroundEditOpen(false)} type="button">Cancel</button>
+                    <button disabled={!backgroundEditPrompt.trim() || backgroundEditMutation.isPending} type="submit">
+                      {backgroundEditMutation.isPending ? 'Editing' : 'Apply edit'}
                     </button>
                   </div>
-                </div>
+                </form>
               ) : null}
               <div className="scene-background-grid scene-design-asset-strip">
                 {sceneBackgroundAssets.map(asset => (
@@ -692,6 +819,7 @@ export function SceneLibrary(props: {
               </div>
               {backgroundUploadMutation.error ? <p className="scene-background-error">{backgroundUploadMutation.error.message}</p> : null}
               {backgroundGenerateMutation.error ? <p className="scene-background-error">{backgroundGenerateMutation.error.message}</p> : null}
+              {backgroundEditMutation.error ? <p className="scene-background-error">{backgroundEditMutation.error.message}</p> : null}
               {backgroundDeleteMutation.error ? <p className="scene-background-error">{backgroundDeleteMutation.error.message}</p> : null}
               </section>
 
@@ -798,6 +926,30 @@ export function SceneLibrary(props: {
           </div>
         ) : null}
       </section>
+
+      {backgroundPreviewOpen && selectedBackground?.url ? (
+        <div
+          aria-label="Full size background preview"
+          aria-modal="true"
+          className="character-preview-modal scene-background-preview-modal"
+          onClick={() => setBackgroundPreviewOpen(false)}
+          role="dialog"
+        >
+          <button
+            aria-label="Close full size preview"
+            className="character-preview-modal-close"
+            onClick={() => setBackgroundPreviewOpen(false)}
+            type="button"
+          >
+            x
+          </button>
+          <img
+            alt={assetName(selectedBackground.path)}
+            onClick={event => event.stopPropagation()}
+            src={selectedBackground.url}
+          />
+        </div>
+      ) : null}
 
     </div>
   )

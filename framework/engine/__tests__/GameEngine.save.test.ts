@@ -11,6 +11,7 @@ interface GameEngineLike {
   readonly bus: EventBusLike
   readonly state: string
   start(): void
+  advance(): void
   getState(): GameSaveState
   restoreState(saved: GameSaveState): void
 }
@@ -36,6 +37,12 @@ interface CharacterPayload {
   position?: string
   sheet?: string
   animation?: string
+  scale?: number
+  offset?: {
+    x?: number
+    y?: number
+  }
+  exit?: boolean | string
 }
 
 function compileInk(ink: string): string {
@@ -131,7 +138,7 @@ async function createEngine(ink: string): Promise<GameEngineLike> {
 describe('GameEngine save/load snapshots', () => {
   it('captures scene, character, audio, locale, thumbnail and elapsed playtime', async () => {
     const engine = await createEngine(`# scene: cafe, variant: night
-# character: kai, position: left, sheet: Main, animation: happy
+# character: kai, position: left, sheet: Main, animation: happy, scale: 0.2, offsetX: 10, offsetY: -30
 # bgm: theme
 Kai: Hello there.
 `)
@@ -149,7 +156,7 @@ Kai: Hello there.
     expect(state.meta.thumbnail).toBe('images/thumbs/cafe.jpg')
     expect(state.meta.playtime).toBeGreaterThanOrEqual(0)
     expect(state.visual?.scene).toEqual({ id: 'cafe', variant: 'night' })
-    expect(state.visual?.characters).toEqual([{ id: 'kai', position: 'left', sheet: 'Main', animation: 'happy' }])
+    expect(state.visual?.characters).toEqual([{ id: 'kai', position: 'left', sheet: 'Main', animation: 'happy', scale: 0.2, offset: { x: 10, y: -30 } }])
     expect(state.visual?.audio.bgm).toMatchObject({
       type: 'bgm',
       id: 'theme',
@@ -191,7 +198,7 @@ Kai: Hello there.
       },
       visual: {
         scene: { id: 'cafe', variant: 'night' },
-        characters: [{ id: 'kai', position: 'right', sheet: 'Chapter_01', animation: 'sad' }],
+        characters: [{ id: 'kai', position: 'right', sheet: 'Chapter_01', animation: 'sad', scale: 0.75, offset: { x: -12, y: 20 } }],
         audio: {
           bgm: { type: 'bgm', id: 'theme', file: 'audio/theme.mp3', volume: 0.6 },
         },
@@ -200,7 +207,7 @@ Kai: Hello there.
     })
 
     expect(scenes[0]).toMatchObject({ id: 'cafe', variant: 'night' })
-    expect(characters[0]).toEqual({ id: 'kai', position: 'right', sheet: 'Chapter_01', animation: 'sad' })
+    expect(characters[0]).toEqual({ id: 'kai', position: 'right', sheet: 'Chapter_01', animation: 'sad', scale: 0.75, offset: { x: -12, y: 20 } })
     expect(bgm[0]).toMatchObject({ type: 'bgm', id: 'theme', file: 'audio/theme.mp3' })
 
     await waitUntil(() => dialogs.length === 1)
@@ -208,7 +215,52 @@ Kai: Hello there.
     const restored = engine.getState()
     expect(restored.meta.playtime).toBeGreaterThanOrEqual(12)
     expect(restored.visual?.scene).toEqual({ id: 'cafe', variant: 'night' })
-    expect(restored.visual?.characters).toEqual([{ id: 'kai', position: 'right', sheet: 'Chapter_01', animation: 'sad' }])
+    expect(restored.visual?.characters).toEqual([{ id: 'kai', position: 'right', sheet: 'Chapter_01', animation: 'sad', scale: 0.75, offset: { x: -12, y: 20 } }])
     expect(restored.visual?.audio.bgm).toMatchObject({ id: 'theme', file: 'audio/theme.mp3' })
+  })
+
+  it('does not emit malformed character events when character tag omits id', async () => {
+    const engine = await createEngine(`A line.\n# character: exit\n# character\n`)
+    const characterEvents: Array<Record<string, unknown>> = []
+    const dialogs: string[] = []
+
+    engine.bus.on<Record<string, unknown>>('engine:character', payload => {
+      characterEvents.push(payload)
+    })
+    engine.bus.on<DialogPayload>('engine:dialog', payload => {
+      dialogs.push(payload.text)
+    })
+
+    engine.start()
+
+    await waitUntil(() => dialogs.length === 1)
+    await new Promise(resolve => setTimeout(resolve, 0))
+
+    expect(dialogs).toEqual(['A line.'])
+    expect(characterEvents).toEqual([])
+  })
+
+  it('preserves exit payloads for character tags', async () => {
+    const engine = await createEngine(`# character: kai, position: left, animation: happy
+Line one.
+# character: kai, exit: true
+Line two.
+`)
+    const characterEvents: CharacterPayload[] = []
+    const dialogs: string[] = []
+
+    engine.bus.on<CharacterPayload>('engine:character', payload => {
+      characterEvents.push(payload)
+    })
+    engine.bus.on<DialogPayload>('engine:dialog', payload => {
+      dialogs.push(payload.text)
+    })
+
+    engine.start()
+    await waitUntil(() => dialogs.length === 1)
+    engine.advance()
+    await waitUntil(() => dialogs.length === 2)
+
+    expect(characterEvents.some(event => event.id === 'kai' && event.exit)).toBe(true)
   })
 })

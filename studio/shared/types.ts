@@ -33,6 +33,15 @@ export interface StudioProjectResponse {
   project: StudioProjectSummary
 }
 
+export interface StudioProjectCreateRequest {
+  gameId: string
+  title?: string
+}
+
+export interface StudioProjectCreateResponse {
+  project: StudioProjectSummary
+}
+
 export interface StudioProjectIdentityDraft {
   title: string
   description: string
@@ -176,13 +185,21 @@ export interface StudioSceneBackgroundUploadResponse {
 
 export interface StudioSceneBackgroundGenerateRequest {
   folder: string
-  prompt: string
+  prompt?: string
 }
 
 export interface StudioSceneBackgroundGenerateResponse {
   path: string
   url: string | null
   revisedPrompt: string
+  scene: StudioSceneItem
+}
+
+export interface StudioSceneBackgroundEditResponse {
+  path: string
+  url: string | null
+  revisedPrompt: string
+  sourcePath: string
   scene: StudioSceneItem
 }
 
@@ -354,6 +371,11 @@ export interface StudioCharactersResponse {
 
 export interface StudioCharacterResponse {
   character: StudioCharacterItem
+}
+
+export interface StudioCharacterDeleteResponse {
+  deletedPath: string
+  characters: StudioCharacterItem[]
 }
 
 export interface StudioCharacterAtlasResponse {

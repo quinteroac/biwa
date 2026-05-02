@@ -82,4 +82,33 @@ describe('GameEngine instance policy', () => {
     expect(GameEngine.instance).toBe(first)
     expect(second.title).toBe('singleton-a')
   })
+
+  it('applies the configured dialog font size as a CSS variable', async () => {
+    const setProperty = mock(() => {})
+    Object.defineProperty(globalThis, 'document', {
+      configurable: true,
+      value: {
+        documentElement: {
+          style: { setProperty },
+        },
+      } as unknown as Document,
+    })
+    Object.defineProperty(globalThis, 'fetch', {
+      configurable: true,
+      value: mock(async (input: RequestInfo | URL): Promise<Response> => {
+        const url = String(input)
+        if (url === './story-theme.json') return new Response(compileInk('Theme line.\n'), { status: 200 })
+        if (url.endsWith('/index.json')) return new Response('[]', { status: 200 })
+        return new Response('{}', { status: 200 })
+      }),
+    })
+
+    const { GameEngine } = await importEngine()
+    await GameEngine.create({
+      ...config('theme-font-size', './story-theme.json'),
+      theme: { fontSize: '22px' },
+    })
+
+    expect(setProperty).toHaveBeenCalledWith('--vn-dialog-font-size', '22px')
+  })
 })

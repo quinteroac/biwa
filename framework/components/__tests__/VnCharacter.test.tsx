@@ -52,4 +52,34 @@ describe('VnCharacter', () => {
     expect(html).toContain('calc(50% + 12px)')
     expect(html).toContain('scale(1.2)')
   })
+
+  it('applies scale and offset props over character data defaults', () => {
+    const html = renderToString(createElement(VnCharacter, {
+      id: 'kai',
+      charData: {
+        displayName: 'Kai',
+        scale: 1.2,
+        offset: { x: 12, y: -8 },
+        animation: {
+          type: 'spritesheet-library',
+          defaultStateSheet: 'Main',
+          defaultAnimationSheet: 'Main',
+          defaultState: 'neutral',
+          defaultAction: '',
+          states: {},
+          animationSheets: {},
+        },
+      },
+      position: 'center',
+      sheet: 'Main',
+      animation: 'neutral',
+      scale: 0.2,
+      offset: { x: -24, y: 16 },
+      exiting: false,
+      onExited: () => {},
+    }))
+
+    expect(html).toContain('calc(50% + -24px)')
+    expect(html).toContain('translateY(36px) scale(0.2)')
+  })
 })

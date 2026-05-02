@@ -116,6 +116,10 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Studio spritesheet authoring now distinguishes Visual Novel state atlases from Animation atlases, including generation metadata, atlas summaries and physical spritesheet discovery.
 - Studio Sprites and Animations tabs now provide inspector-style side selectors with fit-to-view previews, zoom controls and mouse pan navigation.
 - Studio Animations preview now plays live multi-frame Aseprite frame tags, supports playback-speed control and lists animations across every generated animation spritesheet.
+- Runtime character display tags now support per-line `scale`/`size` and `offsetX`/`offsetY` overrides that are preserved in save snapshots.
+- `theme.fontSize` and `--vn-dialog-font-size` for configuring the main dialog text size from `game.config.ts`.
+- Studio scene background full-preview modal with fit-to-view asset previews and an in-place image editing action.
+- Studio scene and character image generation/editing prompts now include art-style reference images when available.
 
 ### Changed
 
@@ -157,3 +161,16 @@ All notable changes are tracked here. The project uses semantic-versioning langu
 - Character spritesheet runtime metadata now separates `states.*.sprites` from `animationSheets.*.actions` instead of mixing still sprites and multi-frame actions in one `sheets.*.animations` map.
 - `VnCharacter`, the official Aseprite character atlas renderer, Studio character APIs and `doctor` validation now resolve state sprites and live animation actions through the new separated spritesheet-library schema.
 - Studio spritesheet image generation prompts now treat Animation atlases as action groups with fixed frame ranges instead of still sprite/expression sheets.
+- Studio scene background generation is now form-driven, using Scene Metadata plus Lighting & Mood fields instead of a manual prompt textarea.
+- Studio scene background generation and editing now request images that match the configured art-style references.
+- Studio character-sheet image editing now overwrites the selected asset in place so the edited image remains visible in the active preview.
+- Studio character-sheet generation now asks the model to preserve both the referenced character identity and concept-art style.
+- Ink tag docs and registry coverage now include the supported character, sprite, speaker, volume, gallery, minigame, animation and sheet tags.
+- `games/ella/` is ignored by Git so local sample/project content does not appear as untracked repository noise.
+
+### Fixed
+
+- Fixed palette color inputs closing while typing numeric color values or using backspace.
+- Fixed `# character: <id>, exit: true` events being normalized before the UI could remove the character.
+- Fixed selected choice text being echoed into the following dialog line.
+- Fixed scene and character image edit flows creating detached generated copies instead of updating the selected asset.

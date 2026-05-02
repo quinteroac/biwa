@@ -1,5 +1,5 @@
 import { spawnSync } from 'child_process'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, unlinkSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, unlinkSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { basename, dirname, extname, join, normalize, relative } from 'path'
 import yaml from 'js-yaml'
@@ -12,6 +12,7 @@ import type {
   StudioAsepriteAtlasKind,
   StudioCharacterAtlasResponse,
   StudioCharacterAtlasSummary,
+  StudioCharacterDeleteResponse,
   StudioCharacterDraft,
   StudioCharacterItem,
   StudioCharacterResponse,
@@ -35,7 +36,6 @@ const ROOT = new URL('../../', import.meta.url).pathname.replace(/\/$/, '')
 const GAMES_DIR = join(ROOT, 'games')
 const DEFAULT_CHARACTER_SHEET_ART_TYPES = Object.freeze(['conceptArt'] satisfies StudioCharacterSheetArtType[])
 const CHARACTER_SHEET_ART_TYPE_ORDER = Object.freeze(['conceptArt', 'silhouetteSketch', 'characterSheet', 'actionPoses'] satisfies StudioCharacterSheetArtType[])
-const CHARACTER_SHEET_EDIT_SLUG = 'edit'
 const CHARACTER_SHEET_ART_INSTRUCTIONS = Object.freeze({
   conceptArt: {
     label: 'Concept Art',
@@ -241,7 +241,9 @@ function atlasPath(data: Record<string, unknown>): string {
 }
 
 function assetUrl(gameId: string, path: string): string {
-  return `/api/projects/${gameId}/assets/file?path=${encodeURIComponent(path)}`
+  const filePath = resolveAssetPath(gameId, path)
+  const version = existsSync(filePath) ? `&v=${Math.trunc(statSync(filePath).mtimeMs)}` : ''
+  return `/api/projects/${gameId}/assets/file?path=${encodeURIComponent(path)}${version}`
 }
 
 function spritesheetRootDir(gameId: string, characterId: string): string {
@@ -672,7 +674,7 @@ function buildCharacterImagePrompt(
     `Task: ${art.label}.`,
     art.prompt,
     styleReferencePaths.length > 0 ? `Use the attached visual novel art style reference image${styleReferencePaths.length === 1 ? '' : 's'} as the style guide. Create this character in that same visual style, matching the overall line quality, rendering approach, palette discipline, lighting mood, and finish level while keeping the character design original.` : '',
-    referencePath ? `Use the attached reference image to preserve this character's identity, silhouette, costume language, palette, and proportions.` : '',
+    referencePath ? `Use the attached reference image as the primary character identity and art-style guide. Preserve the character identity, silhouette, costume language, palette, and proportions, and match the same visual style: line quality, shape language, rendering technique, brush or cel-shading treatment, lighting mood, color discipline, texture level, and finish. Do not reinterpret the character in a different art style.` : '',
     `Character: ${draft.displayName || draft.id}.`,
     draft.role ? `Role: ${draft.role}.` : '',
     draft.physicalDescription ? `Physical description: ${draft.physicalDescription}.` : '',
@@ -747,6 +749,14 @@ function imageMimeFromPath(path: string): string {
   if (ext === '.jpg' || ext === '.jpeg') return 'image/jpeg'
   if (ext === '.webp') return 'image/webp'
   return 'image/png'
+}
+
+function imageOutputFormatFromPath(path: string): 'png' | 'webp' | 'jpeg' | null {
+  const ext = extname(path).toLowerCase()
+  if (ext === '.png') return 'png'
+  if (ext === '.webp') return 'webp'
+  if (ext === '.jpg' || ext === '.jpeg') return 'jpeg'
+  return null
 }
 
 function shellQuote(value: string): string {
@@ -916,6 +926,17 @@ export async function writeCharacter(gameId: string, path: string, draft: Studio
   const content = `---\n${yaml.dump(data, { lineWidth: 100, noRefs: true }).trim()}\n---\n\n${body.trim()}\n`
   writeFileSync(filePath, content)
   return readCharacter(gameId, path)
+}
+
+export async function deleteCharacterFile(gameId: string, path: string): Promise<StudioCharacterDeleteResponse> {
+  await validateGame(gameId)
+  const filePath = resolveCharacterFile(gameId, path)
+  if (!existsSync(filePath)) throw new Error(`Character file not found: ${path}`)
+  unlinkSync(filePath)
+  return {
+    deletedPath: normalizeCharacterPath(path),
+    characters: await listCharacters(gameId),
+  }
 }
 
 export async function generateCharacterAtlas(
@@ -1329,13 +1350,15 @@ export async function editCharacterSheetConcept(
   const characterId = draft.id.trim() || path.replace(/\.md$/, '')
   const normalizedAssetPath = assetPath.replace(/\\/g, '/').replace(/^assets\//, '').replace(/^\/+/, '')
   assertCharacterSheetAssetPath(characterId, normalizedAssetPath)
-  const targetDir = join(GAMES_DIR, gameId, 'assets', 'characters', characterId, 'character-sheet', 'generated')
-  mkdirSync(targetDir, { recursive: true })
+  const targetPath = resolveAssetPath(gameId, normalizedAssetPath)
+  if (!existsSync(targetPath)) throw new Error(`Character sheet image does not exist: ${normalizedAssetPath}`)
   const requestStartedAt = Date.now()
   const controller = new AbortController()
   const timeoutMs = settings.imageGenerationTimeoutSeconds * 1000
   const timeout = setTimeout(() => controller.abort(), timeoutMs)
-  const request = await createOpenAiImagePayload(gameId, settings, trimmedPrompt, normalizedAssetPath)
+  const request = await createOpenAiImagePayload(gameId, settings, trimmedPrompt, normalizedAssetPath, {
+    outputFormat: imageOutputFormatFromPath(normalizedAssetPath) ?? settings.outputFormat,
+  })
   console.info(`[studio] OpenAI Images edit request: game=${gameId} character=${characterId} source=${normalizedAssetPath} model=${settings.model} size=${settings.characterSheetResolution} moderation=${settings.moderation}`)
   let response: Response
   try {
@@ -1353,20 +1376,18 @@ export async function editCharacterSheetConcept(
   console.info(`[studio] OpenAI Images edit payload summary: ${imageResponseSummary(payload)}`)
   if (!response.ok) throw new Error(openAiErrorMessage(payload, `OpenAI image edit failed with ${response.status}.`))
   const generated = await imageBytesFromResponse(payload)
-  const filename = nextGeneratedFilenameForPrefix(targetDir, imageExtension(settings.outputFormat), CHARACTER_SHEET_EDIT_SLUG)
-  const nextAssetPath = `characters/${characterId}/character-sheet/generated/${filename}`
-  writeFileSync(join(targetDir, filename), generated.bytes)
+  writeFileSync(targetPath, generated.bytes)
   const currentSheet = draft.characterSheet ?? { main: '', concepts: [], generated: [] }
   const nextSheet = {
-    main: currentSheet.main || nextAssetPath,
+    main: currentSheet.main || normalizedAssetPath,
     concepts: currentSheet.concepts,
-    generated: [...currentSheet.generated, nextAssetPath],
+    generated: currentSheet.generated,
   }
   const saved = await writeCharacter(gameId, path, { ...draft, characterSheet: nextSheet })
-  console.info(`[studio] OpenAI Images saved edited concept: ${nextAssetPath}`)
+  console.info(`[studio] OpenAI Images replaced edited concept: ${normalizedAssetPath}`)
   return {
-    path: nextAssetPath,
-    url: assetUrl(gameId, nextAssetPath),
+    path: normalizedAssetPath,
+    url: assetUrl(gameId, normalizedAssetPath),
     revisedPrompt: generated.revisedPrompt,
     sourcePath: normalizedAssetPath,
     character: saved.character,

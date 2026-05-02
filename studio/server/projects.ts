@@ -1,8 +1,10 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'fs'
 import { basename, extname, join } from 'path'
 import { createDoctorJsonReport, validateGame } from '../../manager/commands/doctor.ts'
+import { deriveTitle, scaffoldNewGame } from '../../manager/commands/new.ts'
 import type { DoctorJsonReport } from '../../manager/commands/doctor.ts'
 import type {
+  StudioProjectCreateResponse,
   StudioProjectCounts,
   StudioProjectCoverUploadResponse,
   StudioProjectIdentityDraft,
@@ -168,6 +170,13 @@ export async function listProjects(): Promise<StudioProjectSummary[]> {
     projects.push(await getProjectSummary(gameId))
   }
   return projects
+}
+
+export async function createProject(gameId: string, title?: string): Promise<StudioProjectCreateResponse> {
+  const normalizedGameId = gameId.trim()
+  const normalizedTitle = title?.trim() || deriveTitle(normalizedGameId)
+  await scaffoldNewGame(normalizedGameId, normalizedTitle)
+  return { project: await getProjectSummary(normalizedGameId) }
 }
 
 export async function updateProjectIdentity(gameId: string, draft: StudioProjectIdentityDraft): Promise<StudioProjectSummary> {

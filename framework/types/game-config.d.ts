@@ -5,6 +5,7 @@ export type DistributionMode = 'standalone' | 'portal' | 'static' | 'embedded';
 
 export interface GameThemeConfig {
   font?: string;
+  fontSize?: string;
   dialogBg?: string;
   accent?: string;
   cssVars?: Record<string, string>;

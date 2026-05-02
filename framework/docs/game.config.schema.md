@@ -161,6 +161,7 @@ Visual customization for this novel. All fields are optional — the framework p
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `theme.font` | `string` | — | CSS `font-family` for dialog text. Default: system serif. |
+| `theme.fontSize` | `string` | — | CSS `font-size` for the main dialog text. Example: `"22px"`. Default: `18px`. |
 | `theme.dialogBg` | `string` | — | Background of the dialog box. Accepts any CSS color value. Default: `rgba(0, 0, 0, 0.75)`. |
 | `theme.accent` | `string` | — | Color used for choices, highlights, and interactive elements. Default: `white`. |
 | `theme.cssVars` | `Record<string, string>` | — | Escape hatch. Arbitrary CSS custom properties injected into `:root`. Use for any visual detail not covered by the fields above. |
@@ -168,6 +169,7 @@ Visual customization for this novel. All fields are optional — the framework p
 ```ts
 theme: {
   font:      '"Georgia", serif',
+  fontSize:  '22px',
   dialogBg:  'rgba(10, 10, 20, 0.85)',
   accent:    '#c084fc',
   cssVars: {
@@ -397,6 +399,7 @@ export type MinigamesConfig = Record<string, () => Promise<unknown>>
 
 export interface ThemeConfig {
   font?:     string
+  fontSize?: string
   dialogBg?: string
   accent?:   string
   cssVars?:  Record<string, string>

@@ -43,6 +43,8 @@ export interface VnCharacterProps {
   position: 'left' | 'center' | 'right'
   sheet: string
   animation: string
+  scale?: number
+  offset?: { x?: number; y?: number }
   exiting: boolean
   onExited: (id: string) => void
 }
@@ -157,7 +159,7 @@ function selectedSpritesheet(anim: CharacterData['animation'], sheet: string, an
   return { sheet: stateSheet, mapping: stateSheet.sprites ?? {} }
 }
 
-export function VnCharacter({ id, charData, position, sheet, animation, exiting, onExited }: VnCharacterProps) {
+export function VnCharacter({ id, charData, position, sheet, animation, scale: scaleOverride, offset: offsetOverride, exiting, onExited }: VnCharacterProps) {
   const [entered, setEntered] = useState(false)
 
   useEffect(() => {
@@ -177,9 +179,9 @@ export function VnCharacter({ id, charData, position, sheet, animation, exiting,
   const selectedSheet = selectedSpritesheet(anim, sheet, animation)
 
   const visible = entered && !exiting
-  const scale = charData?.scale ?? 1
-  const offsetX = charData?.offset?.x ?? 0
-  const offsetY = charData?.offset?.y ?? 0
+  const scale = scaleOverride ?? charData?.scale ?? 1
+  const offsetX = offsetOverride?.x ?? charData?.offset?.x ?? 0
+  const offsetY = offsetOverride?.y ?? charData?.offset?.y ?? 0
 
   let posStyle: React.CSSProperties
   if (position === 'left') {

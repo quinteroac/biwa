@@ -15,6 +15,11 @@ export interface SavedCharacterState {
   position: string
   sheet: string
   animation: string
+  scale?: number
+  offset?: {
+    x?: number
+    y?: number
+  }
   exiting?: boolean
 }
 
